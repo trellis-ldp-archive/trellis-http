@@ -12,6 +12,7 @@ apply plugin: 'signing'
 apply plugin: 'checkstyle'
 apply plugin: 'com.github.hierynomus.license'
 apply plugin: 'jacoco'
+apply plugin: 'project-report'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -32,6 +33,7 @@ ext {
     commonsCodecVersion = '1.10'
     slf4jVersion = '1.7.21'
     jaxrsVersion = '2.0.1'
+    metricsVersion = '3.1.0'
 
     /* Testing */
     junitVersion = '4.12'
@@ -52,6 +54,7 @@ dependencies {
     compile group: 'org.trellisldp', name: 'trellis-vocabulary', version: trellisVocabularyVersion
     compile group: 'org.apache.commons', name: 'commons-rdf-api', version: commonsRdfVersion
     compile group: 'javax.ws.rs', name: 'javax.ws.rs-api', version: jaxrsVersion
+    compile group: 'io.dropwizard.metrics', name: 'metrics-annotation', version: metricsVersion
     compile group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
 
     testCompile group: 'junit', name: 'junit', version: junitVersion

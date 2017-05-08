@@ -45,6 +45,8 @@ import static org.trellisldp.http.RdfMediaType.TEXT_TURTLE;
 import static org.trellisldp.http.RdfMediaType.VARIANTS;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 
+import com.codahale.metrics.annotation.Timed;
+
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Optional;
@@ -109,6 +111,7 @@ public class LdpResource extends BaseLdpResource {
      * @return the response
      */
     @GET
+    @Timed
     public Response getResource(@PathParam("path") final String path) {
         if (path.endsWith("/")) {
             return redirectWithoutSlash(path);
