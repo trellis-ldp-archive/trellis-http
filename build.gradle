@@ -26,7 +26,6 @@ ext {
     license = 'Apache 2'
 
     /* Dependencies */
-    trellisApiVersion = '0.1.0-SNAPSHOT'
     trellisSpiVersion = '0.1.0-SNAPSHOT'
     trellisVocabularyVersion = '0.1.0-SNAPSHOT'
     commonsRdfVersion = '0.3.0-incubating'
@@ -49,7 +48,6 @@ configurations {
 
 dependencies {
     compile group: 'commons-codec', name: 'commons-codec', version: commonsCodecVersion
-    compile group: 'org.trellisldp', name: 'trellis-api', version: trellisApiVersion
     compile group: 'org.trellisldp', name: 'trellis-spi', version: trellisSpiVersion
     compile group: 'org.trellisldp', name: 'trellis-vocabulary', version: trellisVocabularyVersion
     compile group: 'org.apache.commons', name: 'commons-rdf-api', version: commonsRdfVersion
@@ -120,6 +118,11 @@ publishing {
             from components.java
         }
     }
+}
+
+processResources {
+    outputs.upToDateWhen { false }
+    expand project.properties
 }
 
 signing {
