@@ -11,14 +11,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
+package org.trellisldp.http.impl;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Stream.empty;
 import static java.util.stream.Stream.of;
 import static javax.ws.rs.core.UriBuilder.fromUri;
-import static org.trellisldp.http.Constants.TRELLIS_PREFIX;
-import static org.trellisldp.http.RdfMediaType.VARIANTS;
+import static org.trellisldp.http.impl.Constants.TRELLIS_PREFIX;
+import static org.trellisldp.http.impl.RdfMediaType.VARIANTS;
 
 import java.util.HashSet;
 import java.util.List;
@@ -50,7 +50,7 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
-class BaseLdpResource {
+public class BaseLdpResource {
 
     protected static final RDF rdf = ServiceLoader.load(RDF.class).iterator().next();
 
@@ -89,7 +89,7 @@ class BaseLdpResource {
     }
 
     protected static Optional<IRI> getProfile(final List<MediaType> types) {
-        return types.stream().flatMap(getProfile).findFirst();
+        return types.stream().flatMap(profileMapper).findFirst();
     }
 
     private static String stripSlash(final String path) {
@@ -114,7 +114,7 @@ class BaseLdpResource {
         return include;
     }
 
-    private static final Function<MediaType, Stream<IRI>> getProfile = type -> {
+    private static final Function<MediaType, Stream<IRI>> profileMapper = type -> {
         if (VARIANTS.stream().map(Variant::getMediaType).anyMatch(type::isCompatible)) {
             final Map<String, String> params = type.getParameters();
             if (params.containsKey("profile")) {

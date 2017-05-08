@@ -25,24 +25,24 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.ok;
 import static javax.ws.rs.core.Response.status;
-import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
+import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.http.Constants.ACCEPT_DATETIME;
-import static org.trellisldp.http.Constants.ACCEPT_PATCH;
-import static org.trellisldp.http.Constants.ACCEPT_POST;
-import static org.trellisldp.http.Constants.APPLICATION_LINK_FORMAT;
-import static org.trellisldp.http.Constants.MEMENTO_DATETIME;
-import static org.trellisldp.http.Constants.NOT_ACCEPTABLE_ERROR;
-import static org.trellisldp.http.Constants.PREFER;
-import static org.trellisldp.http.Constants.PREFERENCE_APPLIED;
-import static org.trellisldp.http.Constants.TRELLIS_PREFIX;
-import static org.trellisldp.http.Constants.VARY;
-import static org.trellisldp.http.RdfMediaType.APPLICATION_LD_JSON;
-import static org.trellisldp.http.RdfMediaType.APPLICATION_N_TRIPLES;
-import static org.trellisldp.http.RdfMediaType.APPLICATION_SPARQL_UPDATE;
-import static org.trellisldp.http.RdfMediaType.TEXT_TURTLE;
-import static org.trellisldp.http.RdfMediaType.VARIANTS;
+import static org.trellisldp.http.impl.Constants.ACCEPT_DATETIME;
+import static org.trellisldp.http.impl.Constants.ACCEPT_PATCH;
+import static org.trellisldp.http.impl.Constants.ACCEPT_POST;
+import static org.trellisldp.http.impl.Constants.APPLICATION_LINK_FORMAT;
+import static org.trellisldp.http.impl.Constants.MEMENTO_DATETIME;
+import static org.trellisldp.http.impl.Constants.NOT_ACCEPTABLE_ERROR;
+import static org.trellisldp.http.impl.Constants.PREFER;
+import static org.trellisldp.http.impl.Constants.PREFERENCE_APPLIED;
+import static org.trellisldp.http.impl.Constants.TRELLIS_PREFIX;
+import static org.trellisldp.http.impl.Constants.VARY;
+import static org.trellisldp.http.impl.RdfMediaType.APPLICATION_LD_JSON;
+import static org.trellisldp.http.impl.RdfMediaType.APPLICATION_N_TRIPLES;
+import static org.trellisldp.http.impl.RdfMediaType.APPLICATION_SPARQL_UPDATE;
+import static org.trellisldp.http.impl.RdfMediaType.TEXT_TURTLE;
+import static org.trellisldp.http.impl.RdfMediaType.VARIANTS;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 
 import com.codahale.metrics.annotation.Timed;
@@ -67,6 +67,10 @@ import org.slf4j.Logger;
 
 import org.trellisldp.api.Datastream;
 import org.trellisldp.api.Resource;
+import org.trellisldp.http.impl.BaseLdpResource;
+import org.trellisldp.http.impl.MementoResource;
+import org.trellisldp.http.impl.Prefer;
+import org.trellisldp.http.impl.ResourceStreamer;
 import org.trellisldp.spi.DatastreamService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.SerializationService;
@@ -197,7 +201,7 @@ public class LdpResource extends BaseLdpResource {
             } else {
                 builder.header(VARY, ACCEPT_DATETIME);
             }
-            builder.link(identifier, "original").link(identifier, "timegate")
+            builder.link(identifier, "original timegate")
                 .links(MementoResource.getMementoLinks(identifier, res.getMementos()).toArray(Link[]::new));
 
             // NonRDFSources responses (strong ETags, etc)

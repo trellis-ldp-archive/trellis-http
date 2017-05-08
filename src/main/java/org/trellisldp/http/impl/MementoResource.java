@@ -11,11 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
+package org.trellisldp.http.impl;
 
-import static org.trellisldp.http.Constants.ACCEPT_DATETIME;
-import static org.trellisldp.http.Constants.APPLICATION_LINK_FORMAT;
-import static org.trellisldp.http.Constants.VARY;
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.time.ZonedDateTime.parse;
@@ -27,13 +24,9 @@ import static java.util.stream.Stream.concat;
 import static java.util.stream.Stream.empty;
 import static javax.ws.rs.core.Response.Status.FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
-
-import org.trellisldp.api.Resource;
-import org.trellisldp.api.VersionRange;
-import org.trellisldp.spi.SerializationService;
-import org.trellisldp.vocabulary.PROV;
-import org.trellisldp.vocabulary.Trellis;
-import org.trellisldp.vocabulary.XSD;
+import static org.trellisldp.http.impl.Constants.ACCEPT_DATETIME;
+import static org.trellisldp.http.impl.Constants.APPLICATION_LINK_FORMAT;
+import static org.trellisldp.http.impl.Constants.VARY;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -54,10 +47,17 @@ import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 
+import org.trellisldp.api.Resource;
+import org.trellisldp.api.VersionRange;
+import org.trellisldp.spi.SerializationService;
+import org.trellisldp.vocabulary.PROV;
+import org.trellisldp.vocabulary.Trellis;
+import org.trellisldp.vocabulary.XSD;
+
 /**
  * @author acoburn
  */
-final class MementoResource {
+public final class MementoResource {
 
     private static final RDF rdf = ServiceLoader.load(RDF.class).iterator().next();
 

@@ -11,9 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
-
-import org.trellisldp.spi.SerializationService;
+package org.trellisldp.http.impl;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -24,11 +22,12 @@ import javax.ws.rs.core.StreamingOutput;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDFSyntax;
+import org.trellisldp.spi.SerializationService;
 
 /**
  * @author acoburn
  */
-class ResourceStreamer implements StreamingOutput {
+public class ResourceStreamer implements StreamingOutput {
 
     private final SerializationService service;
     private final Stream<Quad> stream;
@@ -40,7 +39,7 @@ class ResourceStreamer implements StreamingOutput {
      * @param service the serialization service
      * @param stream the stream of quads
      * @param syntax the RDF syntax to output
-     * @param profile the profile, if any
+     * @param profiles the profile, if any
      */
     public ResourceStreamer(final SerializationService service, final Stream<Quad> stream, final RDFSyntax syntax,
             final IRI... profiles) {
