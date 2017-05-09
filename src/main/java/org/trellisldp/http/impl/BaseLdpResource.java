@@ -17,7 +17,7 @@ import static java.util.Arrays.stream;
 import static java.util.stream.Stream.empty;
 import static java.util.stream.Stream.of;
 import static javax.ws.rs.core.UriBuilder.fromUri;
-import static org.trellisldp.http.impl.Constants.TRELLIS_PREFIX;
+import static org.trellisldp.http.impl.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.impl.RdfMediaType.VARIANTS;
 
 import java.util.HashSet;

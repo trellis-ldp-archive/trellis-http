@@ -24,9 +24,9 @@ import static java.util.stream.Stream.concat;
 import static java.util.stream.Stream.empty;
 import static javax.ws.rs.core.Response.Status.FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
-import static org.trellisldp.http.impl.Constants.ACCEPT_DATETIME;
-import static org.trellisldp.http.impl.Constants.APPLICATION_LINK_FORMAT;
-import static org.trellisldp.http.impl.Constants.VARY;
+import static org.trellisldp.http.impl.HttpConstants.ACCEPT_DATETIME;
+import static org.trellisldp.http.impl.HttpConstants.APPLICATION_LINK_FORMAT;
+import static org.trellisldp.http.impl.HttpConstants.VARY;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;

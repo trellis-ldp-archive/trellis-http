@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * @author acoburn
  */
-public final class Constants {
+public final class HttpConstants {
 
     public static final String APPLICATION_LINK_FORMAT = "application/link-format";
 
@@ -51,7 +51,7 @@ public final class Constants {
         put("message", "HTTP " + NOT_ACCEPTABLE.getStatusCode() + " " + NOT_ACCEPTABLE.getReasonPhrase());
     }});
 
-    private Constants() {
+    private HttpConstants() {
         // prevent instantiation
     }
 }
