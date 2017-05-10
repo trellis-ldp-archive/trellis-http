@@ -50,6 +50,7 @@ import com.codahale.metrics.annotation.Timed;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.function.Function;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -117,36 +118,41 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        final String urlPrefix = ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString());
-        final String identifier = urlPrefix + path;
+        final String identifier = ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()) + path;
         final Optional<RDFSyntax> syntax = getRdfSyntax(headers.getAcceptableMediaTypes());
         final Optional<Instant> acceptDatetime = MementoResource.getAcceptDatetime(headers);
         final Optional<Instant> version = MementoResource.getVersionParam(uriInfo);
-        final Optional<IRI> profile = getProfile(headers.getAcceptableMediaTypes());
-        final Boolean timemap = MementoResource.getTimeMapParam(uriInfo);
 
-        final Optional<Resource> resource;
         if (version.isPresent()) {
             LOGGER.info("Getting versioned resource: {}", version.get().toString());
-            resource = resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), version.get());
+            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), version.get())
+                    .map(buildGetResponse(identifier, syntax)).orElse(status(NOT_FOUND)).build();
 
-        } else if (timemap) {
-            // Short-circuit
+        } else if (MementoResource.getTimeMapParam(uriInfo)) {
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
                 .map(res -> res.getTimeMapBuilder(identifier, syntax, serializationService))
                 .orElse(status(NOT_FOUND)).build();
 
         } else if (acceptDatetime.isPresent()) {
-            // Short-circuit
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), acceptDatetime.get())
                 .map(MementoResource::new).map(res -> res.getTimeGateBuilder(identifier, acceptDatetime.get()))
                 .orElse(status(NOT_FOUND)).build();
-
-        } else {
-            resource = resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path));
         }
 
-        return resource.map(res -> {
+        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
+                .map(buildGetResponse(identifier, syntax)).orElse(status(NOT_FOUND)).build();
+    }
+
+    private Function<Resource, Response.ResponseBuilder> buildGetResponse(final String identifier,
+            final Optional<RDFSyntax> syntax) {
+
+            // TODO add acl header, if in effect
+            // TODO check cache control headers
+            // TODO add support for instance digests
+            // TODO add support for range requests
+
+        return res -> {
+            final Optional<IRI> profile = getProfile(headers.getAcceptableMediaTypes());
             if (res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
                 return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
                         .toArray(Link[]::new));
@@ -174,7 +180,6 @@ public class LdpResource extends BaseLdpResource {
 
             // Add NonRDFSource-related "describe*" link headers
             res.getDatastream().ifPresent(ds -> {
-                // TODO -- add digest support
                 //final Optional<String> wantDigest = ofNullable(headers.getRequestHeaders().getFirst(WANT_DIGEST));
                 if (syntax.isPresent()) {
                     // TODO make this identifier opaque
@@ -206,7 +211,7 @@ public class LdpResource extends BaseLdpResource {
                 final InputStream datastream = datastreamService.getResolver(dsid).flatMap(svc -> svc.getContent(dsid))
                     .orElseThrow(() ->
                         new WebApplicationException("Could not load datastream resolver for " + dsid.getIRIString()));
-                builder.tag(md5Hex(res.getDatastream().map(Datastream::getModified).get() + identifier))
+                return builder.tag(md5Hex(res.getDatastream().map(Datastream::getModified).get() + identifier))
                     .entity(datastream);
 
             // RDFSource responses (weak ETags, etc)
@@ -217,26 +222,18 @@ public class LdpResource extends BaseLdpResource {
                                     .orElse("")), true));
 
                 if (prefer.getPreference().filter("minimal"::equals).isPresent()) {
-                    builder.status(NO_CONTENT);
+                    return builder.status(NO_CONTENT);
                 } else {
-                    builder.entity(new ResourceStreamer(serializationService,
+                    final String urlPrefix = ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString());
+                    return builder.entity(new ResourceStreamer(serializationService,
                                 res.stream().filter(filterWithPrefer(prefer))
                                 .map(unskolemize(resourceService, urlPrefix)),
                                 syntax.get(), profile.orElseGet(() ->
                                     RDFA_HTML.equals(syntax.get()) ? rdf.createIRI(identifier) : JSONLD.expanded)));
                 }
-
-            // Other responses (typically, a request for application/link-format on an LDPR)
-            } else {
-                return status(NOT_ACCEPTABLE).type(APPLICATION_JSON).entity(NOT_ACCEPTABLE_ERROR);
             }
-
-            // TODO add acl header, if in effect
-            // TODO check cache control headers
-            // TODO add support for instance digests
-            // TODO add support for range requests
-
-            return builder;
-        }).orElse(status(NOT_FOUND)).build();
+            // Other responses (typically, a request for application/link-format on an LDPR)
+            return status(NOT_ACCEPTABLE).type(APPLICATION_JSON).entity(NOT_ACCEPTABLE_ERROR);
+        };
     }
 }
