@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http.impl;
+package org.trellisldp.http;
 
 import static java.util.Collections.unmodifiableMap;
 import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;

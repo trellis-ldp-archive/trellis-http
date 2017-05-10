@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http.impl;
+package org.trellisldp.http;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,7 +27,7 @@ import org.trellisldp.spi.SerializationService;
 /**
  * @author acoburn
  */
-public class ResourceStreamer implements StreamingOutput {
+class ResourceStreamer implements StreamingOutput {
 
     private final SerializationService service;
     private final Stream<Quad> stream;

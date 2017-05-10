@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http.impl;
+package org.trellisldp.http;
 
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
@@ -24,9 +24,9 @@ import static java.util.stream.Stream.concat;
 import static java.util.stream.Stream.empty;
 import static javax.ws.rs.core.Response.Status.FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
-import static org.trellisldp.http.impl.HttpConstants.ACCEPT_DATETIME;
-import static org.trellisldp.http.impl.HttpConstants.APPLICATION_LINK_FORMAT;
-import static org.trellisldp.http.impl.HttpConstants.VARY;
+import static org.trellisldp.http.HttpConstants.ACCEPT_DATETIME;
+import static org.trellisldp.http.HttpConstants.APPLICATION_LINK_FORMAT;
+import static org.trellisldp.http.HttpConstants.VARY;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -57,7 +57,7 @@ import org.trellisldp.vocabulary.XSD;
 /**
  * @author acoburn
  */
-public final class MementoResource {
+final class MementoResource {
 
     private static final RDF rdf = ServiceLoader.load(RDF.class).iterator().next();
 

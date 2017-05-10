@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http.impl;
+package org.trellisldp.http;
 
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 
@@ -23,7 +23,7 @@ import javax.ws.rs.core.Variant;
 /**
  * @author acoburn
  */
-public final class RdfMediaType {
+final class RdfMediaType {
 
     private static final String APPLICATION = "application";
 

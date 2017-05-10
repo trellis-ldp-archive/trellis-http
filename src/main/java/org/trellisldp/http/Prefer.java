@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http.impl;
+package org.trellisldp.http;
 
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
@@ -34,7 +34,7 @@ import java.util.function.Function;
  * @see <a href="https://tools.ietf.org/html/rfc7240">RFC 7240</a> and
  * <a href="https://www.iana.org/assignments/http-parameters/http-parameters.xhtml#preferences">IANA values</a>
  */
-public class Prefer {
+class Prefer {
 
     private final Optional<String> preference;
 

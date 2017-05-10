@@ -11,14 +11,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http.impl;
+package org.trellisldp.http;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Stream.empty;
 import static java.util.stream.Stream.of;
 import static javax.ws.rs.core.UriBuilder.fromUri;
-import static org.trellisldp.http.impl.HttpConstants.TRELLIS_PREFIX;
-import static org.trellisldp.http.impl.RdfMediaType.VARIANTS;
+import static org.trellisldp.http.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.RdfMediaType.VARIANTS;
 
 import java.util.HashSet;
 import java.util.List;
@@ -50,7 +50,7 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
-public class BaseLdpResource {
+class BaseLdpResource {
 
     protected static final RDF rdf = ServiceLoader.load(RDF.class).iterator().next();
 
