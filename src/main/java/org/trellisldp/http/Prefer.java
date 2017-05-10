@@ -29,12 +29,14 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
+ * A class representing an HTTP Prefer header
+ *
  * @author acoburn
  *
  * @see <a href="https://tools.ietf.org/html/rfc7240">RFC 7240</a> and
  * <a href="https://www.iana.org/assignments/http-parameters/http-parameters.xhtml#preferences">IANA values</a>
  */
-class Prefer {
+public class Prefer {
 
     private final Optional<String> preference;
 
