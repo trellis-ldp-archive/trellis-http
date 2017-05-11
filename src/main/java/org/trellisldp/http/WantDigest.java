@@ -13,15 +13,20 @@
  */
 package org.trellisldp.http;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
+import static java.lang.Float.compare;
 import static java.lang.Float.parseFloat;
 import static java.util.Arrays.stream;
-import static java.util.Map.Entry.comparingByValue;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 
-import java.util.HashMap;
+import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
 
 /**
  * A class representing an HTTP Want-Digest header
@@ -32,6 +37,8 @@ import java.util.Map;
  */
 public class WantDigest {
 
+    private static final Logger LOGGER = getLogger(WantDigest.class);
+
     private final List<String> algorithms;
 
     /**
@@ -39,20 +46,18 @@ public class WantDigest {
      * @param wantDigest the value of the Want-Digest header
      */
     public WantDigest(final String wantDigest) {
-        final Map<String, Float> algs = new HashMap<>();
         if (nonNull(wantDigest)) {
-            stream(wantDigest.split(",")).map(String::trim).forEach(alg -> {
+            this.algorithms = stream(wantDigest.split(",")).map(String::trim).map(alg -> {
                 final String[] parts = alg.split(";", 2);
-                final String key = parts[0];
                 if (parts.length == 2) {
-                    algs.put(key, getValue(parts[1]));
-                } else {
-                    algs.put(key, 1.0f);
+                    return new AbstractMap.SimpleImmutableEntry<>(parts[0], getValue(parts[1]));
                 }
-            });
+                return new AbstractMap.SimpleImmutableEntry<>(parts[0], 1.0f);
+            }).sorted((e1, e2) -> compare(e2.getValue(), e1.getValue())).map(Map.Entry::getKey)
+            .map(String::toUpperCase).collect(toList());
+        } else {
+            this.algorithms = emptyList();
         }
-        this.algorithms = algs.entrySet().stream().sorted(comparingByValue())
-            .map(Map.Entry::getKey).map(String::toUpperCase).collect(toList());
     }
 
     /**
@@ -64,14 +69,15 @@ public class WantDigest {
     }
 
     private float getValue(final String val) {
-        if (nonNull(val)) {
+        if (val.startsWith("q=")) {
             try {
-                return parseFloat(val);
+                return parseFloat(val.substring(2));
             } catch (final NumberFormatException ex) {
-                return 0.0f;
+                LOGGER.warn("Invalid q value for Want-Digest request header ({}), setting to 0.0", val);
             }
+        } else {
+            LOGGER.warn("Invalid parameter value for Want-Digest request header ({}), setting to 0.0", val);
         }
-        return 1.0f;
+        return 0.0f;
     }
-
 }
