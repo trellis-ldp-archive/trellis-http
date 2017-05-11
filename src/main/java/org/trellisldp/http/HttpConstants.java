@@ -32,6 +32,8 @@ public final class HttpConstants {
 
     public static final String ACCEPT_POST = "Accept-Post";
 
+    public static final String ACCEPT_RANGES = "Accept-Ranges";
+
     public static final String DIGEST = "Digest";
 
     public static final String MEMENTO_DATETIME = "Memento-Datetime";
@@ -39,6 +41,8 @@ public final class HttpConstants {
     public static final String PREFER = "Prefer";
 
     public static final String PREFERENCE_APPLIED = "Preference-Applied";
+
+    public static final String RANGE = "Range";
 
     public static final String TRELLIS_PREFIX = "trellis:";
 

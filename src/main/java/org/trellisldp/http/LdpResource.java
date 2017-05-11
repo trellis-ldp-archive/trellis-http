@@ -31,13 +31,17 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.HttpConstants.ACCEPT_PATCH;
 import static org.trellisldp.http.HttpConstants.ACCEPT_POST;
+import static org.trellisldp.http.HttpConstants.ACCEPT_RANGES;
 import static org.trellisldp.http.HttpConstants.APPLICATION_LINK_FORMAT;
+import static org.trellisldp.http.HttpConstants.DIGEST;
 import static org.trellisldp.http.HttpConstants.MEMENTO_DATETIME;
 import static org.trellisldp.http.HttpConstants.NOT_ACCEPTABLE_ERROR;
 import static org.trellisldp.http.HttpConstants.PREFER;
 import static org.trellisldp.http.HttpConstants.PREFERENCE_APPLIED;
+import static org.trellisldp.http.HttpConstants.RANGE;
 import static org.trellisldp.http.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.HttpConstants.VARY;
+import static org.trellisldp.http.HttpConstants.WANT_DIGEST;
 import static org.trellisldp.http.RdfMediaType.APPLICATION_LD_JSON;
 import static org.trellisldp.http.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.RdfMediaType.APPLICATION_SPARQL_UPDATE;
@@ -148,7 +152,6 @@ public class LdpResource extends BaseLdpResource {
 
             // TODO add acl header, if in effect
             // TODO check cache control headers
-            // TODO add support for instance digests
             // TODO add support for range requests
 
         return res -> {
@@ -180,7 +183,6 @@ public class LdpResource extends BaseLdpResource {
 
             // Add NonRDFSource-related "describe*" link headers
             res.getDatastream().ifPresent(ds -> {
-                //final Optional<String> wantDigest = ofNullable(headers.getRequestHeaders().getFirst(WANT_DIGEST));
                 if (syntax.isPresent()) {
                     // TODO make this identifier opaque
                     builder.link(identifier + "#description", "canonical").link(identifier, "describes");
@@ -208,18 +210,26 @@ public class LdpResource extends BaseLdpResource {
             // NonRDFSources responses (strong ETags, etc)
             if (res.getDatastream().isPresent() && !syntax.isPresent()) {
                 final IRI dsid = res.getDatastream().map(Datastream::getIdentifier).get();
-                final InputStream datastream = datastreamService.getResolver(dsid).flatMap(svc -> svc.getContent(dsid))
-                    .orElseThrow(() ->
+                final InputStream datastream = datastreamService.getContent(dsid).orElseThrow(() ->
                         new WebApplicationException("Could not load datastream resolver for " + dsid.getIRIString()));
-                builder.header(VARY, "Ranges");
-                builder.header("Accept-Ranges", "bytes");
+                builder.header(VARY, RANGE);
+                builder.header(ACCEPT_RANGES, "bytes");
+
+                // Add instance digests, if requested and supported
+                ofNullable(headers.getRequestHeaders().getFirst(WANT_DIGEST)).map(WantDigest::new)
+                    .map(WantDigest::getAlgorithms).ifPresent(algs ->
+                        algs.stream().filter(datastreamService.supportedAlgorithms()::contains).findFirst()
+                        .ifPresent(alg -> datastreamService.getContent(dsid)
+                            .map(is -> datastreamService.hexDigest(alg, is))
+                            .ifPresent(digest -> builder.header(DIGEST, digest))));
+
                 return builder.tag(md5Hex(res.getDatastream().map(Datastream::getModified).get() + identifier))
                     .entity(datastream);
 
             // RDFSource responses (weak ETags, etc)
             } else if (syntax.isPresent()) {
                 // No range requests for RDFSource documents
-                builder.header("Accept-Ranges", "none");
+                builder.header(ACCEPT_RANGES, "none");
                 final Prefer prefer = new Prefer(ofNullable(headers.getRequestHeaders().getFirst(PREFER)).orElse(""));
                 builder.header(PREFERENCE_APPLIED, "return=" + prefer.getPreference().orElse("representation"))
                     .tag(new EntityTag(md5Hex(res.getModified() + identifier + syntax.map(RDFSyntax::toString)

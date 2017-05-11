@@ -52,7 +52,7 @@ public class Prefer {
 
     /**
      * Create a Prefer header representation
-     * @param prefer the Prefer header
+     * @param prefer the value of the Prefer header
      */
     public Prefer(final String prefer) {
         final Map<String, String> data = new HashMap<>();
