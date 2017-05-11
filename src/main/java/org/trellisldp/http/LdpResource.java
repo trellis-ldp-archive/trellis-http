@@ -213,6 +213,7 @@ public class LdpResource extends BaseLdpResource {
                 final InputStream datastream = datastreamService.getContent(dsid).orElseThrow(() ->
                         new WebApplicationException("Could not load datastream resolver for " + dsid.getIRIString()));
                 builder.header(VARY, RANGE);
+                builder.header(VARY, WANT_DIGEST);
                 builder.header(ACCEPT_RANGES, "bytes");
 
                 // Add instance digests, if requested and supported
