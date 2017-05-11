@@ -211,11 +211,15 @@ public class LdpResource extends BaseLdpResource {
                 final InputStream datastream = datastreamService.getResolver(dsid).flatMap(svc -> svc.getContent(dsid))
                     .orElseThrow(() ->
                         new WebApplicationException("Could not load datastream resolver for " + dsid.getIRIString()));
+                builder.header(VARY, "Ranges");
+                builder.header("Accept-Ranges", "bytes");
                 return builder.tag(md5Hex(res.getDatastream().map(Datastream::getModified).get() + identifier))
                     .entity(datastream);
 
             // RDFSource responses (weak ETags, etc)
             } else if (syntax.isPresent()) {
+                // No range requests for RDFSource documents
+                builder.header("Accept-Ranges", "none");
                 final Prefer prefer = new Prefer(ofNullable(headers.getRequestHeaders().getFirst(PREFER)).orElse(""));
                 builder.header(PREFERENCE_APPLIED, "return=" + prefer.getPreference().orElse("representation"))
                     .tag(new EntityTag(md5Hex(res.getModified() + identifier + syntax.map(RDFSyntax::toString)
