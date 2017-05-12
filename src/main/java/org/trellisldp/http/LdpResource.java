@@ -20,6 +20,7 @@ import static java.util.stream.Collectors.joining;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
@@ -55,6 +56,7 @@ import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 
 import com.codahale.metrics.annotation.Timed;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Optional;
@@ -69,8 +71,10 @@ import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 
+import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
@@ -154,7 +158,7 @@ public class LdpResource extends BaseLdpResource {
                 .map(getRepresentation(identifier, syntax)).orElse(status(NOT_FOUND)).build();
     }
 
-    private Function<Resource, Response.ResponseBuilder> getRepresentation(final String identifier,
+    private Function<Resource, ResponseBuilder> getRepresentation(final String identifier,
             final Optional<RDFSyntax> syntax) {
 
             // TODO add acl header, if in effect
@@ -166,7 +170,7 @@ public class LdpResource extends BaseLdpResource {
                         .toArray(Link[]::new));
             }
 
-            final Response.ResponseBuilder builder = basicGetResponseBuilder(res, syntax);
+            final ResponseBuilder builder = basicGetResponseBuilder(res, syntax);
 
             // Add NonRDFSource-related "describe*" link headers
             res.getDatastream().ifPresent(ds -> {
@@ -198,7 +202,7 @@ public class LdpResource extends BaseLdpResource {
             if (res.getDatastream().isPresent() && !syntax.isPresent()) {
                 final EntityTag etag = new EntityTag(md5Hex(
                             res.getDatastream().map(Datastream::getModified).get() + identifier));
-                final Response.ResponseBuilder cacheHit = evaluateCache(res.getDatastream()
+                final ResponseBuilder cacheHit = evaluateCache(res.getDatastream()
                         .map(Datastream::getModified).get(), etag);
 
                 if (nonNull(cacheHit)) {
@@ -208,7 +212,7 @@ public class LdpResource extends BaseLdpResource {
                 final IRI dsid = res.getDatastream().map(Datastream::getIdentifier).get();
                 final InputStream datastream = datastreamService.getContent(dsid).orElseThrow(() ->
                         new WebApplicationException("Could not load datastream resolver for " + dsid.getIRIString()));
-                builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes");
+                builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes").tag(etag);
 
                 // Add instance digests, if requested and supported
                 ofNullable(headers.getRequestHeaders().getFirst(WANT_DIGEST)).map(WantDigest::new)
@@ -218,14 +222,29 @@ public class LdpResource extends BaseLdpResource {
                             .map(is -> datastreamService.hexDigest(alg, is))
                             .ifPresent(digest -> builder.header(DIGEST, digest))));
 
-                return builder.tag(etag).entity(datastream);
+                // Range requests
+                final Optional<Range> range = ofNullable(headers.getRequestHeaders().getFirst(RANGE)).map(Range::new)
+                    .filter(Range::isRange);
+
+                if (range.isPresent()) {
+                    try {
+                        datastream.skip(range.get().getFrom().get());
+                    } catch (final IOException ex) {
+                        LOGGER.error("Error seeking through datastream: {}", ex.getMessage());
+                        return status(BAD_REQUEST).entity(ex.getMessage());
+                    }
+                    range.map(r -> new BoundedInputStream(datastream, r.getTo().get() - r.getFrom().get()))
+                        .ifPresent(builder::entity);
+                    return builder;
+                }
+                return builder.entity(datastream);
 
             // RDFSource responses (weak ETags, etc)
             } else if (syntax.isPresent()) {
                 final Prefer prefer = new Prefer(ofNullable(headers.getRequestHeaders().getFirst(PREFER)).orElse(""));
                 final EntityTag etag = new EntityTag(
                         md5Hex(res.getModified() + identifier + syntax.map(RDFSyntax::toString).orElse("")), true);
-                final Response.ResponseBuilder cacheHit = evaluateCache(res.getModified(), etag);
+                final ResponseBuilder cacheHit = evaluateCache(res.getModified(), etag);
 
                 if (nonNull(cacheHit)) {
                     return cacheHit;
@@ -251,9 +270,8 @@ public class LdpResource extends BaseLdpResource {
         };
     }
 
-    private static Response.ResponseBuilder basicGetResponseBuilder(final Resource res,
-            final Optional<RDFSyntax> syntax) {
-        final Response.ResponseBuilder builder = ok();
+    private static ResponseBuilder basicGetResponseBuilder(final Resource res, final Optional<RDFSyntax> syntax) {
+        final ResponseBuilder builder = ok();
 
         final CacheControl cc = new CacheControl();
         cc.setMaxAge(cacheAge);

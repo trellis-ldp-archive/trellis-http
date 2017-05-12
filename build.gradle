@@ -31,6 +31,7 @@ ext {
     trellisVocabularyVersion = '0.1.0-SNAPSHOT'
     commonsRdfVersion = '0.3.0-incubating'
     commonsCodecVersion = '1.10'
+    commonsIoVersion = '2.5'
     slf4jVersion = '1.7.21'
     jaxrsVersion = '2.0.1'
     metricsVersion = '3.1.0'
@@ -51,6 +52,7 @@ configurations {
 
 dependencies {
     compile group: 'commons-codec', name: 'commons-codec', version: commonsCodecVersion
+    compile group: 'commons-io', name: 'commons-io', version: commonsIoVersion
     compile group: 'org.trellisldp', name: 'trellis-spi', version: trellisSpiVersion
     compile group: 'org.trellisldp', name: 'trellis-vocabulary', version: trellisVocabularyVersion
     compile group: 'org.apache.commons', name: 'commons-rdf-api', version: commonsRdfVersion
