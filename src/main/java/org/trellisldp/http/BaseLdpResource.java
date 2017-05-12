@@ -15,13 +15,13 @@ package org.trellisldp.http;
 
 import static java.util.Date.from;
 import static javax.ws.rs.core.UriBuilder.fromUri;
+import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.RdfUtils.getInstance;
 import static org.trellisldp.http.RdfUtils.toExternalIri;
 
 import java.time.Instant;
 import java.util.function.Function;
 
-import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.HttpHeaders;
@@ -32,6 +32,7 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.commons.rdf.api.BlankNodeOrIRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
+import org.slf4j.Logger;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.Trellis;
 
@@ -40,7 +41,7 @@ import org.trellisldp.vocabulary.Trellis;
  */
 class BaseLdpResource {
 
-    private static final int cacheAge = 86400;
+    private static final Logger LOGGER = getLogger(BaseLdpResource.class);
 
     protected static final RDF rdf = getInstance();
 
@@ -74,13 +75,11 @@ class BaseLdpResource {
     }
 
     protected Response.ResponseBuilder evaluateCache(final Instant modified, final EntityTag etag) {
-        final CacheControl cc = new CacheControl();
-        cc.setMaxAge(cacheAge);
-
-        final Response.ResponseBuilder cache = request.evaluatePreconditions(from(modified), etag);
-        if (cache != null) {
-            cache.cacheControl(cc);
+        try {
+            return request.evaluatePreconditions(from(modified), etag);
+        } catch (final Exception ex) {
+            LOGGER.warn("Ignoring cache-related headers: {}", ex.getMessage());
         }
-        return cache;
+        return null;
     }
 }

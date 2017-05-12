@@ -65,6 +65,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
@@ -91,6 +92,8 @@ import org.trellisldp.vocabulary.Trellis;
 @Path("{path: .+}")
 @Produces({TEXT_TURTLE, APPLICATION_LD_JSON, APPLICATION_N_TRIPLES, APPLICATION_LINK_FORMAT, TEXT_HTML})
 public class LdpResource extends BaseLdpResource {
+
+    private static final int cacheAge = 86400;
 
     private static final Logger LOGGER = getLogger(LdpResource.class);
 
@@ -252,6 +255,9 @@ public class LdpResource extends BaseLdpResource {
             final Optional<RDFSyntax> syntax) {
         final Response.ResponseBuilder builder = ok();
 
+        final CacheControl cc = new CacheControl();
+        cc.setMaxAge(cacheAge);
+
         // Standard HTTP Headers
         builder.lastModified(from(res.getModified())).variants(VARIANTS).header(VARY, PREFER);
         syntax.map(s -> s.mediaType).ifPresent(builder::type);
@@ -270,6 +276,6 @@ public class LdpResource extends BaseLdpResource {
             }
         });
 
-        return builder;
+        return builder.cacheControl(cc);
     }
 }
