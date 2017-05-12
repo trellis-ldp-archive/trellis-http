@@ -14,6 +14,7 @@
 package org.trellisldp.http;
 
 import static java.util.Date.from;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -47,6 +48,9 @@ import static org.trellisldp.http.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.RdfMediaType.TEXT_TURTLE;
 import static org.trellisldp.http.RdfMediaType.VARIANTS;
+import static org.trellisldp.http.RdfUtils.filterWithPrefer;
+import static org.trellisldp.http.RdfUtils.getProfile;
+import static org.trellisldp.http.RdfUtils.getRdfSyntax;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 
 import com.codahale.metrics.annotation.Timed;
@@ -130,7 +134,7 @@ public class LdpResource extends BaseLdpResource {
         if (version.isPresent()) {
             LOGGER.info("Getting versioned resource: {}", version.get().toString());
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), version.get())
-                    .map(buildGetResponse(identifier, syntax)).orElse(status(NOT_FOUND)).build();
+                    .map(getRepresentation(identifier, syntax)).orElse(status(NOT_FOUND)).build();
 
         } else if (MementoResource.getTimeMapParam(uriInfo)) {
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
@@ -144,42 +148,22 @@ public class LdpResource extends BaseLdpResource {
         }
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
-                .map(buildGetResponse(identifier, syntax)).orElse(status(NOT_FOUND)).build();
+                .map(getRepresentation(identifier, syntax)).orElse(status(NOT_FOUND)).build();
     }
 
-    private Function<Resource, Response.ResponseBuilder> buildGetResponse(final String identifier,
+    private Function<Resource, Response.ResponseBuilder> getRepresentation(final String identifier,
             final Optional<RDFSyntax> syntax) {
 
             // TODO add acl header, if in effect
-            // TODO check cache control headers
             // TODO add support for range requests
 
         return res -> {
-            final Optional<IRI> profile = getProfile(headers.getAcceptableMediaTypes());
             if (res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
                 return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
                         .toArray(Link[]::new));
             }
 
-            final Response.ResponseBuilder builder = ok();
-
-            // Standard HTTP Headers
-            builder.lastModified(from(res.getModified())).variants(VARIANTS).header(VARY, PREFER);
-            syntax.map(s -> s.mediaType).ifPresent(builder::type);
-
-            // Add LDP-required headers
-            final IRI model = res.getDatastream().isPresent() && syntax.isPresent() ?
-                    LDP.RDFSource : res.getInteractionModel();
-            ldpResourceTypes(model).forEach(type -> {
-                builder.link(type.getIRIString(), "type");
-                // Mementos don't accept POST or PATCH
-                if (LDP.Container.equals(type) && !res.isMemento()) {
-                    builder.header(ACCEPT_POST, VARIANTS.stream().map(Variant::getMediaType)
-                            .map(mt -> mt.getType() + "/" + mt.getSubtype()).collect(joining(",")));
-                } else if (LDP.RDFSource.equals(type) && !res.isMemento()) {
-                    builder.header(ACCEPT_PATCH, APPLICATION_SPARQL_UPDATE);
-                }
-            });
+            final Response.ResponseBuilder builder = basicGetResponseBuilder(res, syntax);
 
             // Add NonRDFSource-related "describe*" link headers
             res.getDatastream().ifPresent(ds -> {
@@ -209,12 +193,19 @@ public class LdpResource extends BaseLdpResource {
 
             // NonRDFSources responses (strong ETags, etc)
             if (res.getDatastream().isPresent() && !syntax.isPresent()) {
+                final EntityTag etag = new EntityTag(md5Hex(
+                            res.getDatastream().map(Datastream::getModified).get() + identifier));
+                final Response.ResponseBuilder cacheHit = evaluateCache(res.getDatastream()
+                        .map(Datastream::getModified).get(), etag);
+
+                if (nonNull(cacheHit)) {
+                    return cacheHit;
+                }
+
                 final IRI dsid = res.getDatastream().map(Datastream::getIdentifier).get();
                 final InputStream datastream = datastreamService.getContent(dsid).orElseThrow(() ->
                         new WebApplicationException("Could not load datastream resolver for " + dsid.getIRIString()));
-                builder.header(VARY, RANGE);
-                builder.header(VARY, WANT_DIGEST);
-                builder.header(ACCEPT_RANGES, "bytes");
+                builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes");
 
                 // Add instance digests, if requested and supported
                 ofNullable(headers.getRequestHeaders().getFirst(WANT_DIGEST)).map(WantDigest::new)
@@ -224,22 +215,27 @@ public class LdpResource extends BaseLdpResource {
                             .map(is -> datastreamService.hexDigest(alg, is))
                             .ifPresent(digest -> builder.header(DIGEST, digest))));
 
-                return builder.tag(md5Hex(res.getDatastream().map(Datastream::getModified).get() + identifier))
-                    .entity(datastream);
+                return builder.tag(etag).entity(datastream);
 
             // RDFSource responses (weak ETags, etc)
             } else if (syntax.isPresent()) {
-                // No range requests for RDFSource documents
-                builder.header(ACCEPT_RANGES, "none");
                 final Prefer prefer = new Prefer(ofNullable(headers.getRequestHeaders().getFirst(PREFER)).orElse(""));
+                final EntityTag etag = new EntityTag(
+                        md5Hex(res.getModified() + identifier + syntax.map(RDFSyntax::toString).orElse("")), true);
+                final Response.ResponseBuilder cacheHit = evaluateCache(res.getModified(), etag);
+
+                if (nonNull(cacheHit)) {
+                    return cacheHit;
+                }
+
                 builder.header(PREFERENCE_APPLIED, "return=" + prefer.getPreference().orElse("representation"))
-                    .tag(new EntityTag(md5Hex(res.getModified() + identifier + syntax.map(RDFSyntax::toString)
-                                    .orElse("")), true));
+                    .tag(etag);
 
                 if (prefer.getPreference().filter("minimal"::equals).isPresent()) {
                     return builder.status(NO_CONTENT);
                 } else {
                     final String urlPrefix = ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString());
+                    final Optional<IRI> profile = getProfile(headers.getAcceptableMediaTypes());
                     return builder.entity(new ResourceStreamer(serializationService,
                                 res.stream().filter(filterWithPrefer(prefer))
                                 .map(unskolemize(resourceService, urlPrefix)),
@@ -250,5 +246,30 @@ public class LdpResource extends BaseLdpResource {
             // Other responses (typically, a request for application/link-format on an LDPR)
             return status(NOT_ACCEPTABLE).type(APPLICATION_JSON).entity(NOT_ACCEPTABLE_ERROR);
         };
+    }
+
+    private static Response.ResponseBuilder basicGetResponseBuilder(final Resource res,
+            final Optional<RDFSyntax> syntax) {
+        final Response.ResponseBuilder builder = ok();
+
+        // Standard HTTP Headers
+        builder.lastModified(from(res.getModified())).variants(VARIANTS).header(VARY, PREFER);
+        syntax.map(s -> s.mediaType).ifPresent(builder::type);
+
+        // Add LDP-required headers
+        final IRI model = res.getDatastream().isPresent() && syntax.isPresent() ?
+                LDP.RDFSource : res.getInteractionModel();
+        ldpResourceTypes(model).forEach(type -> {
+            builder.link(type.getIRIString(), "type");
+            // Mementos don't accept POST or PATCH
+            if (LDP.Container.equals(type) && !res.isMemento()) {
+                builder.header(ACCEPT_POST, VARIANTS.stream().map(Variant::getMediaType)
+                        .map(mt -> mt.getType() + "/" + mt.getSubtype()).collect(joining(",")));
+            } else if (LDP.RDFSource.equals(type) && !res.isMemento()) {
+                builder.header(ACCEPT_PATCH, APPLICATION_SPARQL_UPDATE);
+            }
+        });
+
+        return builder;
     }
 }

@@ -13,38 +13,26 @@
  */
 package org.trellisldp.http;
 
-import static java.util.Arrays.stream;
-import static java.util.stream.Stream.empty;
-import static java.util.stream.Stream.of;
+import static java.util.Date.from;
 import static javax.ws.rs.core.UriBuilder.fromUri;
-import static org.trellisldp.http.HttpConstants.TRELLIS_PREFIX;
-import static org.trellisldp.http.RdfMediaType.VARIANTS;
+import static org.trellisldp.http.RdfUtils.getInstance;
+import static org.trellisldp.http.RdfUtils.toExternalIri;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.ServiceLoader;
-import java.util.Set;
+import java.time.Instant;
 import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
 
+import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.core.Variant;
 
 import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
-import org.apache.commons.rdf.api.RDFSyntax;
-import org.apache.commons.rdf.api.RDFTerm;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
@@ -52,7 +40,9 @@ import org.trellisldp.vocabulary.Trellis;
  */
 class BaseLdpResource {
 
-    protected static final RDF rdf = ServiceLoader.load(RDF.class).iterator().next();
+    private static final int cacheAge = 86400;
+
+    protected static final RDF rdf = getInstance();
 
     protected final ResourceService resourceService;
 
@@ -61,6 +51,9 @@ class BaseLdpResource {
 
     @Context
     protected HttpHeaders headers;
+
+    @Context
+    protected Request request;
 
     protected BaseLdpResource(final ResourceService resourceService) {
         this.resourceService = resourceService;
@@ -76,65 +69,18 @@ class BaseLdpResource {
                     quad.getPredicate(), toExternalIri(svc.unskolemize(quad.getObject()), baseUrl));
     }
 
-    protected static Predicate<Quad> filterWithPrefer(final Prefer prefer) {
-        final Set<String> include = getDefaultRepresentation();
-        prefer.getOmit().forEach(include::remove);
-        prefer.getInclude().forEach(include::add);
-        return quad -> quad.getGraphName().filter(x -> x instanceof IRI).map(x -> (IRI) x)
-            .map(IRI::getIRIString).filter(include::contains).isPresent();
-    }
-
-    protected static Optional<RDFSyntax> getRdfSyntax(final List<MediaType> types) {
-        return types.stream().flatMap(getSyntax).findFirst();
-    }
-
-    protected static Optional<IRI> getProfile(final List<MediaType> types) {
-        return types.stream().flatMap(profileMapper).findFirst();
-    }
-
     private static String stripSlash(final String path) {
         return path.endsWith("/") ? stripSlash(path.substring(0, path.length() - 1)) : path;
     }
 
-    private static RDFTerm toExternalIri(final RDFTerm term, final String baseUrl) {
-        if (term instanceof IRI) {
-            final String iri = ((IRI) term).getIRIString();
-            if (iri.startsWith(TRELLIS_PREFIX)) {
-                return rdf.createIRI(baseUrl + iri.substring(TRELLIS_PREFIX.length()));
-            }
+    protected Response.ResponseBuilder evaluateCache(final Instant modified, final EntityTag etag) {
+        final CacheControl cc = new CacheControl();
+        cc.setMaxAge(cacheAge);
+
+        final Response.ResponseBuilder cache = request.evaluatePreconditions(from(modified), etag);
+        if (cache != null) {
+            cache.cacheControl(cc);
         }
-        return term;
+        return cache;
     }
-
-    private static Set<String> getDefaultRepresentation() {
-        final Set<String> include = new HashSet<>();
-        include.add(LDP.PreferContainment.getIRIString());
-        include.add(LDP.PreferMembership.getIRIString());
-        include.add(Trellis.PreferUserManaged.getIRIString());
-        return include;
-    }
-
-    private static final Function<MediaType, Stream<IRI>> profileMapper = type -> {
-        if (VARIANTS.stream().map(Variant::getMediaType).anyMatch(type::isCompatible)) {
-            final Map<String, String> params = type.getParameters();
-            if (params.containsKey("profile")) {
-                return stream(params.get("profile").split(" ")).map(String::trim).flatMap(profile -> {
-                    try {
-                        return of(rdf.createIRI(profile));
-                    } catch (final IllegalArgumentException ex) {
-                        // ignore the profile value
-                        return empty();
-                    }
-                });
-            }
-        }
-        return empty();
-    };
-
-    private static final Function<MediaType, Stream<RDFSyntax>> getSyntax = type -> {
-        final Optional<RDFSyntax> syntax = VARIANTS.stream().map(Variant::getMediaType).filter(type::isCompatible)
-            .findFirst().map(MediaType::toString).flatMap(RDFSyntax::byMediaType);
-        // TODO replace with Optional::stream with JDK 9
-        return syntax.isPresent() ? of(syntax.get()) : empty();
-    };
 }

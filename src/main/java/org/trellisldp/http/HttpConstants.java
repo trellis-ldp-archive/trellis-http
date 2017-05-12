@@ -14,10 +14,16 @@
 package org.trellisldp.http;
 
 import static java.util.Collections.unmodifiableMap;
+import static java.util.Collections.unmodifiableSet;
 import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+
+import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -53,6 +59,12 @@ public final class HttpConstants {
     public static final Map<String, Object> NOT_ACCEPTABLE_ERROR = unmodifiableMap(new HashMap<String, Object>() { {
         put("code", NOT_ACCEPTABLE.getStatusCode());
         put("message", "HTTP " + NOT_ACCEPTABLE.getStatusCode() + " " + NOT_ACCEPTABLE.getReasonPhrase());
+    }});
+
+    public static final Set<String> DEFAULT_REPRESENTATION = unmodifiableSet(new HashSet<String>() { {
+        add(LDP.PreferContainment.getIRIString());
+        add(LDP.PreferMembership.getIRIString());
+        add(Trellis.PreferUserManaged.getIRIString());
     }});
 
     private HttpConstants() {
