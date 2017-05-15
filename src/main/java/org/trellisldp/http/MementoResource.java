@@ -17,7 +17,6 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.time.ZonedDateTime.parse;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
-import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
@@ -29,7 +28,6 @@ import static org.trellisldp.http.HttpConstants.APPLICATION_LINK_FORMAT;
 import static org.trellisldp.http.HttpConstants.VARY;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,10 +35,8 @@ import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
@@ -74,8 +70,6 @@ final class MementoResource {
     private static final String UNTIL = "until";
 
     private static final String DATETIME = "datetime";
-
-    private static final String VERSION = "version";
 
     private final Resource resource;
 
@@ -130,36 +124,6 @@ final class MementoResource {
     public static Stream<Link> getMementoLinks(final String identifier, final Stream<VersionRange> mementos) {
         final List<VersionRange> ranges = mementos.collect(toList());
         return concat(getTimeMap(identifier, ranges.stream()), ranges.stream().map(mementoToLink(identifier)));
-    }
-
-    /**
-     * Attempt to retrieve an Accept-Datetime from a set of HttpHeaders
-     * @param headers the headers
-     * @return a point in time, if one is available
-     */
-    public static Optional<Instant> getAcceptDatetime(final HttpHeaders headers) {
-        return ofNullable(headers.getRequestHeaders().getFirst(ACCEPT_DATETIME))
-                .map(x -> parse(x, RFC_1123_DATE_TIME)).map(ZonedDateTime::toInstant);
-    }
-
-    /**
-     * Attempt to retrieve a version parameter from the request URI
-     * @param uriInfo the request URI
-     * @return a point in time, if one is available
-     */
-    public static Optional<Instant> getVersionParam(final UriInfo uriInfo) {
-        return ofNullable(uriInfo.getQueryParameters().getFirst(VERSION))
-                .map(String::trim).map(Long::parseLong).map(Instant::ofEpochMilli);
-    }
-
-    /**
-     * Attempt to retrieve the timemap parameter from the request URI
-     * @param uriInfo the request URI
-     * @return true if the timemap parameter is set; false otherwise
-     */
-    public static Boolean getTimeMapParam(final UriInfo uriInfo) {
-        return ofNullable(uriInfo.getQueryParameters().getFirst(TIMEMAP))
-                .map(String::trim).map(Boolean::new).orElse(false);
     }
 
     private static final Function<Link, Stream<Quad>> linkToQuads = link -> {
