@@ -14,6 +14,7 @@
 package org.trellisldp.http;
 
 import static java.util.Arrays.stream;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Stream.empty;
 import static java.util.stream.Stream.of;
 import static org.trellisldp.http.HttpConstants.DEFAULT_REPRESENTATION;
@@ -61,8 +62,10 @@ final class RdfUtils {
      */
     public static Predicate<Quad> filterWithPrefer(final Prefer prefer) {
         final Set<String> include = new HashSet<>(DEFAULT_REPRESENTATION);
-        prefer.getOmit().forEach(include::remove);
-        prefer.getInclude().forEach(include::add);
+        ofNullable(prefer).ifPresent(p -> {
+            p.getOmit().forEach(include::remove);
+            p.getInclude().forEach(include::add);
+        });
         return quad -> quad.getGraphName().filter(x -> x instanceof IRI).map(x -> (IRI) x)
             .map(IRI::getIRIString).filter(include::contains).isPresent();
     }

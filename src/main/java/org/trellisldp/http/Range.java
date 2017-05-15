@@ -17,53 +17,44 @@ import static java.lang.Integer.parseInt;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Optional;
+
+import javax.ws.rs.WebApplicationException;
 
 import org.slf4j.Logger;
 
 /**
  * @author acoburn
  */
-class Range {
+public class Range {
 
     private static final Logger LOGGER = getLogger(Range.class);
 
     private static final int radix = 10;
 
-    private final Optional<Integer> from;
+    private final Integer from;
 
-    private final Optional<Integer> to;
+    private final Integer to;
 
     /**
      * Create a Range object
      * @param value the range value
      */
     public Range(final String value) {
-        final Optional<Integer[]> vals = parse(value);
-        if (vals.isPresent()) {
-            from = of(vals.get()[0]);
-            to = of(vals.get()[1]);
-        } else {
-            from = empty();
-            to = empty();
-        }
-    }
-
-    /**
-     * Determine if the supplied header included a valid range request
-     * @return true if the request is actionable; false otherwise
-     */
-    public boolean isRange() {
-        return getFrom().isPresent() && getTo().isPresent();
+        final Integer[] vals = parse(value).orElseThrow(() ->
+                new WebApplicationException("Invalid Range request", BAD_REQUEST));
+        from = vals[0];
+        to = vals[1];
     }
 
     /**
      * Get the from value
      * @return the byte offset
      */
-    public Optional<Integer> getFrom() {
+    public Integer getFrom() {
         return from;
     }
 
@@ -71,7 +62,7 @@ class Range {
      * Get the to value
      * @return the byte end
      */
-    public Optional<Integer> getTo() {
+    public Integer getTo() {
         return to;
     }
 

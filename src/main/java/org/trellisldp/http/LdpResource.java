@@ -63,6 +63,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -124,11 +125,15 @@ public class LdpResource extends BaseLdpResource {
     /**
      * Perform a GET operation on an LDP Resource
      * @param path the path
+     * @param prefer the Prefer header
+     * @param digest the Want-Digest header
+     * @param range the Range header
      * @return the response
      */
     @GET
     @Timed
-    public Response getResource(@PathParam("path") final String path) {
+    public Response getResource(@PathParam("path") final String path, @HeaderParam("Prefer") final Prefer prefer,
+            @HeaderParam("Want-Digest") final WantDigest digest, @HeaderParam("Range") final Range range) {
         if (path.endsWith("/")) {
             return redirectWithoutSlash(path);
         }
@@ -141,7 +146,8 @@ public class LdpResource extends BaseLdpResource {
         if (version.isPresent()) {
             LOGGER.info("Getting versioned resource: {}", version.get().toString());
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), version.get())
-                    .map(getRepresentation(identifier, syntax)).orElse(status(NOT_FOUND)).build();
+                    .map(getRepresentation(identifier, syntax, prefer, digest, range))
+                    .orElse(status(NOT_FOUND)).build();
 
         } else if (MementoResource.getTimeMapParam(uriInfo)) {
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
@@ -155,14 +161,13 @@ public class LdpResource extends BaseLdpResource {
         }
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
-                .map(getRepresentation(identifier, syntax)).orElse(status(NOT_FOUND)).build();
+                .map(getRepresentation(identifier, syntax, prefer, digest, range)).orElse(status(NOT_FOUND)).build();
     }
 
     private Function<Resource, ResponseBuilder> getRepresentation(final String identifier,
-            final Optional<RDFSyntax> syntax) {
+            final Optional<RDFSyntax> syntax, final Prefer prefer, final WantDigest digest, final Range range) {
 
             // TODO add acl header, if in effect
-            // TODO add support for range requests
 
         return res -> {
             if (res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
@@ -215,33 +220,26 @@ public class LdpResource extends BaseLdpResource {
                 builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes").tag(etag);
 
                 // Add instance digests, if requested and supported
-                ofNullable(headers.getRequestHeaders().getFirst(WANT_DIGEST)).map(WantDigest::new)
-                    .map(WantDigest::getAlgorithms).ifPresent(algs ->
+                ofNullable(digest).map(WantDigest::getAlgorithms).ifPresent(algs ->
                         algs.stream().filter(datastreamService.supportedAlgorithms()::contains).findFirst()
                         .ifPresent(alg -> datastreamService.getContent(dsid)
                             .map(is -> datastreamService.hexDigest(alg, is))
-                            .ifPresent(digest -> builder.header(DIGEST, digest))));
+                            .ifPresent(d -> builder.header(DIGEST, d))));
 
                 // Range requests
-                final Optional<Range> range = ofNullable(headers.getRequestHeaders().getFirst(RANGE)).map(Range::new)
-                    .filter(Range::isRange);
-
-                if (range.isPresent()) {
+                if (nonNull(range)) {
                     try {
-                        datastream.skip(range.get().getFrom().get());
+                        datastream.skip(range.getFrom());
                     } catch (final IOException ex) {
                         LOGGER.error("Error seeking through datastream: {}", ex.getMessage());
                         return status(BAD_REQUEST).entity(ex.getMessage());
                     }
-                    range.map(r -> new BoundedInputStream(datastream, r.getTo().get() - r.getFrom().get()))
-                        .ifPresent(builder::entity);
-                    return builder;
+                    return builder.entity(new BoundedInputStream(datastream, range.getTo() - range.getFrom()));
                 }
                 return builder.entity(datastream);
 
             // RDFSource responses (weak ETags, etc)
             } else if (syntax.isPresent()) {
-                final Prefer prefer = new Prefer(ofNullable(headers.getRequestHeaders().getFirst(PREFER)).orElse(""));
                 final EntityTag etag = new EntityTag(
                         md5Hex(res.getModified() + identifier + syntax.map(RDFSyntax::toString).orElse("")), true);
                 final ResponseBuilder cacheHit = evaluateCache(res.getModified(), etag);
@@ -250,10 +248,11 @@ public class LdpResource extends BaseLdpResource {
                     return cacheHit;
                 }
 
-                builder.header(PREFERENCE_APPLIED, "return=" + prefer.getPreference().orElse("representation"))
-                    .tag(etag);
+                builder.tag(etag);
+                ofNullable(prefer).ifPresent(p ->
+                        builder.header(PREFERENCE_APPLIED, "return=" + p.getPreference().orElse("representation")));
 
-                if (prefer.getPreference().filter("minimal"::equals).isPresent()) {
+                if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
                     return builder.status(NO_CONTENT);
                 } else {
                     final String urlPrefix = ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString());
