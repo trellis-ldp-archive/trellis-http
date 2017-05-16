@@ -123,7 +123,6 @@ public class LdpResource extends BaseLdpResource {
             // Add NonRDFSource-related "describe*" link headers
             res.getDatastream().ifPresent(ds -> {
                 if (syntax.isPresent()) {
-                    // TODO make this identifier opaque
                     builder.link(identifier + "#description", "canonical").link(identifier, "describes");
                 } else {
                     builder.link(identifier, "canonical").link(identifier + "#description", "describedby")
