@@ -19,6 +19,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,6 +28,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+
+import javax.ws.rs.WebApplicationException;
 
 /**
  * A class representing an HTTP Prefer header
@@ -65,6 +68,8 @@ public class Prefer {
                     this.params.add(x[0].trim());
                 }
             });
+        } else {
+            throw new WebApplicationException(BAD_REQUEST);
         }
 
         this.preference = ofNullable(data.get("return")).filter(x -> x.equals("minimal") || x.equals("representation"));

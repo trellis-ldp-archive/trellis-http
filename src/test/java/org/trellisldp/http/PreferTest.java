@@ -18,6 +18,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import javax.ws.rs.WebApplicationException;
+
 import org.junit.Test;
 
 /**
@@ -110,5 +112,34 @@ public class PreferTest {
         assertFalse(prefer.getWait().isPresent());
         assertTrue(prefer.getRespondAsync());
         assertTrue(prefer.getDepthNoroot());
+    }
+
+    @Test
+    public void testPrefer8() {
+        final Prefer prefer = new Prefer("handling=strict; return=minimal");
+        assertTrue(prefer.getInclude().isEmpty());
+        assertTrue(prefer.getOmit().isEmpty());
+        assertEquals(of("minimal"), prefer.getPreference());
+        assertEquals(of("strict"), prefer.getHandling());
+        assertFalse(prefer.getWait().isPresent());
+        assertFalse(prefer.getRespondAsync());
+        assertFalse(prefer.getDepthNoroot());
+    }
+
+    @Test
+    public void testPrefer9() {
+        final Prefer prefer = new Prefer("handling=blah; return=minimal");
+        assertTrue(prefer.getInclude().isEmpty());
+        assertTrue(prefer.getOmit().isEmpty());
+        assertEquals(of("minimal"), prefer.getPreference());
+        assertFalse(prefer.getHandling().isPresent());
+        assertFalse(prefer.getWait().isPresent());
+        assertFalse(prefer.getRespondAsync());
+        assertFalse(prefer.getDepthNoroot());
+    }
+
+    @Test(expected = WebApplicationException.class)
+    public void testNullPrefer() {
+        final Prefer prefer = new Prefer(null);
     }
 }
