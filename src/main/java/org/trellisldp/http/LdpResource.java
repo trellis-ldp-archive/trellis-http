@@ -98,7 +98,7 @@ public class LdpResource extends BaseLdpResource {
             .withSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()))
             .withVersion(version).withTimemap(timemap).withPrefer(prefer)
             .withProfile(getProfile(headers.getAcceptableMediaTypes()))
-            .withCacheEvaluator(cacheEvaluator)
+            .withCacheEvaluator(cacheEvaluator).withDatetime(datetime)
             .withWantDigest(digest).withRange(range).build(path);
     }
 }

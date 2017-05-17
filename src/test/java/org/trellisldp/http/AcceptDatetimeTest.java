@@ -15,7 +15,7 @@ package org.trellisldp.http;
 
 import static org.junit.Assert.assertEquals;
 
-import java.time.format.DateTimeParseException;
+import javax.ws.rs.WebApplicationException;
 
 import org.junit.Test;
 
@@ -31,12 +31,12 @@ public class AcceptDatetimeTest {
         assertEquals("2017-05-01T13:43:22Z", datetime.getInstant().toString());
     }
 
-    @Test(expected = DateTimeParseException.class)
+    @Test(expected = WebApplicationException.class)
     public void testInvalidDatetime() {
         final AcceptDatetime datetime = new AcceptDatetime("Mon, 2 May 2017 13:43:22 GMT");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test(expected = WebApplicationException.class)
     public void testNullDatetime() {
         final AcceptDatetime datetime = new AcceptDatetime(null);
     }

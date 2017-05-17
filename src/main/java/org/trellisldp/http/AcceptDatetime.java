@@ -15,14 +15,26 @@ package org.trellisldp.http;
 
 import static java.time.ZonedDateTime.parse;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
-import static java.util.Objects.requireNonNull;
+import static java.util.Objects.nonNull;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.time.Instant;
+import java.time.DateTimeException;
+import java.util.Optional;
+
+import javax.ws.rs.WebApplicationException;
+
+import org.slf4j.Logger;
 
 /**
  * @author acoburn
  */
 public class AcceptDatetime {
+
+    private static final Logger LOGGER = getLogger(AcceptDatetime.class);
 
     private final Instant datetime;
 
@@ -31,8 +43,8 @@ public class AcceptDatetime {
      * @param datetime the date time in RFC 1123 format
      */
     public AcceptDatetime(final String datetime) {
-        requireNonNull(datetime, "Datetime may not be null");
-        this.datetime = parse(datetime.trim(), RFC_1123_DATE_TIME).toInstant();
+        this.datetime = parseDatetime(datetime).orElseThrow(() ->
+                new WebApplicationException("Invalid Accept-Datetime request", BAD_REQUEST));
     }
 
     /**
@@ -46,5 +58,16 @@ public class AcceptDatetime {
     @Override
     public String toString() {
         return datetime.toString();
+    }
+
+    private static Optional<Instant> parseDatetime(final String datetime) {
+        if (nonNull(datetime)) {
+            try {
+                return of(parse(datetime.trim(), RFC_1123_DATE_TIME).toInstant());
+            } catch (final DateTimeException ex) {
+                LOGGER.warn("Invalid date supplied ({}): {}", datetime, ex.getMessage());
+            }
+        }
+        return empty();
     }
 }
