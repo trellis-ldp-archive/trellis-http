@@ -41,6 +41,8 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.RDFTerm;
 
 /**
+ * RDF Utility functions
+ *
  * @author acoburn
  */
 final class RdfUtils {
@@ -108,14 +110,7 @@ final class RdfUtils {
         if (VARIANTS.stream().map(Variant::getMediaType).anyMatch(type::isCompatible)) {
             final Map<String, String> params = type.getParameters();
             if (params.containsKey("profile")) {
-                return stream(params.get("profile").split(" ")).map(String::trim).flatMap(profile -> {
-                    try {
-                        return of(rdf.createIRI(profile));
-                    } catch (final IllegalArgumentException ex) {
-                        // ignore the profile value
-                        return empty();
-                    }
-                });
+                return stream(params.get("profile").split(" ")).map(String::trim).map(rdf::createIRI);
             }
         }
         return empty();

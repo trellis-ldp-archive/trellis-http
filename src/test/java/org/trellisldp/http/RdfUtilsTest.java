@@ -14,9 +14,11 @@
 package org.trellisldp.http;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 
@@ -29,6 +31,7 @@ import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.trellisldp.vocabulary.DC;
+import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.Trellis;
 import org.junit.Test;
 
@@ -88,4 +91,31 @@ public class RdfUtilsTest {
         assertEquals(literal, RdfUtils.toExternalIri(literal, externalUrl));
     }
 
+    @Test
+    public void testProfile() {
+        final List<MediaType> types = asList(
+                new MediaType("application", "json"),
+                new MediaType("text", "xml"),
+                new MediaType("application", "ld+json", singletonMap("profile", JSONLD.compacted.getIRIString())));
+        assertEquals(JSONLD.compacted, RdfUtils.getProfile(types));
+    }
+
+    @Test
+    public void testMultipleProfiles() {
+        final RDF rdf = RdfUtils.getInstance();
+        final List<MediaType> types = asList(
+                new MediaType("application", "json"),
+                new MediaType("text", "xml"),
+                new MediaType("application", "ld+json", singletonMap("profile", "first second")));
+        assertEquals(rdf.createIRI("first"), RdfUtils.getProfile(types));
+    }
+
+    @Test
+    public void testNoProfile() {
+        final List<MediaType> types = asList(
+                new MediaType("application", "json"),
+                new MediaType("text", "xml"),
+                new MediaType("application", "ld+json"));
+        assertNull(RdfUtils.getProfile(types));
+    }
 }
