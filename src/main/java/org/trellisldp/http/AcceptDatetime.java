@@ -21,8 +21,8 @@ import static java.util.Optional.of;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import java.time.Instant;
 import java.time.DateTimeException;
+import java.time.Instant;
 import java.util.Optional;
 
 import javax.ws.rs.WebApplicationException;
