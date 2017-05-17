@@ -75,8 +75,8 @@ final class RdfUtils {
      * @param types the mediatypes from HTTP Accept
      * @return the rdf syntax, if available
      */
-    public static Optional<RDFSyntax> getRdfSyntax(final List<MediaType> types) {
-        return types.stream().flatMap(getSyntax).findFirst();
+    public static RDFSyntax getRdfSyntax(final List<MediaType> types) {
+        return types.stream().flatMap(getSyntax).findFirst().orElse(null);
     }
 
     /**
@@ -84,8 +84,8 @@ final class RdfUtils {
      * @param types the mediatypes from HTTP Accept
      * @return the profile, if available
      */
-    public static Optional<IRI> getProfile(final List<MediaType> types) {
-        return types.stream().flatMap(profileMapper).findFirst();
+    public static IRI getProfile(final List<MediaType> types) {
+        return types.stream().flatMap(profileMapper).findFirst().orElse(null);
     }
 
     /**

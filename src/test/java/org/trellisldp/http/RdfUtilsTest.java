@@ -14,7 +14,6 @@
 package org.trellisldp.http;
 
 import static java.util.Arrays.asList;
-import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -50,7 +49,7 @@ public class RdfUtilsTest {
                 new MediaType("text", "xml"),
                 new MediaType("text", "turtle"));
 
-        assertEquals(of(TURTLE), RdfUtils.getRdfSyntax(types));
+        assertEquals(TURTLE, RdfUtils.getRdfSyntax(types));
     }
 
     @Test

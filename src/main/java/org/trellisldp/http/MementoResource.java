@@ -17,6 +17,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.time.ZonedDateTime.parse;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
@@ -30,7 +31,6 @@ import static org.trellisldp.http.HttpConstants.VARY;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -88,13 +88,13 @@ final class MementoResource {
      * @param serializer the serializer to use
      * @return a response builder object
      */
-    public Response.ResponseBuilder getTimeMapBuilder(final String identifier, final Optional<RDFSyntax> syntax,
+    public Response.ResponseBuilder getTimeMapBuilder(final String identifier, final RDFSyntax syntax,
             final SerializationService serializer) {
         final Response.ResponseBuilder builder = Response.ok().link(identifier, ORIGINAL + " " + TIMEGATE);
         final List<Link> links = getMementoLinks(identifier, resource.getMementos()).collect(toList());
         builder.links(links.toArray(new Link[0]));
-        if (syntax.isPresent()) {
-            builder.entity(new ResourceStreamer(serializer, links.stream().flatMap(linkToQuads), syntax.get()));
+        if (nonNull(syntax)) {
+            builder.entity(new ResourceStreamer(serializer, links.stream().flatMap(linkToQuads), syntax));
         } else {
             builder.entity(links.stream().map(Link::toString).collect(joining(",\n")) + "\n");
         }
