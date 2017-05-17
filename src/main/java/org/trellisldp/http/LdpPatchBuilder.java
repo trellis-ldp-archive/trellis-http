@@ -34,6 +34,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.BlankNodeOrIRI;
+import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.Triple;
 import org.slf4j.Logger;
@@ -94,7 +95,7 @@ class LdpPatchBuilder extends LdpResponseBuilder {
             serializationService.update(graph, update, TRELLIS_PREFIX + path);
             final Dataset dataset = rdf.createDataset();
             graph.stream().map(t ->
-                    rdf.createQuad(Trellis.PreferUserManaged, t.getSubject(), t.getPredicate(), t.getObject))
+                    rdf.createQuad(Trellis.PreferUserManaged, t.getSubject(), t.getPredicate(), t.getObject()))
                 .forEach(dataset::add);
 
             // TODO update the triples via
