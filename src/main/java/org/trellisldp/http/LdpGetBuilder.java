@@ -80,9 +80,11 @@ import org.trellisldp.vocabulary.OA;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
+ * The GET response builder
+ *
  * @author acoburn
  */
-class LdpGetBuilder extends LdpResponseBuilder<LdpGetBuilder> {
+class LdpGetBuilder extends LdpResponseBuilder {
 
     private static final int cacheAge = 86400;
 

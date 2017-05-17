@@ -28,9 +28,11 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.trellisldp.spi.ResourceService;
 
 /**
+ * The base response builder class
+ *
  * @author acoburn
  */
-abstract class LdpResponseBuilder<T extends LdpResponseBuilder> {
+abstract class LdpResponseBuilder {
 
     protected static final RDF rdf = getInstance();
 
@@ -60,10 +62,9 @@ abstract class LdpResponseBuilder<T extends LdpResponseBuilder> {
      * @param url the URL
      * @return the Response builder
      */
-    @SuppressWarnings("unchecked")
-    public T withBaseUrl(final String url) {
+    public LdpResponseBuilder withBaseUrl(final String url) {
         this.baseUrl = url;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -71,10 +72,9 @@ abstract class LdpResponseBuilder<T extends LdpResponseBuilder> {
      * @param evaluator the evaluator
      * @return the Response builder
      */
-    @SuppressWarnings("unchecked")
-    public T withCacheEvaluator(final BiFunction<Instant, EntityTag, ResponseBuilder> evaluator) {
+    public LdpResponseBuilder withCacheEvaluator(final BiFunction<Instant, EntityTag, ResponseBuilder> evaluator) {
         this.evaluator = evaluator;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -82,10 +82,9 @@ abstract class LdpResponseBuilder<T extends LdpResponseBuilder> {
      * @param prefer the prefer object
      * @return the Response builder
      */
-    @SuppressWarnings("unchecked")
-    public T withPrefer(final Prefer prefer) {
+    public LdpResponseBuilder withPrefer(final Prefer prefer) {
         this.prefer = prefer;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -93,10 +92,9 @@ abstract class LdpResponseBuilder<T extends LdpResponseBuilder> {
      * @param profile the profile object
      * @return the Response builder
      */
-    @SuppressWarnings("unchecked")
-    public T withProfile(final IRI profile) {
+    public LdpResponseBuilder withProfile(final IRI profile) {
         this.profile = profile;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -104,10 +102,9 @@ abstract class LdpResponseBuilder<T extends LdpResponseBuilder> {
      * @param version the version object
      * @return the Response builder
      */
-    @SuppressWarnings("unchecked")
-    public T withVersion(final Version version) {
+    public LdpResponseBuilder withVersion(final Version version) {
         this.version = version;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -115,10 +112,9 @@ abstract class LdpResponseBuilder<T extends LdpResponseBuilder> {
      * @param syntax the syntax object
      * @return the Response builder
      */
-    @SuppressWarnings("unchecked")
-    public T withSyntax(final RDFSyntax syntax) {
+    public LdpResponseBuilder withSyntax(final RDFSyntax syntax) {
         this.syntax = syntax;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -126,10 +122,9 @@ abstract class LdpResponseBuilder<T extends LdpResponseBuilder> {
      * @param timemap whether to include a timemap
      * @return the Response builder
      */
-    @SuppressWarnings("unchecked")
-    public T withTimemap(final Boolean timemap) {
+    public LdpResponseBuilder withTimemap(final Boolean timemap) {
         this.timemap = timemap;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -137,10 +132,9 @@ abstract class LdpResponseBuilder<T extends LdpResponseBuilder> {
      * @param datetime the datetime object
      * @return the Response builder
      */
-    @SuppressWarnings("unchecked")
-    public T withDatetime(final AcceptDatetime datetime) {
+    public LdpResponseBuilder withDatetime(final AcceptDatetime datetime) {
         this.datetime = datetime;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -148,10 +142,9 @@ abstract class LdpResponseBuilder<T extends LdpResponseBuilder> {
      * @param digest the want-digest object
      * @return the Response builder
      */
-    @SuppressWarnings("unchecked")
-    public T withWantDigest(final WantDigest digest) {
+    public LdpResponseBuilder withWantDigest(final WantDigest digest) {
         this.digest = digest;
-        return (T) this;
+        return this;
     }
 
     /**
@@ -159,10 +152,9 @@ abstract class LdpResponseBuilder<T extends LdpResponseBuilder> {
      * @param range the range object
      * @return the Response builder
      */
-    @SuppressWarnings("unchecked")
-    public T withRange(final Range range) {
+    public LdpResponseBuilder withRange(final Range range) {
         this.range = range;
-        return (T) this;
+        return this;
     }
 
     /**
