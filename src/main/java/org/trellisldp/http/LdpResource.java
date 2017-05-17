@@ -24,6 +24,7 @@ import static org.trellisldp.http.RdfUtils.getRdfSyntax;
 
 import com.codahale.metrics.annotation.Timed;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
@@ -100,5 +101,29 @@ public class LdpResource extends BaseLdpResource {
             .withProfile(getProfile(headers.getAcceptableMediaTypes()))
             .withCacheEvaluator(cacheEvaluator).withDatetime(datetime)
             .withWantDigest(digest).withRange(range).build(path);
+    }
+
+    /**
+     * Perform a PATCH operation on an LDP Resource
+     * @param path the path
+     * @param prefer the Prefer header
+     * @param body the body
+     * @return the response
+     */
+    @PATCH
+    @Timed
+    @Consumes("application/sparql-update")
+    public Response updateResource(@PathParam("path") final String path,
+            @HeaderParam("Prefer") final Prefer prefer, final String body) {
+
+        if (path.endsWith("/")) {
+            return redirectWithoutSlash(path);
+        }
+
+        return LdpPatchBuilder.builder(resourceService, serializationService)
+            .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
+            .withSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()))
+            .withPrefer(prefer).withProfile(getProfile(headers.getAcceptableMediaTypes()))
+            .withCacheEvaluator(cacheEvaluator).withSparqlUpdate(body).build(path);
     }
 }

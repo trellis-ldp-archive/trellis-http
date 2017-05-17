@@ -94,7 +94,7 @@ final class MementoResource {
         final List<Link> links = getMementoLinks(identifier, resource.getMementos()).collect(toList());
         builder.links(links.toArray(new Link[0]));
         if (nonNull(syntax)) {
-            builder.entity(new ResourceStreamer(serializer, links.stream().flatMap(linkToQuads), syntax));
+            builder.entity(ResourceStreamer.quadStreamer(serializer, links.stream().flatMap(linkToQuads), syntax));
         } else {
             builder.entity(links.stream().map(Link::toString).collect(joining(",\n")) + "\n");
         }

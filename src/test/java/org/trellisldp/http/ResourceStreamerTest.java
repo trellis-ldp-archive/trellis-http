@@ -46,7 +46,7 @@ public class ResourceStreamerTest {
                     DC.title, rdf.createLiteral("A title")));
 
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        final ResourceStreamer streamer = new ResourceStreamer(svc, quads, NQUADS);
+        final ResourceStreamer streamer = ResourceStreamer.quadStreamer(svc, quads, NQUADS);
         streamer.write(out);
         assertEquals("<trellis:repository/foo> <http://purl.org/dc/terms/title> \"A title\" .\n",
                 out.toString("UTF-8"));

@@ -15,6 +15,7 @@ package org.trellisldp.http;
 
 import static org.trellisldp.http.RdfUtils.getInstance;
 
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.function.BiFunction;
 
@@ -39,6 +40,8 @@ abstract class LdpResponseBuilder {
     protected final ResourceService resourceService;
 
     protected String baseUrl = "";
+    protected String update = null;
+    protected InputStream entity = null;
     protected IRI profile = null;
     protected Prefer prefer = null;
     protected Boolean timemap = false;
@@ -154,6 +157,26 @@ abstract class LdpResponseBuilder {
      */
     public LdpResponseBuilder withRange(final Range range) {
         this.range = range;
+        return this;
+    }
+
+    /**
+     * Add a Sparql-Update command
+     * @param update the sparql update command
+     * @return the Response builder
+     */
+    public LdpResponseBuilder withSparqlUpdate(final String update) {
+        this.update = update;
+        return this;
+    }
+
+    /**
+     * Add an entity
+     * @param entity the entity
+     * @return the Response builder
+     */
+    public LdpResponseBuilder withEntity(final InputStream entity) {
+        this.entity = entity;
         return this;
     }
 

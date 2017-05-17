@@ -228,7 +228,7 @@ class LdpGetBuilder extends LdpResponseBuilder {
                 if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
                     return builder.status(NO_CONTENT);
                 } else {
-                    return builder.entity(new ResourceStreamer(serializationService,
+                    return builder.entity(ResourceStreamer.quadStreamer(serializationService,
                                 res.stream().filter(filterWithPrefer(prefer))
                                 .map(unskolemize(resourceService, baseUrl)),
                                 syntax, ofNullable(profile).orElseGet(() ->
@@ -269,7 +269,7 @@ class LdpGetBuilder extends LdpResponseBuilder {
         return builder.cacheControl(cc);
     }
 
-    protected static Function<Quad, Quad> unskolemize(final ResourceService svc, final String baseUrl) {
+    private static Function<Quad, Quad> unskolemize(final ResourceService svc, final String baseUrl) {
         return quad -> rdf.createQuad(quad.getGraphName().orElse(Trellis.PreferUserManaged),
                     (BlankNodeOrIRI) toExternalIri(svc.unskolemize(quad.getSubject()), baseUrl),
                     quad.getPredicate(), toExternalIri(svc.unskolemize(quad.getObject()), baseUrl));

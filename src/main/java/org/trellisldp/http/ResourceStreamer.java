@@ -22,6 +22,7 @@ import javax.ws.rs.core.StreamingOutput;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDFSyntax;
+import org.apache.commons.rdf.api.Triple;
 import org.trellisldp.spi.SerializationService;
 
 /**
@@ -30,18 +31,18 @@ import org.trellisldp.spi.SerializationService;
 class ResourceStreamer implements StreamingOutput {
 
     private final SerializationService service;
-    private final Stream<Quad> stream;
+    private final Stream<Triple> stream;
     private final RDFSyntax syntax;
     private final IRI[] profiles;
 
     /**
      * Create a streamable RDF resource
      * @param service the serialization service
-     * @param stream the stream of quads
+     * @param stream the stream of triples
      * @param syntax the RDF syntax to output
      * @param profiles the profile, if any
      */
-    public ResourceStreamer(final SerializationService service, final Stream<Quad> stream, final RDFSyntax syntax,
+    protected ResourceStreamer(final SerializationService service, final Stream<Triple> stream, final RDFSyntax syntax,
             final IRI... profiles) {
         this.service = service;
         this.stream = stream;
@@ -49,8 +50,34 @@ class ResourceStreamer implements StreamingOutput {
         this.profiles = profiles;
     }
 
+    /**
+     * Create a streamable RDF resource
+     * @param service the serialization service
+     * @param stream the stream of triples
+     * @param syntax the RDF syntax to output
+     * @param profiles the profile, if any
+     * @return the resource streamer
+     */
+    final public static ResourceStreamer tripleStreamer(final SerializationService service,
+            final Stream<Triple> stream, final RDFSyntax syntax, final IRI... profiles) {
+        return new ResourceStreamer(service, stream, syntax, profiles);
+    }
+
+    /**
+     * Create a streamable RDF resource
+     * @param service the serialization service
+     * @param stream the stream of quads
+     * @param syntax the RDF syntax to output
+     * @param profiles the profile, if any
+     * @return the resource streamer
+     */
+    final public static ResourceStreamer quadStreamer(final SerializationService service,
+            final Stream<Quad> stream, final RDFSyntax syntax, final IRI... profiles) {
+        return new ResourceStreamer(service, stream.map(Quad::asTriple), syntax, profiles);
+    }
+
     @Override
     public void write(final OutputStream os) throws IOException {
-        service.write(stream.map(Quad::asTriple), os, syntax, profiles);
+        service.write(stream, os, syntax, profiles);
     }
 }

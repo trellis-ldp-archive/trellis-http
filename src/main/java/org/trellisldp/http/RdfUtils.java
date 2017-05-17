@@ -106,6 +106,22 @@ final class RdfUtils {
         return term;
     }
 
+    /**
+     * Convert an external IRI to an internal IRI
+     * @param term the RDF term
+     * @param baseUrl the base URL
+     * @return a converted RDF term
+     */
+    public static RDFTerm toInternalIri(final RDFTerm term, final String baseUrl) {
+        if (term instanceof IRI) {
+            final String iri = ((IRI) term).getIRIString();
+            if (iri.startsWith(baseUrl)) {
+                return rdf.createIRI(TRELLIS_PREFIX + iri.substring(baseUrl.length()));
+            }
+        }
+        return term;
+    }
+
     private static final Function<MediaType, Stream<IRI>> profileMapper = type -> {
         if (VARIANTS.stream().map(Variant::getMediaType).anyMatch(type::isCompatible)) {
             final Map<String, String> params = type.getParameters();
