@@ -14,8 +14,9 @@
 package org.trellisldp.http;
 
 import static java.time.Instant.now;
-import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
+import static java.util.UUID.randomUUID;
+import static org.trellisldp.http.RdfUtils.getInstance;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -30,6 +31,7 @@ import org.trellisldp.vocabulary.Trellis;
  */
 class HttpSession implements Session {
 
+    private final IRI identifier = getInstance().createIRI("trellis:session/" + randomUUID().toString());
     private final IRI agent;
     private final IRI delegatedBy;
     private final Instant created;
@@ -64,7 +66,7 @@ class HttpSession implements Session {
 
     @Override
     public IRI getIdentifier() {
-        return null;
+        return identifier;
     }
 
     @Override
@@ -80,10 +82,5 @@ class HttpSession implements Session {
     @Override
     public Instant getCreated() {
         return created;
-    }
-
-    @Override
-    public Optional<Instant> getExpiry() {
-        return empty();
     }
 }
