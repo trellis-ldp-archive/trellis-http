@@ -27,6 +27,7 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.trellisldp.spi.ResourceService;
+import org.trellisldp.spi.Session;
 
 /**
  * The base response builder class
@@ -51,6 +52,7 @@ abstract class LdpResponseBuilder {
     protected WantDigest digest = null;
     protected Range range = null;
     protected BiFunction<Instant, EntityTag, ResponseBuilder> evaluator = null;
+    protected Session session = null;
 
     /**
      * A LDP Response builder
@@ -157,6 +159,16 @@ abstract class LdpResponseBuilder {
      */
     public LdpResponseBuilder withRange(final Range range) {
         this.range = range;
+        return this;
+    }
+
+    /**
+     * Add a session
+     * @param session the session
+     * @return te Response builder
+     */
+    public LdpResponseBuilder withSession(final Session session) {
+        this.session = session;
         return this;
     }
 

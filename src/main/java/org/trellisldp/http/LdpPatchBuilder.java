@@ -36,13 +36,16 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import org.apache.commons.rdf.api.BlankNodeOrIRI;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.Graph;
+import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Triple;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
+import org.trellisldp.spi.AuditData;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.SerializationService;
 import org.trellisldp.vocabulary.JSONLD;
+import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.Trellis;
 
 
@@ -93,14 +96,17 @@ class LdpPatchBuilder extends LdpResponseBuilder {
             final Graph graph = rdf.createGraph();
             res.stream(Trellis.PreferUserManaged).forEach(graph::add);
             serializationService.update(graph, update, TRELLIS_PREFIX + path);
+
+            final IRI bnode = (IRI) resourceService.skolemize(rdf.createBlankNode());
             final Dataset dataset = rdf.createDataset();
-            graph.stream().map(t ->
+            graph.stream().map(skolemize(resourceService, baseUrl)).map(t ->
                     rdf.createQuad(Trellis.PreferUserManaged, t.getSubject(), t.getPredicate(), t.getObject()))
                 .forEach(dataset::add);
 
-            // TODO update the triples via
-            // resourceService.put(res.getIdentifier(), dataset);
-            // Also, add the audit quads (which should go into a spi.Audit class)
+            dataset.add(Trellis.PreferAudit, res.getIdentifier(), PROV.wasGeneratedBy, bnode);
+            AuditData.updateData(bnode, session).stream().forEach(dataset::add);
+
+            resourceService.put(res.getIdentifier(), dataset);
 
             final ResponseBuilder builder = ok();
 

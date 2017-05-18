@@ -36,6 +36,7 @@ import javax.ws.rs.core.Response;
 import org.trellisldp.spi.DatastreamService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.SerializationService;
+import org.trellisldp.spi.Session;
 
 /**
  * @author acoburn
@@ -52,6 +53,8 @@ public class LdpResource extends BaseLdpResource {
 
     protected final String baseUrl;
 
+    protected final Session session;
+
     /**
      * Create a LdpResource
      * @param baseUrl the baseUrl
@@ -67,6 +70,8 @@ public class LdpResource extends BaseLdpResource {
         this.resourceService = resourceService;
         this.serializationService = serializationService;
         this.datastreamService = datastreamService;
+        // TODO -- add user session
+        this.session = new HttpSession();
     }
 
     /**
@@ -124,6 +129,7 @@ public class LdpResource extends BaseLdpResource {
             .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
             .withSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()))
             .withPrefer(prefer).withProfile(getProfile(headers.getAcceptableMediaTypes()))
+            .withSession(session)
             .withCacheEvaluator(cacheEvaluator).withSparqlUpdate(body).build(path);
     }
 }
