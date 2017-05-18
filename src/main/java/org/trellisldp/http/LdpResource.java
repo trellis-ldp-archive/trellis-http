@@ -25,6 +25,7 @@ import static org.trellisldp.http.RdfUtils.getRdfSyntax;
 import com.codahale.metrics.annotation.Timed;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
@@ -131,5 +132,22 @@ public class LdpResource extends BaseLdpResource {
             .withPrefer(prefer).withProfile(getProfile(headers.getAcceptableMediaTypes()))
             .withSession(session)
             .withCacheEvaluator(cacheEvaluator).withSparqlUpdate(body).build(path);
+    }
+
+    /**
+     * Perform a DELETE operation on an LDP Resource
+     * @param path the path
+     * @return the response
+     */
+    @DELETE
+    @Timed
+    public Response deleteResource(@PathParam("path") final String path) {
+        if (path.endsWith("/")) {
+            return redirectWithoutSlash(path);
+        }
+
+        return LdpDeleteBuilder.builder(resourceService)
+            .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
+            .withSession(session).withCacheEvaluator(cacheEvaluator).build(path);
     }
 }
