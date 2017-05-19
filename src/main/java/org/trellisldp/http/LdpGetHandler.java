@@ -13,11 +13,20 @@
  */
 package org.trellisldp.http;
 
+import static java.lang.String.join;
 import static java.util.Date.from;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
+import static javax.ws.rs.HttpMethod.DELETE;
+import static javax.ws.rs.HttpMethod.GET;
+import static javax.ws.rs.HttpMethod.HEAD;
+import static javax.ws.rs.HttpMethod.OPTIONS;
+import static javax.ws.rs.HttpMethod.POST;
+import static javax.ws.rs.HttpMethod.PUT;
+import static javax.ws.rs.core.HttpHeaders.ALLOW;
+import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -41,7 +50,6 @@ import static org.trellisldp.http.HttpConstants.PREFER;
 import static org.trellisldp.http.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.HttpConstants.RANGE;
 import static org.trellisldp.http.HttpConstants.TRELLIS_PREFIX;
-import static org.trellisldp.http.HttpConstants.VARY;
 import static org.trellisldp.http.HttpConstants.WANT_DIGEST;
 import static org.trellisldp.http.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.RdfMediaType.VARIANTS;
@@ -190,7 +198,8 @@ class LdpGetHandler extends LdpResponseHandler {
                 final IRI dsid = res.getDatastream().map(Datastream::getIdentifier).get();
                 final InputStream datastream = datastreamService.getContent(dsid).orElseThrow(() ->
                         new WebApplicationException("Could not load datastream resolver for " + dsid.getIRIString()));
-                builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes").tag(etag);
+                builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes")
+                    .header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE)).tag(etag);
 
                 // Add instance digests, if requested and supported
                 ofNullable(digest).map(WantDigest::getAlgorithms).ifPresent(algs ->
@@ -222,6 +231,11 @@ class LdpGetHandler extends LdpResponseHandler {
                 }
 
                 builder.tag(etag);
+                if (res.getInteractionModel().equals(LDP.RDFSource)) {
+                    builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE, "PATCH"));
+                } else {
+                    builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, POST, DELETE, "PATCH"));
+                }
                 ofNullable(prefer).ifPresent(p ->
                         builder.header(PREFERENCE_APPLIED, "return=" + p.getPreference().orElse("representation")));
 

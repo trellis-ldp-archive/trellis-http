@@ -178,10 +178,11 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
+        // add link header
         return LdpPostHandler.builder(resourceService, serializationService, datastreamService)
             .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
             .withSession(session).withContentType(contentType).withSlug(slug)
-            .build(path);
+            .withLink(link).build(path);
     }
 
     /**

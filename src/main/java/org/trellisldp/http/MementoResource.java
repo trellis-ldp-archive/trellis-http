@@ -22,11 +22,11 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
 import static java.util.stream.Stream.empty;
+import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.Response.Status.FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.trellisldp.http.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.HttpConstants.APPLICATION_LINK_FORMAT;
-import static org.trellisldp.http.HttpConstants.VARY;
 
 import java.time.Instant;
 import java.util.ArrayList;

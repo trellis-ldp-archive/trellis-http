@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.function.BiFunction;
 
 import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
@@ -55,6 +56,7 @@ abstract class LdpResponseHandler {
     protected Session session = null;
     protected String contentType = null;
     protected String slug = null;
+    protected Link link = null;
 
     /**
      * A LDP Response builder
@@ -201,6 +203,16 @@ abstract class LdpResponseHandler {
      */
     public LdpResponseHandler withSlug(final String slug) {
         this.slug = slug;
+        return this;
+    }
+
+    /**
+     * Add an interaction model
+     * @param model the model
+     * @return the Response builder
+     */
+    public LdpResponseHandler withLink(final Link link) {
+        this.link = link;
         return this;
     }
 

@@ -52,8 +52,6 @@ public final class HttpConstants {
 
     public static final String TRELLIS_PREFIX = "trellis:";
 
-    public static final String VARY = "Vary";
-
     public static final String WANT_DIGEST = "Want-Digest";
 
     public static final Map<String, Object> NOT_ACCEPTABLE_ERROR = unmodifiableMap(new HashMap<String, Object>() { {
