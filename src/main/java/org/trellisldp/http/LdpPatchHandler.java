@@ -49,19 +49,18 @@ import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
 
-
 /**
  * The PATCH response builder
  *
  * @author acoburn
  */
-class LdpPatchBuilder extends LdpResponseBuilder {
+class LdpPatchHandler extends LdpResponseHandler {
 
-    private static final Logger LOGGER = getLogger(LdpPatchBuilder.class);
+    private static final Logger LOGGER = getLogger(LdpPatchHandler.class);
 
     private final SerializationService serializationService;
 
-    protected LdpPatchBuilder(final ResourceService resourceService, final SerializationService serializationService) {
+    protected LdpPatchHandler(final ResourceService resourceService, final SerializationService serializationService) {
         super(resourceService);
         this.serializationService = serializationService;
     }
@@ -72,9 +71,9 @@ class LdpPatchBuilder extends LdpResponseBuilder {
      * @param serializationService the serialization service
      * @return the response builder`
      */
-    public static LdpPatchBuilder builder(final ResourceService resourceService,
+    public static LdpPatchHandler builder(final ResourceService resourceService,
             final SerializationService serializationService) {
-        return new LdpPatchBuilder(resourceService, serializationService);
+        return new LdpPatchHandler(resourceService, serializationService);
     }
 
     @Override

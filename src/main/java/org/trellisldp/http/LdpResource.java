@@ -24,6 +24,8 @@ import static org.trellisldp.http.RdfUtils.getRdfSyntax;
 
 import com.codahale.metrics.annotation.Timed;
 
+import java.io.InputStream;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -31,7 +33,10 @@ import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
 
 import org.trellisldp.spi.DatastreamService;
@@ -100,7 +105,7 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        return LdpGetBuilder.builder(resourceService, serializationService, datastreamService)
+        return LdpGetHandler.builder(resourceService, serializationService, datastreamService)
             .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
             .withSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()))
             .withVersion(version).withTimemap(timemap).withPrefer(prefer)
@@ -126,7 +131,7 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        return LdpPatchBuilder.builder(resourceService, serializationService)
+        return LdpPatchHandler.builder(resourceService, serializationService)
             .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
             .withSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()))
             .withPrefer(prefer).withProfile(getProfile(headers.getAcceptableMediaTypes()))
@@ -142,12 +147,62 @@ public class LdpResource extends BaseLdpResource {
     @DELETE
     @Timed
     public Response deleteResource(@PathParam("path") final String path) {
+
         if (path.endsWith("/")) {
             return redirectWithoutSlash(path);
         }
 
-        return LdpDeleteBuilder.builder(resourceService)
+        return LdpDeleteHandler.builder(resourceService)
             .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
             .withSession(session).withCacheEvaluator(cacheEvaluator).build(path);
+    }
+
+    /**
+     * Perform a POST operation on a LDP Resource
+     * @param path the path
+     * @param link the LDP interaction model
+     * @param contentType the content-type
+     * @param slug the slug header
+     * @param body the body
+     * @return the response
+     */
+    @POST
+    @Timed
+    public Response createResource(@PathParam("path") final String path,
+            @HeaderParam("Link") final Link link,
+            @HeaderParam("Content-Type") final String contentType,
+            @HeaderParam("Slug") final String slug,
+            final InputStream body) {
+
+        if (path.endsWith("/")) {
+            return redirectWithoutSlash(path);
+        }
+
+        return LdpPostHandler.builder(resourceService, serializationService, datastreamService)
+            .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
+            .withSession(session).withContentType(contentType).withSlug(slug)
+            .build(path);
+    }
+
+    /**
+     * Perform a PUT operation on a LDP Resource
+     * @param path the path
+     * @param link the LDP interaction model
+     * @param contentType the content-type
+     * @param body the body
+     * @return the response
+     */
+    @PUT
+    @Timed
+    public Response setResource(@PathParam("path") final String path,
+            @HeaderParam("Link") final Link link,
+            @HeaderParam("Content-Type") final String contentType,
+            final InputStream body) {
+
+        if (path.endsWith("/")) {
+            return redirectWithoutSlash(path);
+        }
+
+        return Response.ok().build();
     }
 }

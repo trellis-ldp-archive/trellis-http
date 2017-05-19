@@ -34,7 +34,7 @@ import org.trellisldp.spi.Session;
  *
  * @author acoburn
  */
-abstract class LdpResponseBuilder {
+abstract class LdpResponseHandler {
 
     protected static final RDF rdf = getInstance();
 
@@ -53,12 +53,14 @@ abstract class LdpResponseBuilder {
     protected Range range = null;
     protected BiFunction<Instant, EntityTag, ResponseBuilder> evaluator = null;
     protected Session session = null;
+    protected String contentType = null;
+    protected String slug = null;
 
     /**
      * A LDP Response builder
      * @param resourceService the resourceService
      */
-    protected LdpResponseBuilder(final ResourceService resourceService) {
+    protected LdpResponseHandler(final ResourceService resourceService) {
         this.resourceService = resourceService;
     }
 
@@ -67,7 +69,7 @@ abstract class LdpResponseBuilder {
      * @param url the URL
      * @return the Response builder
      */
-    public LdpResponseBuilder withBaseUrl(final String url) {
+    public LdpResponseHandler withBaseUrl(final String url) {
         this.baseUrl = url;
         return this;
     }
@@ -77,7 +79,7 @@ abstract class LdpResponseBuilder {
      * @param evaluator the evaluator
      * @return the Response builder
      */
-    public LdpResponseBuilder withCacheEvaluator(final BiFunction<Instant, EntityTag, ResponseBuilder> evaluator) {
+    public LdpResponseHandler withCacheEvaluator(final BiFunction<Instant, EntityTag, ResponseBuilder> evaluator) {
         this.evaluator = evaluator;
         return this;
     }
@@ -87,7 +89,7 @@ abstract class LdpResponseBuilder {
      * @param prefer the prefer object
      * @return the Response builder
      */
-    public LdpResponseBuilder withPrefer(final Prefer prefer) {
+    public LdpResponseHandler withPrefer(final Prefer prefer) {
         this.prefer = prefer;
         return this;
     }
@@ -97,7 +99,7 @@ abstract class LdpResponseBuilder {
      * @param profile the profile object
      * @return the Response builder
      */
-    public LdpResponseBuilder withProfile(final IRI profile) {
+    public LdpResponseHandler withProfile(final IRI profile) {
         this.profile = profile;
         return this;
     }
@@ -107,7 +109,7 @@ abstract class LdpResponseBuilder {
      * @param version the version object
      * @return the Response builder
      */
-    public LdpResponseBuilder withVersion(final Version version) {
+    public LdpResponseHandler withVersion(final Version version) {
         this.version = version;
         return this;
     }
@@ -117,7 +119,7 @@ abstract class LdpResponseBuilder {
      * @param syntax the syntax object
      * @return the Response builder
      */
-    public LdpResponseBuilder withSyntax(final RDFSyntax syntax) {
+    public LdpResponseHandler withSyntax(final RDFSyntax syntax) {
         this.syntax = syntax;
         return this;
     }
@@ -127,7 +129,7 @@ abstract class LdpResponseBuilder {
      * @param timemap whether to include a timemap
      * @return the Response builder
      */
-    public LdpResponseBuilder withTimemap(final Boolean timemap) {
+    public LdpResponseHandler withTimemap(final Boolean timemap) {
         this.timemap = timemap;
         return this;
     }
@@ -137,7 +139,7 @@ abstract class LdpResponseBuilder {
      * @param datetime the datetime object
      * @return the Response builder
      */
-    public LdpResponseBuilder withDatetime(final AcceptDatetime datetime) {
+    public LdpResponseHandler withDatetime(final AcceptDatetime datetime) {
         this.datetime = datetime;
         return this;
     }
@@ -147,7 +149,7 @@ abstract class LdpResponseBuilder {
      * @param digest the want-digest object
      * @return the Response builder
      */
-    public LdpResponseBuilder withWantDigest(final WantDigest digest) {
+    public LdpResponseHandler withWantDigest(final WantDigest digest) {
         this.digest = digest;
         return this;
     }
@@ -157,7 +159,7 @@ abstract class LdpResponseBuilder {
      * @param range the range object
      * @return the Response builder
      */
-    public LdpResponseBuilder withRange(final Range range) {
+    public LdpResponseHandler withRange(final Range range) {
         this.range = range;
         return this;
     }
@@ -167,7 +169,7 @@ abstract class LdpResponseBuilder {
      * @param session the session
      * @return te Response builder
      */
-    public LdpResponseBuilder withSession(final Session session) {
+    public LdpResponseHandler withSession(final Session session) {
         this.session = session;
         return this;
     }
@@ -177,7 +179,7 @@ abstract class LdpResponseBuilder {
      * @param update the sparql update command
      * @return the Response builder
      */
-    public LdpResponseBuilder withSparqlUpdate(final String update) {
+    public LdpResponseHandler withSparqlUpdate(final String update) {
         this.update = update;
         return this;
     }
@@ -187,8 +189,28 @@ abstract class LdpResponseBuilder {
      * @param entity the entity
      * @return the Response builder
      */
-    public LdpResponseBuilder withEntity(final InputStream entity) {
+    public LdpResponseHandler withEntity(final InputStream entity) {
         this.entity = entity;
+        return this;
+    }
+
+    /**
+     * Add a slug
+     * @param slug the slug
+     * @return the Response builder
+     */
+    public LdpResponseHandler withSlug(final String slug) {
+        this.slug = slug;
+        return this;
+    }
+
+    /**
+     * Add a content-type
+     * @param contentType the content type
+     * @return the Response builder
+     */
+    public LdpResponseHandler withContentType(final String contentType) {
+        this.contentType = contentType;
         return this;
     }
 

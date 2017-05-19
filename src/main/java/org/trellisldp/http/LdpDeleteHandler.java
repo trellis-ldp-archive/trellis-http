@@ -36,15 +36,15 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-class LdpDeleteBuilder extends LdpResponseBuilder {
+class LdpDeleteHandler extends LdpResponseHandler {
 
-    private static final Logger LOGGER = getLogger(LdpDeleteBuilder.class);
+    private static final Logger LOGGER = getLogger(LdpDeleteHandler.class);
 
     /**
      * Create a builder for an LDP DELETE response
      * @param resourceService the resource service
      */
-    protected LdpDeleteBuilder(final ResourceService resourceService) {
+    protected LdpDeleteHandler(final ResourceService resourceService) {
         super(resourceService);
     }
 
@@ -53,8 +53,8 @@ class LdpDeleteBuilder extends LdpResponseBuilder {
      * @param resourceService the resource service
      * @return the response builder
      */
-    public static LdpDeleteBuilder builder(final ResourceService resourceService) {
-        return new LdpDeleteBuilder(resourceService);
+    public static LdpDeleteHandler builder(final ResourceService resourceService) {
+        return new LdpDeleteHandler(resourceService);
     }
 
     @Override

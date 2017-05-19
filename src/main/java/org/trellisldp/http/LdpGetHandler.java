@@ -84,11 +84,11 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-class LdpGetBuilder extends LdpResponseBuilder {
+class LdpGetHandler extends LdpResponseHandler {
 
     private static final int cacheAge = 86400;
 
-    private static final Logger LOGGER = getLogger(LdpGetBuilder.class);
+    private static final Logger LOGGER = getLogger(LdpGetHandler.class);
 
     private final SerializationService serializationService;
     private final DatastreamService datastreamService;
@@ -99,7 +99,7 @@ class LdpGetBuilder extends LdpResponseBuilder {
      * @param serializationService the serialization service
      * @param datastreamService the datastream service
      */
-    protected LdpGetBuilder(final ResourceService resourceService, final SerializationService serializationService,
+    protected LdpGetHandler(final ResourceService resourceService, final SerializationService serializationService,
             final DatastreamService datastreamService) {
         super(resourceService);
         this.serializationService = serializationService;
@@ -135,9 +135,9 @@ class LdpGetBuilder extends LdpResponseBuilder {
      * @param datastreamService the datastream service
      * @return the response builder
      */
-    public static LdpGetBuilder builder(final ResourceService resourceService,
+    public static LdpGetHandler builder(final ResourceService resourceService,
             final SerializationService serializationService, final DatastreamService datastreamService) {
-        return new LdpGetBuilder(resourceService, serializationService, datastreamService);
+        return new LdpGetHandler(resourceService, serializationService, datastreamService);
     }
 
     private final Function<Resource, ResponseBuilder> getRepresentation(final String path) {
