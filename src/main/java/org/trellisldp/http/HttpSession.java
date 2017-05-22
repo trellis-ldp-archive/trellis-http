@@ -31,7 +31,7 @@ import org.trellisldp.vocabulary.Trellis;
  */
 class HttpSession implements Session {
 
-    private final IRI identifier = getInstance().createIRI("trellis:session/" + randomUUID().toString());
+    private final IRI identifier = getInstance().createIRI("trellis:session/" + randomUUID());
     private final IRI agent;
     private final IRI delegatedBy;
     private final Instant created;

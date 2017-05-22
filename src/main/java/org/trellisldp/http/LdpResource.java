@@ -13,9 +13,13 @@
  */
 package org.trellisldp.http;
 
+import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.status;
 import static org.trellisldp.http.HttpConstants.APPLICATION_LINK_FORMAT;
+import static org.trellisldp.http.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.RdfMediaType.APPLICATION_LD_JSON;
 import static org.trellisldp.http.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.RdfMediaType.TEXT_TURTLE;
@@ -30,11 +34,11 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
@@ -105,13 +109,35 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        return LdpGetHandler.builder(resourceService, serializationService, datastreamService)
+        final LdpRequest ldpreq = LdpRequest.builder().withPath(path)
             .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
             .withSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()))
             .withVersion(version).withTimemap(timemap).withPrefer(prefer)
             .withProfile(getProfile(headers.getAcceptableMediaTypes()))
-            .withCacheEvaluator(cacheEvaluator).withDatetime(datetime)
-            .withWantDigest(digest).withRange(range).build(path);
+            .withDatetime(datetime).withWantDigest(digest).withRange(range).build();
+
+        final LdpGetHandler getHandler = new LdpGetHandler(resourceService, serializationService, datastreamService);
+
+        if (nonNull(version)) {
+            LOGGER.info("Getting versioned resource: {}", version.toString());
+            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), version.getInstant())
+                .map(getHandler.getRepresentation(request, ldpreq)).orElse(status(NOT_FOUND)).build();
+
+        } else if (ldpreq.isTimemap()) {
+            LOGGER.info("Getting timemap resource");
+            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
+                .map(res -> res.getTimeMapBuilder(baseUrl + path, ldpreq.getSyntax(), serializationService))
+                .orElse(status(NOT_FOUND)).build();
+
+        } else if (nonNull(datetime)) {
+            LOGGER.info("Getting timegate resource: {}", datetime.getInstant());
+            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), datetime.getInstant())
+                .map(MementoResource::new).map(res -> res.getTimeGateBuilder(baseUrl + path, datetime.getInstant()))
+                .orElse(status(NOT_FOUND)).build();
+        }
+
+        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
+                .map(getHandler.getRepresentation(request, ldpreq)).orElse(status(NOT_FOUND)).build();
     }
 
     /**

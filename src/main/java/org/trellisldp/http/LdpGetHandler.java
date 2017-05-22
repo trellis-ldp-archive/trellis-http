@@ -15,9 +15,7 @@ package org.trellisldp.http;
 
 import static java.lang.String.join;
 import static java.util.Date.from;
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
@@ -32,7 +30,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.ok;
 import static javax.ws.rs.core.Response.status;
@@ -49,16 +46,17 @@ import static org.trellisldp.http.HttpConstants.NOT_ACCEPTABLE_ERROR;
 import static org.trellisldp.http.HttpConstants.PREFER;
 import static org.trellisldp.http.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.HttpConstants.RANGE;
-import static org.trellisldp.http.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.HttpConstants.WANT_DIGEST;
 import static org.trellisldp.http.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.RdfMediaType.VARIANTS;
 import static org.trellisldp.http.RdfUtils.filterWithPrefer;
+import static org.trellisldp.http.RdfUtils.getInstance;
 import static org.trellisldp.http.RdfUtils.toExternalIri;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -66,7 +64,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 
@@ -74,6 +72,7 @@ import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.rdf.api.BlankNodeOrIRI;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
+import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
 
@@ -92,12 +91,15 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-class LdpGetHandler extends LdpResponseHandler {
+class LdpGetHandler {
+
+    private static final RDF rdf = getInstance();
 
     private static final int cacheAge = 86400;
 
     private static final Logger LOGGER = getLogger(LdpGetHandler.class);
 
+    private final ResourceService resourceService;
     private final SerializationService serializationService;
     private final DatastreamService datastreamService;
 
@@ -107,61 +109,27 @@ class LdpGetHandler extends LdpResponseHandler {
      * @param serializationService the serialization service
      * @param datastreamService the datastream service
      */
-    protected LdpGetHandler(final ResourceService resourceService, final SerializationService serializationService,
+    public LdpGetHandler(final ResourceService resourceService, final SerializationService serializationService,
             final DatastreamService datastreamService) {
-        super(resourceService);
+        this.resourceService = resourceService;
         this.serializationService = serializationService;
         this.datastreamService = datastreamService;
     }
 
-    @Override
-    public Response build(final String path) {
-        if (nonNull(version)) {
-            LOGGER.info("Getting versioned resource: {}", version.toString());
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), version.getInstant())
-                    .map(getRepresentation(path)).orElse(status(NOT_FOUND)).build();
-
-        } else if (nonNull(timemap) && timemap) {
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
-                .map(res -> res.getTimeMapBuilder(baseUrl + path, syntax, serializationService))
-                .orElse(status(NOT_FOUND)).build();
-
-        } else if (nonNull(datetime)) {
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), datetime.getInstant())
-                .map(MementoResource::new).map(res -> res.getTimeGateBuilder(baseUrl + path, datetime.getInstant()))
-                .orElse(status(NOT_FOUND)).build();
-        }
-
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
-                .map(getRepresentation(path)).orElse(status(NOT_FOUND)).build();
-    }
-
-    /**
-     * Create a GET response builder
-     * @param resourceService the resource service
-     * @param serializationService the serialization service
-     * @param datastreamService the datastream service
-     * @return the response builder
-     */
-    public static LdpGetHandler builder(final ResourceService resourceService,
-            final SerializationService serializationService, final DatastreamService datastreamService) {
-        return new LdpGetHandler(resourceService, serializationService, datastreamService);
-    }
-
-    private final Function<Resource, ResponseBuilder> getRepresentation(final String path) {
+    public Function<Resource, ResponseBuilder> getRepresentation(final Request request, final LdpRequest ldpRequest) {
         return res -> {
-            final String identifier = baseUrl + path;
+            final String identifier = ldpRequest.getBaseUrl() + ldpRequest.getPath();
             if (res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
                 return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
                         .toArray(Link[]::new));
             }
 
             // TODO add acl header, if in effect
-            final ResponseBuilder builder = basicGetResponseBuilder(res, syntax);
+            final ResponseBuilder builder = basicGetResponseBuilder(res, ldpRequest.getSyntax());
 
             // Add NonRDFSource-related "describe*" link headers
             res.getDatastream().ifPresent(ds -> {
-                if (nonNull(syntax)) {
+                if (ldpRequest.getSyntax().isPresent()) {
                     builder.link(identifier + "#description", "canonical").link(identifier, "describes");
                 } else {
                     builder.link(identifier, "canonical").link(identifier + "#description", "describedby")
@@ -185,14 +153,19 @@ class LdpGetHandler extends LdpResponseHandler {
                 .links(MementoResource.getMementoLinks(identifier, res.getMementos()).toArray(Link[]::new));
 
             // NonRDFSources responses (strong ETags, etc)
-            if (res.getDatastream().isPresent() && isNull(syntax)) {
-                final EntityTag etag = new EntityTag(md5Hex(
-                            res.getDatastream().map(Datastream::getModified).get() + identifier));
-                final Optional<ResponseBuilder> cacheHit = ofNullable(evaluator).map(fn -> fn.apply(res.getDatastream()
-                        .map(Datastream::getModified).get(), etag));
+            if (res.getDatastream().isPresent() && !ldpRequest.getSyntax().isPresent()) {
+                final Instant mod = res.getDatastream().map(Datastream::getModified).get();
+                final EntityTag etag = new EntityTag(md5Hex(mod + identifier));
+                ResponseBuilder cacheBuilder;
+                try {
+                    cacheBuilder = request.evaluatePreconditions(from(mod), etag);
+                } catch (final Exception ex) {
+                    LOGGER.warn("Ignoring cache-related headers: {}", ex.getMessage());
+                    cacheBuilder = null;
+                }
 
-                if (cacheHit.isPresent()) {
-                    return cacheHit.get();
+                if (nonNull(cacheBuilder)) {
+                    return cacheBuilder;
                 }
 
                 final IRI dsid = res.getDatastream().map(Datastream::getIdentifier).get();
@@ -201,15 +174,16 @@ class LdpGetHandler extends LdpResponseHandler {
                 builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes")
                     .header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE)).tag(etag);
 
-                // Add instance digests, if requested and supported
-                ofNullable(digest).map(WantDigest::getAlgorithms).ifPresent(algs ->
+                // Add instance digests, if ldpRequested and supported
+                ldpRequest.getDigest().map(WantDigest::getAlgorithms).ifPresent(algs ->
                         algs.stream().filter(datastreamService.supportedAlgorithms()::contains).findFirst()
                         .ifPresent(alg -> datastreamService.getContent(dsid)
                             .map(is -> datastreamService.hexDigest(alg, is))
                             .ifPresent(d -> builder.header(DIGEST, d))));
 
-                // Range requests
-                if (nonNull(range)) {
+                // Range ldpRequests
+                if (ldpRequest.getRange().isPresent()) {
+                    final Range range = ldpRequest.getRange().get();
                     try {
                         datastream.skip(range.getFrom());
                     } catch (final IOException ex) {
@@ -221,13 +195,20 @@ class LdpGetHandler extends LdpResponseHandler {
                 return builder.entity(datastream);
 
             // RDFSource responses (weak ETags, etc)
-            } else if (nonNull(syntax)) {
-                final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier + syntax), true);
-                final Optional<ResponseBuilder> cacheHit = ofNullable(evaluator)
-                    .map(fn -> fn.apply(res.getModified(), etag));
+            } else if (ldpRequest.getSyntax().isPresent()) {
+                final RDFSyntax syntax = ldpRequest.getSyntax().get();
+                final Instant mod = res.getModified();
+                final EntityTag etag = new EntityTag(md5Hex(mod + identifier + syntax), true);
+                ResponseBuilder cacheBuilder;
+                try {
+                    cacheBuilder = request.evaluatePreconditions(from(mod), etag);
+                } catch (final Exception ex) {
+                    LOGGER.warn("Ignoring cache-related headers: {}", ex.getMessage());
+                    cacheBuilder = null;
+                }
 
-                if (cacheHit.isPresent()) {
-                    return cacheHit.get();
+                if (nonNull(cacheBuilder)) {
+                    return cacheBuilder;
                 }
 
                 builder.tag(etag);
@@ -236,16 +217,16 @@ class LdpGetHandler extends LdpResponseHandler {
                 } else {
                     builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, POST, DELETE, "PATCH"));
                 }
-                ofNullable(prefer).ifPresent(p ->
+                ldpRequest.getPrefer().ifPresent(p ->
                         builder.header(PREFERENCE_APPLIED, "return=" + p.getPreference().orElse("representation")));
 
-                if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
+                if (ldpRequest.getPrefer().flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
                     return builder.status(NO_CONTENT);
                 } else {
                     return builder.entity(ResourceStreamer.quadStreamer(serializationService,
-                                res.stream().filter(filterWithPrefer(prefer))
-                                .map(unskolemize(resourceService, baseUrl)),
-                                syntax, ofNullable(profile).orElseGet(() ->
+                                res.stream().filter(filterWithPrefer(ldpRequest.getPrefer().orElse(null)))
+                                .map(unskolemize(resourceService, ldpRequest.getBaseUrl())),
+                                syntax, ldpRequest.getProfile().orElseGet(() ->
                                     RDFA_HTML.equals(syntax) ? rdf.createIRI(identifier) : JSONLD.expanded)));
                 }
             }
@@ -254,7 +235,7 @@ class LdpGetHandler extends LdpResponseHandler {
         };
     }
 
-    private static ResponseBuilder basicGetResponseBuilder(final Resource res, final RDFSyntax syntax) {
+    private static ResponseBuilder basicGetResponseBuilder(final Resource res, final Optional<RDFSyntax> syntax) {
         final ResponseBuilder builder = ok();
 
         final CacheControl cc = new CacheControl();
@@ -262,12 +243,12 @@ class LdpGetHandler extends LdpResponseHandler {
 
         // Standard HTTP Headers
         builder.lastModified(from(res.getModified())).variants(VARIANTS).header(VARY, PREFER);
-        if (nonNull(syntax)) {
-            builder.type(syntax.mediaType);
+        if (syntax.isPresent()) {
+            builder.type(syntax.get().mediaType);
         }
 
         // Add LDP-required headers
-        final IRI model = res.getDatastream().isPresent() && nonNull(syntax) ?
+        final IRI model = res.getDatastream().isPresent() && syntax.isPresent() ?
                 LDP.RDFSource : res.getInteractionModel();
         ldpResourceTypes(model).forEach(type -> {
             builder.link(type.getIRIString(), "type");

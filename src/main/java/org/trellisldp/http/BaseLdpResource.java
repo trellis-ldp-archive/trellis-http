@@ -16,6 +16,7 @@ package org.trellisldp.http;
 import static java.util.Date.from;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.http.RdfUtils.getInstance;
 
 import java.time.Instant;
 import java.util.function.BiFunction;
@@ -28,6 +29,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.apache.commons.rdf.api.RDF;
 import org.slf4j.Logger;
 
 /**
@@ -35,7 +37,9 @@ import org.slf4j.Logger;
  */
 class BaseLdpResource {
 
-    private static final Logger LOGGER = getLogger(BaseLdpResource.class);
+    protected static final Logger LOGGER = getLogger(BaseLdpResource.class);
+
+    protected static final RDF rdf = getInstance();
 
     @Context
     protected UriInfo uriInfo;
