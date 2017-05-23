@@ -112,9 +112,8 @@ public class LdpResource extends BaseLdpResource {
         final LdpRequest ldpreq = LdpRequest.builder().withPath(path)
             .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
             .withSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()))
-            .withVersion(version).withTimemap(timemap).withPrefer(prefer)
             .withProfile(getProfile(headers.getAcceptableMediaTypes()))
-            .withDatetime(datetime).withWantDigest(digest).withRange(range).build();
+            .withPrefer(prefer).withWantDigest(digest).withRange(range).build();
 
         final LdpGetHandler getHandler = new LdpGetHandler(resourceService, serializationService, datastreamService);
 
@@ -123,10 +122,11 @@ public class LdpResource extends BaseLdpResource {
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), version.getInstant())
                 .map(getHandler.getRepresentation(request, ldpreq)).orElse(status(NOT_FOUND)).build();
 
-        } else if (ldpreq.isTimemap()) {
+        } else if (nonNull(timemap) && timemap) {
             LOGGER.info("Getting timemap resource");
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
-                .map(res -> res.getTimeMapBuilder(baseUrl + path, ldpreq.getSyntax(), serializationService))
+                .map(res -> res.getTimeMapBuilder(baseUrl + path, ldpreq.getSyntax().orElse(null),
+                            serializationService))
                 .orElse(status(NOT_FOUND)).build();
 
         } else if (nonNull(datetime)) {

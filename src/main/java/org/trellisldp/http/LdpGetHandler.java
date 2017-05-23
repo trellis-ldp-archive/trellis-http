@@ -156,16 +156,13 @@ class LdpGetHandler {
             if (res.getDatastream().isPresent() && !ldpRequest.getSyntax().isPresent()) {
                 final Instant mod = res.getDatastream().map(Datastream::getModified).get();
                 final EntityTag etag = new EntityTag(md5Hex(mod + identifier));
-                ResponseBuilder cacheBuilder;
                 try {
-                    cacheBuilder = request.evaluatePreconditions(from(mod), etag);
+                    final ResponseBuilder cacheBuilder = request.evaluatePreconditions(from(mod), etag);
+                    if (nonNull(cacheBuilder)) {
+                        return cacheBuilder;
+                    }
                 } catch (final Exception ex) {
                     LOGGER.warn("Ignoring cache-related headers: {}", ex.getMessage());
-                    cacheBuilder = null;
-                }
-
-                if (nonNull(cacheBuilder)) {
-                    return cacheBuilder;
                 }
 
                 final IRI dsid = res.getDatastream().map(Datastream::getIdentifier).get();
@@ -199,16 +196,13 @@ class LdpGetHandler {
                 final RDFSyntax syntax = ldpRequest.getSyntax().get();
                 final Instant mod = res.getModified();
                 final EntityTag etag = new EntityTag(md5Hex(mod + identifier + syntax), true);
-                ResponseBuilder cacheBuilder;
                 try {
-                    cacheBuilder = request.evaluatePreconditions(from(mod), etag);
+                    final ResponseBuilder cacheBuilder = request.evaluatePreconditions(from(mod), etag);
+                    if (nonNull(cacheBuilder)) {
+                        return cacheBuilder;
+                    }
                 } catch (final Exception ex) {
                     LOGGER.warn("Ignoring cache-related headers: {}", ex.getMessage());
-                    cacheBuilder = null;
-                }
-
-                if (nonNull(cacheBuilder)) {
-                    return cacheBuilder;
                 }
 
                 builder.tag(etag);

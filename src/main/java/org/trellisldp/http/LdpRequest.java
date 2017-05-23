@@ -35,11 +35,7 @@ final class LdpRequest {
     private final String baseUrl;
     private final String path;
 
-    private final Boolean timemap;
-    private final Version version;
-
     private final Prefer prefer;
-    private final AcceptDatetime datetime;
     private final WantDigest digest;
     private final Range range;
     private final String contentType;
@@ -60,10 +56,7 @@ final class LdpRequest {
         private InputStream entity = null;
         private IRI profile = null;
         private Prefer prefer = null;
-        private Boolean timemap = false;
-        private Version version = null;
         private RDFSyntax syntax = null;
-        private AcceptDatetime datetime = null;
         private WantDigest digest = null;
         private Range range = null;
         private Session session = null;
@@ -118,42 +111,12 @@ final class LdpRequest {
         }
 
         /**
-         * Add a version object
-         * @param version the version object
-         * @return the Response builder
-         */
-        public LdpRequestBuilder withVersion(final Version version) {
-            this.version = version;
-            return this;
-        }
-
-        /**
          * Add an RDFSyntax object
          * @param syntax the syntax object
          * @return the Response builder
          */
         public LdpRequestBuilder withSyntax(final RDFSyntax syntax) {
             this.syntax = syntax;
-            return this;
-        }
-
-        /**
-         * Add a timemap marker
-         * @param timemap whether to include a timemap
-         * @return the Response builder
-         */
-        public LdpRequestBuilder withTimemap(final Boolean timemap) {
-            this.timemap = timemap;
-            return this;
-        }
-
-        /**
-         * Add a datetime object
-         * @param datetime the datetime object
-         * @return the Response builder
-         */
-        public LdpRequestBuilder withDatetime(final AcceptDatetime datetime) {
-            this.datetime = datetime;
             return this;
         }
 
@@ -238,15 +201,13 @@ final class LdpRequest {
         }
 
         public LdpRequest build() {
-            return new LdpRequest(baseUrl, path, timemap, version, prefer, datetime, digest, range,
+            return new LdpRequest(baseUrl, path, prefer, digest, range,
                     contentType, slug, link, session, syntax, profile, update, entity);
         }
     }
 
-
     protected LdpRequest(final String baseUrl, final String path,
-            final Boolean timemap, final Version version,
-            final Prefer prefer, final AcceptDatetime datetime, final WantDigest digest, final Range range,
+            final Prefer prefer, final WantDigest digest, final Range range,
             final String contentType, final String slug, final Link link,
             final Session session, final RDFSyntax syntax, final IRI profile,
             final String update, final InputStream entity) {
@@ -254,11 +215,7 @@ final class LdpRequest {
         this.baseUrl = baseUrl;
         this.path = path;
 
-        this.timemap = timemap;
-        this.version = version;
-
         this.prefer = prefer;
-        this.datetime = datetime;
         this.digest = digest;
         this.range = range;
         this.contentType = contentType;
@@ -285,20 +242,8 @@ final class LdpRequest {
         return ofNullable(path).orElse("");
     }
 
-    public Boolean isTimemap() {
-        return timemap;
-    }
-
-    public Optional<Version> getVersion() {
-        return ofNullable(version);
-    }
-
     public Optional<Prefer> getPrefer() {
         return ofNullable(prefer);
-    }
-
-    public Optional<AcceptDatetime> getDatetime() {
-        return ofNullable(datetime);
     }
 
     public Optional<WantDigest> getDigest() {
