@@ -20,12 +20,12 @@ import static java.util.stream.Stream.of;
 import static org.trellisldp.http.HttpConstants.DEFAULT_REPRESENTATION;
 import static org.trellisldp.http.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.RdfMediaType.VARIANTS;
+import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -34,11 +34,15 @@ import java.util.stream.Stream;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Variant;
 
+import org.apache.commons.rdf.api.BlankNodeOrIRI;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.RDFTerm;
+
+import org.trellisldp.spi.ResourceService;
+import org.trellisldp.vocabulary.Trellis;
 
 /**
  * RDF Utility functions
@@ -47,15 +51,7 @@ import org.apache.commons.rdf.api.RDFTerm;
  */
 final class RdfUtils {
 
-    private static final RDF rdf = ServiceLoader.load(RDF.class).iterator().next();
-
-    /**
-     * Get a Commons RDF instance
-     * @return the RDF instance
-     */
-    public static RDF getInstance() {
-        return rdf;
-    }
+    private static RDF rdf = getInstance();
 
     /**
      * Create a filter based on a Prefer header
@@ -120,6 +116,18 @@ final class RdfUtils {
             }
         }
         return term;
+    }
+
+    /**
+     * Convert quads from a skolemized form to an external form
+     * @param svc the resource service
+     * @param baseUrl the baseUrl
+     * @return a mapping function
+     */
+    public static Function<Quad, Quad> unskolemizeQuads(final ResourceService svc, final String baseUrl) {
+        return quad -> rdf.createQuad(quad.getGraphName().orElse(Trellis.PreferUserManaged),
+                    (BlankNodeOrIRI) toExternalIri(svc.unskolemize(quad.getSubject()), baseUrl),
+                    quad.getPredicate(), toExternalIri(svc.unskolemize(quad.getObject()), baseUrl));
     }
 
     private static final Function<MediaType, Stream<IRI>> profileMapper = type -> {

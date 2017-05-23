@@ -13,7 +13,7 @@
  */
 package org.trellisldp.http;
 
-import static org.trellisldp.http.RdfUtils.getInstance;
+import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.io.InputStream;
 import java.time.Instant;
@@ -208,7 +208,7 @@ abstract class LdpResponseHandler {
 
     /**
      * Add an interaction model
-     * @param model the model
+     * @param link the model
      * @return the Response builder
      */
     public LdpResponseHandler withLink(final Link link) {

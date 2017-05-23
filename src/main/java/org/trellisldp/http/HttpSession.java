@@ -16,7 +16,7 @@ package org.trellisldp.http;
 import static java.time.Instant.now;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
-import static org.trellisldp.http.RdfUtils.getInstance;
+import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -38,9 +38,8 @@ class HttpSession implements Session {
 
     /**
      * Create an HTTP-based session
-     * @param identifier the identifier
      * @param agent the agent
-     * @param delegate the delegate
+     * @param delegatedBy the delegatedBy value
      */
     public HttpSession(final IRI agent, final IRI delegatedBy) {
         this.agent = agent;
@@ -50,7 +49,6 @@ class HttpSession implements Session {
 
     /**
      * Create an HTTP-based session
-     * @param identifier the identifier
      * @param agent the agent
      */
     public HttpSession(final IRI agent) {

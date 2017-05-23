@@ -16,7 +16,7 @@ package org.trellisldp.http;
 import static java.util.Date.from;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.http.RdfUtils.getInstance;
+import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.time.Instant;
 import java.util.function.BiFunction;

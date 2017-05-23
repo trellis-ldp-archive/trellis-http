@@ -17,10 +17,10 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
+import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.util.List;
 
@@ -40,10 +40,7 @@ import org.junit.Test;
  */
 public class RdfUtilsTest {
 
-    @Test
-    public void testRdfInstance() {
-        assertNotNull(RdfUtils.getInstance());
-    }
+    private static final RDF rdf = getInstance();
 
     @Test
     public void testGetSyntax() {
@@ -57,7 +54,6 @@ public class RdfUtilsTest {
 
     @Test
     public void testFilterPrefer() {
-        final RDF rdf = RdfUtils.getInstance();
         final IRI iri = rdf.createIRI("trellis:repository/resource");
         final Quad q1 = rdf.createQuad(Trellis.PreferAudit, iri, DC.creator, rdf.createLiteral("me"));
         final Quad q2 = rdf.createQuad(Trellis.PreferServerManaged, iri, DC.modified, rdf.createLiteral("now"));
@@ -81,7 +77,6 @@ public class RdfUtilsTest {
 
     @Test
     public void testExternalize() {
-        final RDF rdf = RdfUtils.getInstance();
         final IRI iri1 = rdf.createIRI("trellis:repository/resource");
         final IRI iri2 = rdf.createIRI("http://example.org/resource");
         final Literal literal = rdf.createLiteral("Text");
@@ -102,7 +97,6 @@ public class RdfUtilsTest {
 
     @Test
     public void testMultipleProfiles() {
-        final RDF rdf = RdfUtils.getInstance();
         final List<MediaType> types = asList(
                 new MediaType("application", "json"),
                 new MediaType("text", "xml"),

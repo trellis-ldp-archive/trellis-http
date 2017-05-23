@@ -49,6 +49,9 @@ final class LdpRequest {
     private final String update;
     private final InputStream entity;
 
+    /**
+     * The LDP request builder class
+     */
     public static class LdpRequestBuilder {
         private String baseUrl = null;
         private String path = null;
@@ -65,7 +68,7 @@ final class LdpRequest {
         private Link link = null;
 
         /**
-         * A LDP Response builder
+         * A LDP Request builder
          */
         protected LdpRequestBuilder() {
         }
@@ -182,7 +185,7 @@ final class LdpRequest {
 
         /**
          * Add an interaction model
-         * @param model the model
+         * @param link the model
          * @return the Response builder
          */
         public LdpRequestBuilder withLink(final Link link) {
@@ -200,6 +203,10 @@ final class LdpRequest {
             return this;
         }
 
+        /**
+         * Build the request
+         * @return the newly constructed request object
+         */
         public LdpRequest build() {
             return new LdpRequest(baseUrl, path, prefer, digest, range,
                     contentType, slug, link, session, syntax, profile, update, entity);
@@ -230,6 +237,10 @@ final class LdpRequest {
         this.entity = entity;
     }
 
+    /**
+     * Get a request builder
+     * @return the new builder object
+     */
     public static LdpRequestBuilder builder() {
         return new LdpRequestBuilder();
     }

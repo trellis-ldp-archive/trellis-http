@@ -41,7 +41,7 @@ import org.apache.commons.rdf.api.Triple;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
-import org.trellisldp.spi.AuditData;
+import org.trellisldp.spi.RDFUtils;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.SerializationService;
 import org.trellisldp.vocabulary.JSONLD;
@@ -107,7 +107,7 @@ class LdpPatchHandler extends LdpResponseHandler {
 
             dataset.add(Trellis.PreferAudit, res.getIdentifier(), PROV.wasGeneratedBy, bnode);
             dataset.add(Trellis.PreferServerManaged, res.getIdentifier(), RDF.type, res.getInteractionModel());
-            AuditData.updateData(bnode, session).stream().forEach(dataset::add);
+            RDFUtils.auditUpdate(bnode, session).stream().forEach(dataset::add);
 
             // Save new dataset
             resourceService.put(res.getIdentifier(), dataset);

@@ -115,12 +115,13 @@ public class LdpResource extends BaseLdpResource {
             .withProfile(getProfile(headers.getAcceptableMediaTypes()))
             .withPrefer(prefer).withWantDigest(digest).withRange(range).build();
 
-        final LdpGetHandler getHandler = new LdpGetHandler(resourceService, serializationService, datastreamService);
+        final LdpGetHandler getHandler = new LdpGetHandler(resourceService, serializationService, datastreamService,
+                request, ldpreq);
 
         if (nonNull(version)) {
             LOGGER.info("Getting versioned resource: {}", version.toString());
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), version.getInstant())
-                .map(getHandler.getRepresentation(request, ldpreq)).orElse(status(NOT_FOUND)).build();
+                .map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
 
         } else if (nonNull(timemap) && timemap) {
             LOGGER.info("Getting timemap resource");
@@ -137,7 +138,7 @@ public class LdpResource extends BaseLdpResource {
         }
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
-                .map(getHandler.getRepresentation(request, ldpreq)).orElse(status(NOT_FOUND)).build();
+                .map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
     }
 
     /**
