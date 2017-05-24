@@ -47,6 +47,7 @@ import static org.trellisldp.http.HttpConstants.PREFER;
 import static org.trellisldp.http.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.HttpConstants.RANGE;
 import static org.trellisldp.http.HttpConstants.WANT_DIGEST;
+import static org.trellisldp.http.HttpUtils.checkCache;
 import static org.trellisldp.http.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.RdfMediaType.VARIANTS;
 import static org.trellisldp.http.RdfUtils.filterWithPrefer;
@@ -157,8 +158,7 @@ class LdpGetHandler {
     }
 
     private ResponseBuilder getLdpRs(final String identifier, final Resource res, final ResponseBuilder builder) {
-        final RDFSyntax syntax = ldpRequest.getSyntax().get();
-        final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier + syntax), true);
+        final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier), true);
         final ResponseBuilder cacheBuilder = checkCache(request, res.getModified(), etag);
         if (nonNull(cacheBuilder)) {
             return cacheBuilder;
@@ -175,6 +175,7 @@ class LdpGetHandler {
         if (ldpRequest.getPrefer().flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
             return builder.status(NO_CONTENT);
         } else {
+            final RDFSyntax syntax = ldpRequest.getSyntax().get();
             return builder.entity(ResourceStreamer.quadStreamer(serializationService,
                         res.stream().filter(filterWithPrefer(ldpRequest.getPrefer().orElse(null)))
                         .map(unskolemizeQuads(resourceService, ldpRequest.getBaseUrl())),
@@ -263,14 +264,4 @@ class LdpGetHandler {
 
         return builder.cacheControl(cc);
     }
-
-    private static ResponseBuilder checkCache(final Request request, final Instant modified, final EntityTag etag) {
-        try {
-            return request.evaluatePreconditions(from(modified), etag);
-        } catch (final Exception ex) {
-            LOGGER.warn("Ignoring cache-related headers: {}", ex.getMessage());
-        }
-        return null;
-    }
-
 }

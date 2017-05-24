@@ -40,6 +40,7 @@ import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.RDFTerm;
+import org.apache.commons.rdf.api.Triple;
 
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.Trellis;
@@ -118,6 +119,27 @@ final class RdfUtils {
         return term;
     }
 
+    /**
+     * Convert triples from a skolemized form to an externa form
+     * @param svc the resourceService
+     * @param baseUrl the baseUrl
+     * @return a mapping function
+     */
+    public static Function<Triple, Triple> unskolemizeTriples(final ResourceService svc, final String baseUrl) {
+        return triple -> rdf.createTriple((BlankNodeOrIRI) toExternalIri(svc.unskolemize(triple.getSubject()), baseUrl),
+                    triple.getPredicate(), toExternalIri(svc.unskolemize(triple.getObject()), baseUrl));
+    }
+
+    /**
+     * Convert triples from an external form to a skolemized form
+     * @param svc the resourceService
+     * @param baseUrl the baseUrl
+     * @return a mapping function
+     */
+    public static Function<Triple, Triple> skolemizeTriples(final ResourceService svc, final String baseUrl) {
+        return triple -> rdf.createTriple((BlankNodeOrIRI) toInternalIri(svc.skolemize(triple.getSubject()), baseUrl),
+                triple.getPredicate(), toInternalIri(svc.skolemize(triple.getObject()), baseUrl));
+    }
     /**
      * Convert quads from a skolemized form to an external form
      * @param svc the resource service

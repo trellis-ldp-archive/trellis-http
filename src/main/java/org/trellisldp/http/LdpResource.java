@@ -158,12 +158,17 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        return LdpPatchHandler.builder(resourceService, serializationService)
+        final LdpRequest ldpreq = LdpRequest.builder().withPath(path)
             .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
             .withSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()))
-            .withPrefer(prefer).withProfile(getProfile(headers.getAcceptableMediaTypes()))
-            .withSession(session)
-            .withCacheEvaluator(cacheEvaluator).withSparqlUpdate(body).build(path);
+            .withProfile(getProfile(headers.getAcceptableMediaTypes()))
+            .withPrefer(prefer).withSession(session).withSparqlUpdate(body).build();
+
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, serializationService, request,
+                ldpreq);
+
+        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
+                .map(patchHandler::updateResource).orElse(status(NOT_FOUND)).build();
     }
 
     /**
