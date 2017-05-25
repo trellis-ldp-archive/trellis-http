@@ -13,6 +13,7 @@
  */
 package org.trellisldp.http;
 
+import static java.time.Instant.MAX;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
@@ -167,7 +168,7 @@ public class LdpResource extends BaseLdpResource {
         final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, serializationService, request,
                 ldpreq);
 
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
+        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
                 .map(patchHandler::updateResource).orElse(status(NOT_FOUND)).build();
     }
 
