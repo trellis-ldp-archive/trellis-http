@@ -19,6 +19,7 @@ import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
+import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.status;
 import static org.trellisldp.http.HttpConstants.APPLICATION_LINK_FORMAT;
@@ -28,6 +29,7 @@ import static org.trellisldp.http.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.RdfMediaType.TEXT_TURTLE;
 import static org.trellisldp.http.RdfUtils.getProfile;
 import static org.trellisldp.http.RdfUtils.getRdfSyntax;
+import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 
 import com.codahale.metrics.annotation.Timed;
 
@@ -46,10 +48,12 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
 
+import org.trellisldp.api.Resource;
 import org.trellisldp.spi.DatastreamService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.SerializationService;
 import org.trellisldp.spi.Session;
+import org.trellisldp.vocabulary.LDP;
 
 /**
  * @author acoburn
@@ -218,18 +222,23 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        final LdpRequest ldpreq = LdpRequest.builder().withPath(path)
-            .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
-            .withSession(session).withContentType(contentType).withLink(link).build();
+        final String fullPath = path + "/" + ofNullable(slug).orElseGet(() -> randomUUID().toString());
 
-        final String identifier = TRELLIS_PREFIX + path + "/" + ofNullable(slug)
-            .orElseGet(() -> randomUUID().toString());
+        final LdpRequest ldpreq = LdpRequest.builder().withPath(fullPath)
+            .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
+            .withSession(session).withContentType(contentType).withLink(link).withEntity(body).build();
+
 
         final LdpPostHandler postHandler = new LdpPostHandler(resourceService, serializationService, datastreamService,
-                request, ldpreq);
+                ldpreq);
 
-        return resourceService.get(rdf.createIRI(identifier)).map(x -> status(CONFLICT))
-            .orElseGet(() -> postHandler.createResource(identifier, body)).build();
+        if (resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX).map(Resource::getInteractionModel)
+                .filter(type -> ldpResourceTypes(type).anyMatch(LDP.Container::equals)).isPresent()) {
+            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + fullPath), MAX).map(x -> status(CONFLICT))
+                .orElseGet(postHandler::createResource).build();
+        } else {
+            return status(METHOD_NOT_ALLOWED).build();
+        }
     }
 
     /**
