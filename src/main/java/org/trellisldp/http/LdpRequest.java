@@ -245,54 +245,106 @@ final class LdpRequest {
         return new LdpRequestBuilder();
     }
 
+    /**
+     * Get the base URL
+     * @return the base URL
+     */
     public String getBaseUrl() {
         return ofNullable(baseUrl).orElse("");
     }
 
+    /**
+     * Get the path
+     * @return the path
+     */
     public String getPath() {
         return ofNullable(path).orElse("");
     }
 
+    /**
+     * Get a Prefer header object, if one exists
+     * @return the Prefer header object
+     */
     public Optional<Prefer> getPrefer() {
         return ofNullable(prefer);
     }
 
+    /**
+     * Get a Digest header object, if one exists
+     * @return the Digest header object
+     */
     public Optional<WantDigest> getDigest() {
         return ofNullable(digest);
     }
 
+    /**
+     * Get a Range header object, if one exists
+     * @return the Range header object
+     */
     public Optional<Range> getRange() {
         return ofNullable(range);
     }
 
+    /**
+     * Get the content-type string, if it exists
+     * @return the content-type header value
+     */
     public Optional<String> getContentType() {
         return ofNullable(contentType);
     }
 
+    /**
+     * Get the Slug header, if it exists
+     * @return the slug header value
+     */
     public Optional<String> getSlug() {
         return ofNullable(slug);
     }
 
+    /**
+     * Get the Link header, if it exists
+     * @return the link header
+     */
     public Optional<Link> getLink() {
         return ofNullable(link);
     }
 
+    /**
+     * Get the Session object, if it exists
+     * @return the session
+     */
     public Optional<Session> getSession() {
         return ofNullable(session);
     }
 
+    /**
+     * Get the RDF Syntax, if present
+     * @return the RDF Syntax
+     */
     public Optional<RDFSyntax> getSyntax() {
         return ofNullable(syntax);
     }
 
+    /**
+     * Get any profile attribute, if present
+     * @return the profile attribute
+     */
     public Optional<IRI> getProfile() {
         return ofNullable(profile);
     }
 
+    /**
+     * Get a Sparql-Update body
+     * @return the Sparql-Update body
+     */
     public Optional<String> getUpdate() {
         return ofNullable(update);
     }
 
+    /**
+     * Get an HTTP entity
+     * @return the entity
+     */
     public Optional<InputStream> getEntity() {
         return ofNullable(entity);
     }
