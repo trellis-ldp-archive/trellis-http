@@ -228,7 +228,6 @@ public class LdpResource extends BaseLdpResource {
             .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
             .withSession(session).withContentType(contentType).withLink(link).withEntity(body).build();
 
-
         final LdpPostHandler postHandler = new LdpPostHandler(resourceService, serializationService, datastreamService,
                 ldpreq);
 
@@ -260,6 +259,14 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        return Response.ok().build();
+        final LdpRequest ldpreq = LdpRequest.builder().withPath(path)
+            .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
+            .withSession(session).withContentType(contentType).withLink(link).withEntity(body).build();
+
+        final LdpPutHandler putHandler = new LdpPutHandler(resourceService, serializationService, datastreamService,
+                request, ldpreq);
+
+        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
+                .map(putHandler::setResource).orElseGet(putHandler::setResource).build();
     }
 }
