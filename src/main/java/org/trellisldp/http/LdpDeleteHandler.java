@@ -13,22 +13,31 @@
  */
 package org.trellisldp.http;
 
+import static java.util.Objects.nonNull;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.GONE;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.status;
+import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.http.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.HttpUtils.checkCache;
+import static org.trellisldp.spi.RDFUtils.auditDeletion;
+import static org.trellisldp.spi.RDFUtils.getInstance;
 
-import java.util.function.Function;
-
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
+import org.apache.commons.rdf.api.Dataset;
+import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.RDF;
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
 import org.trellisldp.spi.ResourceService;
+import org.trellisldp.spi.Session;
+import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
@@ -36,46 +45,59 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-class LdpDeleteHandler extends LdpResponseHandler {
+class LdpDeleteHandler {
 
+    private static final RDF rdf = getInstance();
     private static final Logger LOGGER = getLogger(LdpDeleteHandler.class);
 
-    /**
-     * Create a builder for an LDP DELETE response
-     * @param resourceService the resource service
-     */
-    protected LdpDeleteHandler(final ResourceService resourceService) {
-        super(resourceService);
-    }
+    private final ResourceService resourceService;
+    private final Request request;
+    private final LdpRequest ldpRequest;
 
     /**
      * Create a builder for an LDP DELETE response
      * @param resourceService the resource service
-     * @return the response builder
+     * @param request the request
+     * @param ldpRequest the LDP request
      */
-    public static LdpDeleteHandler builder(final ResourceService resourceService) {
-        return new LdpDeleteHandler(resourceService);
+    public LdpDeleteHandler(final ResourceService resourceService, final Request request, final LdpRequest ldpRequest) {
+        this.resourceService = resourceService;
+        this.request = request;
+        this.ldpRequest = ldpRequest;
     }
 
-    @Override
-    public Response build(final String path) {
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
-            .map(deleteResource(path)).orElse(status(NOT_FOUND)).build();
-    }
+    /**
+     * Delete the given resource
+     * @param res the resource
+     * @return a response builder
+     */
+    public ResponseBuilder deleteResource(final Resource res) {
+        final String identifier = ldpRequest.getBaseUrl() + ldpRequest.getPath();
+        final Session session = ldpRequest.getSession().orElseThrow(() ->
+                new WebApplicationException("Missing Session", BAD_REQUEST));
 
-    private Function<Resource, ResponseBuilder> deleteResource(final String path) {
-        return res -> {
-            final String identifier = baseUrl + path;
-            if (res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
-                return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
-                        .toArray(Link[]::new));
-            }
+        if (res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
+            return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
+                    .toArray(Link[]::new));
+        }
 
-            LOGGER.debug("Deleting {}", identifier);
+        final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier));
+        final ResponseBuilder cache = checkCache(request, res.getModified(), etag);
+        if (nonNull(cache)) {
+            return cache;
+        }
 
-            final ResponseBuilder builder = status(NO_CONTENT);
+        LOGGER.debug("Deleting {}", identifier);
 
-            return builder;
-        };
+        final IRI bnode = (IRI) resourceService.skolemize(rdf.createBlankNode());
+        final Dataset dataset = auditDeletion(bnode, session);
+        dataset.add(rdf.createQuad(Trellis.PreferAudit, res.getIdentifier(), PROV.wasGeneratedBy, bnode));
+
+        // delete the resource
+        resourceService.put(res.getIdentifier(), dataset);
+
+        final ResponseBuilder builder = status(NO_CONTENT);
+
+        return builder;
     }
 }

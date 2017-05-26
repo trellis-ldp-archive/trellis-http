@@ -13,9 +13,14 @@
  */
 package org.trellisldp.http;
 
+import static javax.ws.rs.core.Response.Status.CREATED;
+import static javax.ws.rs.core.Response.status;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import javax.ws.rs.core.Response;
+import java.io.InputStream;
+
+import javax.ws.rs.core.Request;
+import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.slf4j.Logger;
 import org.trellisldp.spi.DatastreamService;
@@ -27,36 +32,42 @@ import org.trellisldp.spi.SerializationService;
  *
  * @author acoburn
  */
-class LdpPostHandler extends LdpResponseHandler {
+class LdpPostHandler {
 
     private static final Logger LOGGER = getLogger(LdpPostHandler.class);
 
     private final DatastreamService datastreamService;
+    private final ResourceService resourceService;
     private final SerializationService serializationService;
-
-    protected LdpPostHandler(final ResourceService resourceService,
-            final SerializationService serializationService, final DatastreamService datastreamService) {
-        super(resourceService);
-        this.serializationService = serializationService;
-        this.datastreamService = datastreamService;
-    }
+    private final Request request;
+    private final LdpRequest ldpRequest;
 
     /**
      * Create a builder for an LDP POST response
      * @param resourceService the resource service
      * @param serializationService the serialization service
      * @param datastreamService the datastream service
+     * @param request the request
+     * @param ldpRequest the ldp request
+     */
+    protected LdpPostHandler(final ResourceService resourceService,
+            final SerializationService serializationService, final DatastreamService datastreamService,
+            final Request request, final LdpRequest ldpRequest) {
+        this.resourceService = resourceService;
+        this.serializationService = serializationService;
+        this.datastreamService = datastreamService;
+        this.request = request;
+        this.ldpRequest = ldpRequest;
+    }
+
+    /**
+     * Create a new resource
+     * @param identifier the identifier
+     * @param body the body
      * @return the response builder
      */
-    public static LdpPostHandler builder(final ResourceService resourceService,
-            final SerializationService serializationService,
-            final DatastreamService datastreamService) {
-        return new LdpPostHandler(resourceService, serializationService, datastreamService);
+    public ResponseBuilder createResource(final String identifier, final InputStream body) {
+        LOGGER.info("Creating resource as {}", identifier);
+        return status(CREATED);
     }
-
-    @Override
-    public Response build(final String path) {
-        return Response.ok().build();
-    }
-
 }

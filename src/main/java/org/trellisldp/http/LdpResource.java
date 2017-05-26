@@ -16,7 +16,9 @@ package org.trellisldp.http;
 import static java.time.Instant.MAX;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.status;
 import static org.trellisldp.http.HttpConstants.APPLICATION_LINK_FORMAT;
@@ -185,9 +187,14 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        return LdpDeleteHandler.builder(resourceService)
+        final LdpRequest ldpreq = LdpRequest.builder().withPath(path)
             .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
-            .withSession(session).withCacheEvaluator(cacheEvaluator).build(path);
+            .withSession(session).build();
+
+        final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, request, ldpreq);
+
+        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
+            .map(deleteHandler::deleteResource).orElse(status(NOT_FOUND)).build();
     }
 
     /**
@@ -211,11 +218,18 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        // add link header
-        return LdpPostHandler.builder(resourceService, serializationService, datastreamService)
+        final LdpRequest ldpreq = LdpRequest.builder().withPath(path)
             .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
-            .withSession(session).withContentType(contentType).withSlug(slug)
-            .withLink(link).build(path);
+            .withSession(session).withContentType(contentType).withLink(link).build();
+
+        final String identifier = TRELLIS_PREFIX + path + "/" + ofNullable(slug)
+            .orElseGet(() -> randomUUID().toString());
+
+        final LdpPostHandler postHandler = new LdpPostHandler(resourceService, serializationService, datastreamService,
+                request, ldpreq);
+
+        return resourceService.get(rdf.createIRI(identifier)).map(x -> status(CONFLICT))
+            .orElseGet(() -> postHandler.createResource(identifier, body)).build();
     }
 
     /**
