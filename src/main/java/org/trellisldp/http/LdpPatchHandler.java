@@ -27,8 +27,6 @@ import static org.trellisldp.http.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.HttpUtils.checkCache;
 import static org.trellisldp.http.RdfUtils.skolemizeTriples;
 import static org.trellisldp.http.RdfUtils.unskolemizeTriples;
-import static org.trellisldp.spi.RDFUtils.getInstance;
-import static org.trellisldp.vocabulary.RDF.type;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.CacheControl;
@@ -40,7 +38,6 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
 
@@ -51,6 +48,7 @@ import org.trellisldp.spi.SerializationService;
 import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.PROV;
+import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
@@ -58,12 +56,10 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-class LdpPatchHandler {
+class LdpPatchHandler extends BaseLdpHandler {
 
-    private static final RDF rdf = getInstance();
     private static final Logger LOGGER = getLogger(LdpPatchHandler.class);
 
-    private final ResourceService resourceService;
     private final SerializationService serializationService;
     private final Request request;
     private final LdpRequest ldpRequest;
@@ -77,7 +73,7 @@ class LdpPatchHandler {
      */
     public LdpPatchHandler(final ResourceService resourceService, final SerializationService serializationService,
             final Request request, final LdpRequest ldpRequest) {
-        this.resourceService = resourceService;
+        super(resourceService);
         this.serializationService = serializationService;
         this.request = request;
         this.ldpRequest = ldpRequest;
@@ -128,7 +124,7 @@ class LdpPatchHandler {
             .forEach(dataset::add);
 
         dataset.add(Trellis.PreferAudit, res.getIdentifier(), PROV.wasGeneratedBy, bnode);
-        dataset.add(Trellis.PreferServerManaged, res.getIdentifier(), type, res.getInteractionModel());
+        dataset.add(Trellis.PreferServerManaged, res.getIdentifier(), RDF.type, res.getInteractionModel());
         RDFUtils.auditUpdate(bnode, session).stream().forEach(dataset::add);
 
         // Save new dataset

@@ -88,13 +88,12 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-class LdpGetHandler {
+class LdpGetHandler extends BaseLdpHandler {
 
     private static final int cacheAge = 86400;
 
     private static final Logger LOGGER = getLogger(LdpGetHandler.class);
 
-    private final ResourceService resourceService;
     private final SerializationService serializationService;
     private final DatastreamService datastreamService;
     private final Request request;
@@ -110,7 +109,7 @@ class LdpGetHandler {
      */
     public LdpGetHandler(final ResourceService resourceService, final SerializationService serializationService,
             final DatastreamService datastreamService, final Request request, final LdpRequest ldpRequest) {
-        this.resourceService = resourceService;
+        super(resourceService);
         this.serializationService = serializationService;
         this.datastreamService = datastreamService;
         this.request = request;

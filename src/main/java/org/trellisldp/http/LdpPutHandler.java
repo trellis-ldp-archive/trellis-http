@@ -13,25 +13,18 @@
  */
 package org.trellisldp.http;
 
-import static java.util.Arrays.asList;
 import static java.util.Objects.nonNull;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
-import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
-import static org.apache.commons.rdf.api.RDFSyntax.NTRIPLES;
-import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.HttpUtils.checkCache;
 import static org.trellisldp.http.RdfUtils.skolemizeTriples;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
-import static org.trellisldp.spi.RDFUtils.getInstance;
-import static org.trellisldp.vocabulary.RDF.type;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 
 import javax.ws.rs.WebApplicationException;
@@ -42,7 +35,6 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.slf4j.Logger;
@@ -54,6 +46,7 @@ import org.trellisldp.spi.SerializationService;
 import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.PROV;
+import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
@@ -61,14 +54,11 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-class LdpPutHandler {
+class LdpPutHandler extends BaseLdpHandler {
 
-    private static final RDF rdf = getInstance();
     private static final Logger LOGGER = getLogger(LdpPutHandler.class);
-    private static List<RDFSyntax> types = asList(TURTLE, JSONLD, NTRIPLES);
 
     private final DatastreamService datastreamService;
-    private final ResourceService resourceService;
     private final SerializationService serializationService;
     private final Request request;
     private final LdpRequest ldpRequest;
@@ -78,12 +68,13 @@ class LdpPutHandler {
      * @param resourceService the resource service
      * @param serializationService the serialization service
      * @param datastreamService the datastream service
+     * @param request the request
      * @param ldpRequest the ldp request
      */
     public LdpPutHandler(final ResourceService resourceService,
             final SerializationService serializationService, final DatastreamService datastreamService,
             final Request request, final LdpRequest ldpRequest) {
-        this.resourceService = resourceService;
+        super(resourceService);
         this.serializationService = serializationService;
         this.datastreamService = datastreamService;
         this.request = request;
@@ -120,12 +111,13 @@ class LdpPutHandler {
      */
     public ResponseBuilder setResource() {
         final String identifier = ldpRequest.getBaseUrl() + ldpRequest.getPath();
-        LOGGER.info("Creating resource as {}", identifier);
         final Session session = ldpRequest.getSession().orElseThrow(() ->
                 new WebApplicationException("Missing Session", BAD_REQUEST));
         final Optional<String> contentType = ldpRequest.getContentType();
         final Optional<RDFSyntax> syntax = contentType.flatMap(RDFSyntax::byMediaType)
-            .filter(types::contains);
+            .filter(SUPPORTED_RDF_TYPES::contains);
+
+        LOGGER.info("Setting resource as {}", identifier);
 
         final IRI defaultType = contentType.isPresent() && !syntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
 
@@ -133,7 +125,7 @@ class LdpPutHandler {
         final IRI bnode = (IRI) resourceService.skolemize(rdf.createBlankNode());
         final Dataset dataset = auditUpdate(bnode, session);
         dataset.add(rdf.createQuad(Trellis.PreferAudit, iri, PROV.wasGeneratedBy, bnode));
-        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, iri, type,
+        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, iri, RDF.type,
                     ldpRequest.getLink().filter(l -> "type".equals(l.getRel()))
                     .map(Link::getUri).map(URI::toString).map(rdf::createIRI).orElse(defaultType)));
 

@@ -13,21 +13,14 @@
  */
 package org.trellisldp.http;
 
-import static java.util.Arrays.asList;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.status;
-import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
-import static org.apache.commons.rdf.api.RDFSyntax.NTRIPLES;
-import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.RdfUtils.skolemizeTriples;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
-import static org.trellisldp.spi.RDFUtils.getInstance;
-import static org.trellisldp.vocabulary.RDF.type;
 
 import java.net.URI;
-import java.util.List;
 import java.util.Optional;
 
 import javax.ws.rs.WebApplicationException;
@@ -36,7 +29,6 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.slf4j.Logger;
@@ -46,6 +38,7 @@ import org.trellisldp.spi.SerializationService;
 import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.PROV;
+import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
@@ -53,14 +46,11 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-class LdpPostHandler {
+class LdpPostHandler extends BaseLdpHandler {
 
-    private static final RDF rdf = getInstance();
     private static final Logger LOGGER = getLogger(LdpPostHandler.class);
-    private static List<RDFSyntax> types = asList(TURTLE, JSONLD, NTRIPLES);
 
     private final DatastreamService datastreamService;
-    private final ResourceService resourceService;
     private final SerializationService serializationService;
     private final LdpRequest ldpRequest;
 
@@ -74,7 +64,7 @@ class LdpPostHandler {
     public LdpPostHandler(final ResourceService resourceService,
             final SerializationService serializationService, final DatastreamService datastreamService,
             final LdpRequest ldpRequest) {
-        this.resourceService = resourceService;
+        super(resourceService);
         this.serializationService = serializationService;
         this.datastreamService = datastreamService;
         this.ldpRequest = ldpRequest;
@@ -92,7 +82,7 @@ class LdpPostHandler {
                 new WebApplicationException("Missing Session", BAD_REQUEST));
         final Optional<String> contentType = ldpRequest.getContentType();
         final Optional<RDFSyntax> syntax = contentType.flatMap(RDFSyntax::byMediaType)
-            .filter(types::contains);
+            .filter(SUPPORTED_RDF_TYPES::contains);
 
         final IRI defaultType = contentType.isPresent() && !syntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
 
@@ -100,7 +90,7 @@ class LdpPostHandler {
         final IRI bnode = (IRI) resourceService.skolemize(rdf.createBlankNode());
         final Dataset dataset = auditCreation(bnode, session);
         dataset.add(rdf.createQuad(Trellis.PreferAudit, iri, PROV.wasGeneratedBy, bnode));
-        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, iri, type,
+        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, iri, RDF.type,
                     ldpRequest.getLink().filter(l -> "type".equals(l.getRel()))
                     .map(Link::getUri).map(URI::toString).map(rdf::createIRI).orElse(defaultType)));
 

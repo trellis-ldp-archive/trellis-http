@@ -22,7 +22,6 @@ import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.HttpUtils.checkCache;
 import static org.trellisldp.spi.RDFUtils.auditDeletion;
-import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
@@ -32,7 +31,6 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.RDF;
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
 import org.trellisldp.spi.ResourceService;
@@ -45,12 +43,10 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-class LdpDeleteHandler {
+class LdpDeleteHandler extends BaseLdpHandler {
 
-    private static final RDF rdf = getInstance();
     private static final Logger LOGGER = getLogger(LdpDeleteHandler.class);
 
-    private final ResourceService resourceService;
     private final Request request;
     private final LdpRequest ldpRequest;
 
@@ -61,7 +57,7 @@ class LdpDeleteHandler {
      * @param ldpRequest the LDP request
      */
     public LdpDeleteHandler(final ResourceService resourceService, final Request request, final LdpRequest ldpRequest) {
-        this.resourceService = resourceService;
+        super(resourceService);
         this.request = request;
         this.ldpRequest = ldpRequest;
     }
