@@ -48,6 +48,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.rdf.api.RDFSyntax;
+
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.AcceptDatetime;
 import org.trellisldp.http.domain.PATCH;
@@ -61,7 +63,6 @@ import org.trellisldp.http.impl.LdpGetHandler;
 import org.trellisldp.http.impl.LdpPatchHandler;
 import org.trellisldp.http.impl.LdpPostHandler;
 import org.trellisldp.http.impl.LdpPutHandler;
-import org.trellisldp.http.impl.LdpRequest;
 import org.trellisldp.http.impl.MementoResource;
 import org.trellisldp.spi.DatastreamService;
 import org.trellisldp.spi.ResourceService;
@@ -130,14 +131,16 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        final LdpRequest ldpreq = LdpRequest.builder().withPath(path)
-            .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
-            .withSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()))
-            .withProfile(getProfile(headers.getAcceptableMediaTypes()))
-            .withPrefer(prefer).withWantDigest(digest).withRange(range).build();
-
+        final RDFSyntax syntax = getRdfSyntax(headers.getAcceptableMediaTypes());
         final LdpGetHandler getHandler = new LdpGetHandler(resourceService, serializationService, datastreamService,
-                request, ldpreq);
+                request);
+        getHandler.setPath(path);
+        getHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
+        getHandler.setSyntax(syntax);
+        getHandler.setProfile(getProfile(headers.getAcceptableMediaTypes()));
+        getHandler.setPrefer(prefer);
+        getHandler.setWantDigest(digest);
+        getHandler.setRange(range);
 
         if (nonNull(version)) {
             LOGGER.info("Getting versioned resource: {}", version.toString());
@@ -147,8 +150,7 @@ public class LdpResource extends BaseLdpResource {
         } else if (nonNull(timemap) && timemap) {
             LOGGER.info("Getting timemap resource");
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
-                .map(res -> res.getTimeMapBuilder(baseUrl + path, ldpreq.getSyntax().orElse(null),
-                            serializationService))
+                .map(res -> res.getTimeMapBuilder(baseUrl + path, syntax, serializationService))
                 .orElse(status(NOT_FOUND)).build();
 
         } else if (nonNull(datetime)) {

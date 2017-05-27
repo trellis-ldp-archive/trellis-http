@@ -15,7 +15,9 @@ package org.trellisldp.http.impl;
 
 import static java.lang.String.join;
 import static java.util.Date.from;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
@@ -100,7 +102,9 @@ public class LdpGetHandler extends BaseLdpHandler {
     private final SerializationService serializationService;
     private final DatastreamService datastreamService;
     private final Request request;
-    private final LdpRequest ldpRequest;
+
+    private Range range = null;
+    private WantDigest digest = null;
 
     /**
      * A GET response builder
@@ -108,15 +112,29 @@ public class LdpGetHandler extends BaseLdpHandler {
      * @param serializationService the serialization service
      * @param datastreamService the datastream service
      * @param request the HTTP request
-     * @param ldpRequest the LDP-related header values
      */
     public LdpGetHandler(final ResourceService resourceService, final SerializationService serializationService,
-            final DatastreamService datastreamService, final Request request, final LdpRequest ldpRequest) {
+            final DatastreamService datastreamService, final Request request) {
         super(resourceService);
         this.serializationService = serializationService;
         this.datastreamService = datastreamService;
         this.request = request;
-        this.ldpRequest = ldpRequest;
+    }
+
+    /**
+     * Set the WantDigest value
+     * @param digest the digest
+     */
+    public void setWantDigest(final WantDigest digest) {
+        this.digest = digest;
+    }
+
+    /**
+     * Set the Range value
+     * @param range the range
+     */
+    public void setRange(final Range range) {
+        this.range = range;
     }
 
     /**
@@ -125,18 +143,18 @@ public class LdpGetHandler extends BaseLdpHandler {
      * @return the response builder
      */
     public ResponseBuilder getRepresentation(final Resource res) {
-        final String identifier = ldpRequest.getBaseUrl() + ldpRequest.getPath();
+        final String identifier = baseUrl + path;
         if (res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
             return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
                     .toArray(Link[]::new));
         }
 
         // TODO add acl header, if in effect
-        final ResponseBuilder builder = basicGetResponseBuilder(res, ldpRequest.getSyntax());
+        final ResponseBuilder builder = basicGetResponseBuilder(res, ofNullable(syntax));
 
         // Add NonRDFSource-related "describe*" link headers
         res.getDatastream().ifPresent(ds -> {
-            if (ldpRequest.getSyntax().isPresent()) {
+            if (nonNull(syntax)) {
                 builder.link(identifier + "#description", "canonical").link(identifier, "describes");
             } else {
                 builder.link(identifier, "canonical").link(identifier + "#description", "describedby")
@@ -148,11 +166,11 @@ public class LdpGetHandler extends BaseLdpHandler {
             .links(MementoResource.getMementoLinks(identifier, res.getMementos()).toArray(Link[]::new));
 
         // NonRDFSources responses (strong ETags, etc)
-        if (res.getDatastream().isPresent() && !ldpRequest.getSyntax().isPresent()) {
+        if (res.getDatastream().isPresent() && isNull(syntax)) {
             return getLdpNr(identifier, res, builder);
 
         // RDFSource responses (weak ETags, etc)
-        } else if (ldpRequest.getSyntax().isPresent()) {
+        } else if (nonNull(syntax)) {
             return getLdpRs(identifier, res, builder);
         }
         // Other responses (typically, a request for application/link-format on an LDPR)
@@ -171,17 +189,16 @@ public class LdpGetHandler extends BaseLdpHandler {
         } else {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, POST, DELETE, "PATCH"));
         }
-        ldpRequest.getPrefer().ifPresent(p ->
+        ofNullable(prefer).ifPresent(p ->
                 builder.header(PREFERENCE_APPLIED, "return=" + p.getPreference().orElse("representation")));
 
-        if (ldpRequest.getPrefer().flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
+        if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
             return builder.status(NO_CONTENT);
         } else {
-            final RDFSyntax syntax = ldpRequest.getSyntax().get();
             return builder.entity(ResourceStreamer.quadStreamer(serializationService,
-                        res.stream().filter(filterWithPrefer(ldpRequest.getPrefer().orElse(null)))
-                        .map(unskolemizeQuads(resourceService, ldpRequest.getBaseUrl())),
-                        syntax, ldpRequest.getProfile().orElseGet(() ->
+                        res.stream().filter(filterWithPrefer(prefer))
+                        .map(unskolemizeQuads(resourceService, baseUrl)),
+                        syntax, ofNullable(profile).orElseGet(() ->
                             RDFA_HTML.equals(syntax) ? getInstance().createIRI(identifier) : JSONLD.expanded)));
         }
     }
@@ -200,16 +217,15 @@ public class LdpGetHandler extends BaseLdpHandler {
         builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes")
             .header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE)).tag(etag);
 
-        // Add instance digests, if ldpRequested and supported
-        ldpRequest.getDigest().map(WantDigest::getAlgorithms).ifPresent(algs ->
+        // Add instance digests, if Requested and supported
+        ofNullable(digest).map(WantDigest::getAlgorithms).ifPresent(algs ->
                 algs.stream().filter(datastreamService.supportedAlgorithms()::contains).findFirst()
                 .ifPresent(alg -> datastreamService.getContent(dsid)
                     .map(is -> datastreamService.hexDigest(alg, is))
                     .ifPresent(d -> builder.header(DIGEST, d))));
 
-        // Range ldpRequests
-        if (ldpRequest.getRange().isPresent()) {
-            final Range range = ldpRequest.getRange().get();
+        // Range Requests
+        if (nonNull(range)) {
             try {
                 final long skipped = datastream.skip(range.getFrom());
                 if (skipped < range.getFrom()) {
