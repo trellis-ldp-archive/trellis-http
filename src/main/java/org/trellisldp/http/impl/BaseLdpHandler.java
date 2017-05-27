@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
+package org.trellisldp.http.impl;
 
 import static java.util.Arrays.asList;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
@@ -28,7 +28,7 @@ import org.trellisldp.spi.ResourceService;
 /**
  * @author acoburn
  */
-class BaseLdpHandler {
+public class BaseLdpHandler {
 
     protected static final RDF rdf = getInstance();
 

@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
+package org.trellisldp.http.domain;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.nonNull;

@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
+package org.trellisldp.http.impl;
 
 import static java.lang.String.join;
 import static java.util.Date.from;
@@ -36,22 +36,22 @@ import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.http.HttpConstants.ACCEPT_DATETIME;
-import static org.trellisldp.http.HttpConstants.ACCEPT_PATCH;
-import static org.trellisldp.http.HttpConstants.ACCEPT_POST;
-import static org.trellisldp.http.HttpConstants.ACCEPT_RANGES;
-import static org.trellisldp.http.HttpConstants.DIGEST;
-import static org.trellisldp.http.HttpConstants.MEMENTO_DATETIME;
-import static org.trellisldp.http.HttpConstants.NOT_ACCEPTABLE_ERROR;
-import static org.trellisldp.http.HttpConstants.PREFER;
-import static org.trellisldp.http.HttpConstants.PREFERENCE_APPLIED;
-import static org.trellisldp.http.HttpConstants.RANGE;
-import static org.trellisldp.http.HttpConstants.WANT_DIGEST;
-import static org.trellisldp.http.HttpUtils.checkCache;
-import static org.trellisldp.http.RdfMediaType.APPLICATION_SPARQL_UPDATE;
-import static org.trellisldp.http.RdfMediaType.VARIANTS;
-import static org.trellisldp.http.RdfUtils.filterWithPrefer;
-import static org.trellisldp.http.RdfUtils.unskolemizeQuads;
+import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
+import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
+import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
+import static org.trellisldp.http.domain.HttpConstants.ACCEPT_RANGES;
+import static org.trellisldp.http.domain.HttpConstants.DIGEST;
+import static org.trellisldp.http.domain.HttpConstants.MEMENTO_DATETIME;
+import static org.trellisldp.http.domain.HttpConstants.NOT_ACCEPTABLE_ERROR;
+import static org.trellisldp.http.domain.HttpConstants.PREFER;
+import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
+import static org.trellisldp.http.domain.HttpConstants.RANGE;
+import static org.trellisldp.http.domain.HttpConstants.WANT_DIGEST;
+import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
+import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
+import static org.trellisldp.http.impl.HttpUtils.checkCache;
+import static org.trellisldp.http.impl.RdfUtils.filterWithPrefer;
+import static org.trellisldp.http.impl.RdfUtils.unskolemizeQuads;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
@@ -78,6 +78,9 @@ import org.trellisldp.api.Resource;
 import org.trellisldp.spi.DatastreamService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.SerializationService;
+import org.trellisldp.http.domain.Prefer;
+import org.trellisldp.http.domain.Range;
+import org.trellisldp.http.domain.WantDigest;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.OA;
@@ -88,7 +91,7 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-class LdpGetHandler extends BaseLdpHandler {
+public class LdpGetHandler extends BaseLdpHandler {
 
     private static final int cacheAge = 86400;
 

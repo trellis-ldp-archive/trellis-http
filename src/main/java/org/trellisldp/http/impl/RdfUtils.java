@@ -11,15 +11,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
+package org.trellisldp.http.impl;
 
 import static java.util.Arrays.stream;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Stream.empty;
 import static java.util.stream.Stream.of;
-import static org.trellisldp.http.HttpConstants.DEFAULT_REPRESENTATION;
-import static org.trellisldp.http.HttpConstants.TRELLIS_PREFIX;
-import static org.trellisldp.http.RdfMediaType.VARIANTS;
+import static org.trellisldp.http.domain.HttpConstants.DEFAULT_REPRESENTATION;
+import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.util.HashSet;
@@ -42,6 +42,7 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.RDFTerm;
 import org.apache.commons.rdf.api.Triple;
 
+import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.Trellis;
 
@@ -50,7 +51,7 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-final class RdfUtils {
+public final class RdfUtils {
 
     private static RDF rdf = getInstance();
 

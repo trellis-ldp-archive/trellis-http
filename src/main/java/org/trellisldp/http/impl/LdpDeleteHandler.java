@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
+package org.trellisldp.http.impl;
 
 import static java.util.Objects.nonNull;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -20,7 +20,7 @@ import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.http.HttpUtils.checkCache;
+import static org.trellisldp.http.impl.HttpUtils.checkCache;
 import static org.trellisldp.spi.RDFUtils.auditDeletion;
 
 import javax.ws.rs.WebApplicationException;
@@ -43,7 +43,7 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-class LdpDeleteHandler extends BaseLdpHandler {
+public class LdpDeleteHandler extends BaseLdpHandler {
 
     private static final Logger LOGGER = getLogger(LdpDeleteHandler.class);
 

@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
+package org.trellisldp.http.impl;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
@@ -30,6 +30,7 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
+import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.Trellis;

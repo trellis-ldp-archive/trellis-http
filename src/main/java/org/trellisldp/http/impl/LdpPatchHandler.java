@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
+package org.trellisldp.http.impl;
 
 import static java.util.Objects.nonNull;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
@@ -23,10 +23,10 @@ import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.http.HttpConstants.TRELLIS_PREFIX;
-import static org.trellisldp.http.HttpUtils.checkCache;
-import static org.trellisldp.http.RdfUtils.skolemizeTriples;
-import static org.trellisldp.http.RdfUtils.unskolemizeTriples;
+import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.impl.HttpUtils.checkCache;
+import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
+import static org.trellisldp.http.impl.RdfUtils.unskolemizeTriples;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.CacheControl;
@@ -42,6 +42,7 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
+import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.RDFUtils;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.SerializationService;
@@ -56,7 +57,7 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-class LdpPatchHandler extends BaseLdpHandler {
+public class LdpPatchHandler extends BaseLdpHandler {
 
     private static final Logger LOGGER = getLogger(LdpPatchHandler.class);
 

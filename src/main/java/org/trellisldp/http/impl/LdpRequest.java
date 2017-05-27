@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
+package org.trellisldp.http.impl;
 
 import static java.util.Optional.ofNullable;
 
@@ -23,6 +23,9 @@ import javax.ws.rs.core.Link;
 
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
+import org.trellisldp.http.domain.Prefer;
+import org.trellisldp.http.domain.Range;
+import org.trellisldp.http.domain.WantDigest;
 import org.trellisldp.spi.Session;
 
 /**
@@ -30,7 +33,7 @@ import org.trellisldp.spi.Session;
  *
  * @author acoburn
  */
-final class LdpRequest {
+public final class LdpRequest {
 
     private final String baseUrl;
     private final String path;

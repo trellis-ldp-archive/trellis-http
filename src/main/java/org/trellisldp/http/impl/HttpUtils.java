@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
+package org.trellisldp.http.impl;
 
 import static java.util.Date.from;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -29,7 +29,7 @@ import org.slf4j.Logger;
  *
  * @author acoburn
  */
-final class HttpUtils {
+public final class HttpUtils {
 
     private static final Logger LOGGER = getLogger(HttpUtils.class);
 
