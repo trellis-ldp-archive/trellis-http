@@ -13,6 +13,9 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.status;
@@ -35,7 +38,6 @@ import org.slf4j.Logger;
 import org.trellisldp.spi.DatastreamService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.SerializationService;
-import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.RDF;
@@ -52,22 +54,18 @@ public class LdpPostHandler extends BaseLdpHandler {
 
     private final DatastreamService datastreamService;
     private final SerializationService serializationService;
-    private final LdpRequest ldpRequest;
 
     /**
      * Create a builder for an LDP POST response
      * @param resourceService the resource service
      * @param serializationService the serialization service
      * @param datastreamService the datastream service
-     * @param ldpRequest the ldp request
      */
     public LdpPostHandler(final ResourceService resourceService,
-            final SerializationService serializationService, final DatastreamService datastreamService,
-            final LdpRequest ldpRequest) {
+            final SerializationService serializationService, final DatastreamService datastreamService) {
         super(resourceService);
         this.serializationService = serializationService;
         this.datastreamService = datastreamService;
-        this.ldpRequest = ldpRequest;
     }
 
     /**
@@ -75,27 +73,29 @@ public class LdpPostHandler extends BaseLdpHandler {
      * @return the response builder
      */
     public ResponseBuilder createResource() {
-        final String identifier = ldpRequest.getBaseUrl() + ldpRequest.getPath();
+        final String identifier = baseUrl + path;
         LOGGER.info("Creating resource as {}", identifier);
-        final Session session = ldpRequest.getSession().orElseThrow(() ->
-                new WebApplicationException("Missing Session", BAD_REQUEST));
-        final Optional<String> contentType = ldpRequest.getContentType();
-        final Optional<RDFSyntax> syntax = contentType.flatMap(RDFSyntax::byMediaType)
+
+        if (isNull(session)) {
+            throw new WebApplicationException("Missing Session", BAD_REQUEST);
+        }
+
+        final Optional<RDFSyntax> rdfSyntax = ofNullable(contentType).flatMap(RDFSyntax::byMediaType)
             .filter(SUPPORTED_RDF_TYPES::contains);
 
-        final IRI defaultType = contentType.isPresent() && !syntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
+        final IRI defaultType = nonNull(contentType) && !rdfSyntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
 
         final IRI iri = rdf.createIRI(identifier);
         final IRI bnode = (IRI) resourceService.skolemize(rdf.createBlankNode());
         final Dataset dataset = auditCreation(bnode, session);
         dataset.add(rdf.createQuad(Trellis.PreferAudit, iri, PROV.wasGeneratedBy, bnode));
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, iri, RDF.type,
-                    ldpRequest.getLink().filter(l -> "type".equals(l.getRel()))
+                    ofNullable(link).filter(l -> "type".equals(l.getRel()))
                     .map(Link::getUri).map(URI::toString).map(rdf::createIRI).orElse(defaultType)));
 
-        if (ldpRequest.getEntity().isPresent() && syntax.isPresent()) {
-            serializationService.read(ldpRequest.getEntity().get(), identifier, syntax.get())
-                .map(skolemizeTriples(resourceService, ldpRequest.getBaseUrl())).forEach(triple -> {
+        if (nonNull(entity) && rdfSyntax.isPresent()) {
+            serializationService.read(entity, identifier, rdfSyntax.get())
+                .map(skolemizeTriples(resourceService, baseUrl)).forEach(triple -> {
                     dataset.add(rdf.createQuad(Trellis.PreferUserManaged, triple.getSubject(),
                             triple.getPredicate(), triple.getObject()));
                 });

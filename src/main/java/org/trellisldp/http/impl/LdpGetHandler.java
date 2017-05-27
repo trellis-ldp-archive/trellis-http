@@ -75,12 +75,12 @@ import org.slf4j.Logger;
 
 import org.trellisldp.api.Datastream;
 import org.trellisldp.api.Resource;
-import org.trellisldp.spi.DatastreamService;
-import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.SerializationService;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.http.domain.Range;
 import org.trellisldp.http.domain.WantDigest;
+import org.trellisldp.spi.DatastreamService;
+import org.trellisldp.spi.ResourceService;
+import org.trellisldp.spi.SerializationService;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.OA;

@@ -49,16 +49,13 @@ import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
 
 import org.trellisldp.api.Resource;
-import org.trellisldp.spi.DatastreamService;
-import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.SerializationService;
-import org.trellisldp.spi.Session;
 import org.trellisldp.http.domain.AcceptDatetime;
 import org.trellisldp.http.domain.PATCH;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.http.domain.Range;
-import org.trellisldp.http.domain.WantDigest;
 import org.trellisldp.http.domain.Version;
+import org.trellisldp.http.domain.WantDigest;
+import org.trellisldp.http.impl.HttpSession;
 import org.trellisldp.http.impl.LdpDeleteHandler;
 import org.trellisldp.http.impl.LdpGetHandler;
 import org.trellisldp.http.impl.LdpPatchHandler;
@@ -66,6 +63,10 @@ import org.trellisldp.http.impl.LdpPostHandler;
 import org.trellisldp.http.impl.LdpPutHandler;
 import org.trellisldp.http.impl.LdpRequest;
 import org.trellisldp.http.impl.MementoResource;
+import org.trellisldp.spi.DatastreamService;
+import org.trellisldp.spi.ResourceService;
+import org.trellisldp.spi.SerializationService;
+import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.LDP;
 
 /**
@@ -178,14 +179,15 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        final LdpRequest ldpreq = LdpRequest.builder().withPath(path)
-            .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
-            .withSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()))
-            .withProfile(getProfile(headers.getAcceptableMediaTypes()))
-            .withPrefer(prefer).withSession(session).withSparqlUpdate(body).build();
-
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, serializationService, request,
-                ldpreq);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, serializationService, request);
+        patchHandler.setPath(path);
+        patchHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() ->
+                    uriInfo.getBaseUri().toString()));
+        patchHandler.setSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()));
+        patchHandler.setProfile(getProfile(headers.getAcceptableMediaTypes()));
+        patchHandler.setPrefer(prefer);
+        patchHandler.setSession(session);
+        patchHandler.setSparqlUpdate(body);
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
                 .map(patchHandler::updateResource).orElse(status(NOT_FOUND)).build();
@@ -204,11 +206,11 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        final LdpRequest ldpreq = LdpRequest.builder().withPath(path)
-            .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
-            .withSession(session).build();
+        final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, request);
 
-        final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, request, ldpreq);
+        deleteHandler.setPath(path);
+        deleteHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
+        deleteHandler.setSession(session);
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
             .map(deleteHandler::deleteResource).orElse(status(NOT_FOUND)).build();
@@ -237,12 +239,14 @@ public class LdpResource extends BaseLdpResource {
 
         final String fullPath = path + "/" + ofNullable(slug).orElseGet(() -> randomUUID().toString());
 
-        final LdpRequest ldpreq = LdpRequest.builder().withPath(fullPath)
-            .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
-            .withSession(session).withContentType(contentType).withLink(link).withEntity(body).build();
+        final LdpPostHandler postHandler = new LdpPostHandler(resourceService, serializationService, datastreamService);
 
-        final LdpPostHandler postHandler = new LdpPostHandler(resourceService, serializationService, datastreamService,
-                ldpreq);
+        postHandler.setPath(fullPath);
+        postHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
+        postHandler.setSession(session);
+        postHandler.setContentType(contentType);
+        postHandler.setLink(link);
+        postHandler.setEntity(body);
 
         if (resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX).map(Resource::getInteractionModel)
                 .filter(type -> ldpResourceTypes(type).anyMatch(LDP.Container::equals)).isPresent()) {
@@ -272,12 +276,14 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        final LdpRequest ldpreq = LdpRequest.builder().withPath(path)
-            .withBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()))
-            .withSession(session).withContentType(contentType).withLink(link).withEntity(body).build();
-
         final LdpPutHandler putHandler = new LdpPutHandler(resourceService, serializationService, datastreamService,
-                request, ldpreq);
+                request);
+        putHandler.setPath(path);
+        putHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
+        putHandler.setSession(session);
+        putHandler.setContentType(contentType);
+        putHandler.setLink(link);
+        putHandler.setEntity(body);
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
                 .map(putHandler::setResource).orElseGet(putHandler::setResource).build();

@@ -13,6 +13,7 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.GONE;
@@ -34,7 +35,6 @@ import org.apache.commons.rdf.api.IRI;
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.Trellis;
 
@@ -48,18 +48,15 @@ public class LdpDeleteHandler extends BaseLdpHandler {
     private static final Logger LOGGER = getLogger(LdpDeleteHandler.class);
 
     private final Request request;
-    private final LdpRequest ldpRequest;
 
     /**
      * Create a builder for an LDP DELETE response
      * @param resourceService the resource service
      * @param request the request
-     * @param ldpRequest the LDP request
      */
-    public LdpDeleteHandler(final ResourceService resourceService, final Request request, final LdpRequest ldpRequest) {
+    public LdpDeleteHandler(final ResourceService resourceService, final Request request) {
         super(resourceService);
         this.request = request;
-        this.ldpRequest = ldpRequest;
     }
 
     /**
@@ -68,9 +65,10 @@ public class LdpDeleteHandler extends BaseLdpHandler {
      * @return a response builder
      */
     public ResponseBuilder deleteResource(final Resource res) {
-        final String identifier = ldpRequest.getBaseUrl() + ldpRequest.getPath();
-        final Session session = ldpRequest.getSession().orElseThrow(() ->
-                new WebApplicationException("Missing Session", BAD_REQUEST));
+        final String identifier = baseUrl + path;
+        if (isNull(session)) {
+            throw new WebApplicationException("Missing Session", BAD_REQUEST);
+        }
 
         if (res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
             return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())

@@ -13,20 +13,14 @@
  */
 package org.trellisldp.http;
 
-import static java.util.Date.from;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
-import java.time.Instant;
-import java.util.function.BiFunction;
-
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.rdf.api.RDF;
@@ -49,15 +43,6 @@ class BaseLdpResource {
 
     @Context
     protected Request request;
-
-    protected final BiFunction<Instant, EntityTag, ResponseBuilder> cacheEvaluator = (modified, etag) -> {
-        try {
-            return request.evaluatePreconditions(from(modified), etag);
-        } catch (final Exception ex) {
-            LOGGER.warn("Ignoring cache-related headers: {}", ex.getMessage());
-        }
-        return null;
-    };
 
     protected Response redirectWithoutSlash(final String path) {
         return Response.seeOther(fromUri(stripSlash(path)).build()).build();
