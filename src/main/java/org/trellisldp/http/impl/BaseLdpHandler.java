@@ -14,6 +14,8 @@
 package org.trellisldp.http.impl;
 
 import static java.util.Arrays.asList;
+import static javax.ws.rs.core.Response.Status.GONE;
+import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
 import static org.apache.commons.rdf.api.RDFSyntax.NTRIPLES;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
@@ -23,13 +25,16 @@ import java.io.InputStream;
 import java.util.List;
 
 import javax.ws.rs.core.Link;
+import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
+import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.Session;
+import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -58,6 +63,21 @@ public class BaseLdpHandler {
      */
     public BaseLdpHandler(final ResourceService resourceService) {
         this.resourceService = resourceService;
+    }
+
+
+    /**
+     * Check if this is a deleted resource, and if so return an appropriate response
+     * @param res the resource
+     * @param identifier the identifier
+     * @return if the resource has been deleted, return an HTTP response builder, otherwise null
+     */
+    protected ResponseBuilder checkDeleted(final Resource res, final String identifier) {
+       if (res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
+            return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
+                    .toArray(Link[]::new));
+        }
+        return null;
     }
 
     /**

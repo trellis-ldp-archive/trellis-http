@@ -16,7 +16,6 @@ package org.trellisldp.http.impl;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
@@ -26,7 +25,6 @@ import static org.trellisldp.spi.RDFUtils.auditDeletion;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
-import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
@@ -66,15 +64,19 @@ public class LdpDeleteHandler extends BaseLdpHandler {
      */
     public ResponseBuilder deleteResource(final Resource res) {
         final String identifier = baseUrl + path;
+
+        // Check for a valid session
         if (isNull(session)) {
             throw new WebApplicationException("Missing Session", BAD_REQUEST);
         }
 
-        if (res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
-            return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
-                    .toArray(Link[]::new));
+        // Check if this is already deleted
+        final ResponseBuilder deleted = checkDeleted(res, identifier);
+        if (nonNull(deleted)) {
+            return deleted;
         }
 
+        // Check the cache
         final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier));
         final ResponseBuilder cache = checkCache(request, res.getModified(), etag);
         if (nonNull(cache)) {

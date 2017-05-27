@@ -30,7 +30,6 @@ import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.ok;
@@ -86,7 +85,6 @@ import org.trellisldp.spi.SerializationService;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.OA;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * The GET response builder
@@ -144,9 +142,11 @@ public class LdpGetHandler extends BaseLdpHandler {
      */
     public ResponseBuilder getRepresentation(final Resource res) {
         final String identifier = baseUrl + path;
-        if (res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
-            return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
-                    .toArray(Link[]::new));
+
+        // Check if this is already deleted
+        final ResponseBuilder deleted = checkDeleted(res, identifier);
+        if (nonNull(deleted)) {
+            return deleted;
         }
 
         // TODO add acl header, if in effect
