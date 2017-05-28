@@ -236,7 +236,7 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        if (unsupportedMediaType(contentType)) {
+        if (UNSUPPORTED_TYPES.contains(contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
@@ -279,7 +279,7 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        if (unsupportedMediaType(contentType)) {
+        if (UNSUPPORTED_TYPES.contains(contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
