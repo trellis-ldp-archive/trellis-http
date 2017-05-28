@@ -50,7 +50,6 @@ import static org.trellisldp.http.domain.HttpConstants.RANGE;
 import static org.trellisldp.http.domain.HttpConstants.WANT_DIGEST;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
-import static org.trellisldp.http.impl.HttpUtils.checkCache;
 import static org.trellisldp.http.impl.RdfUtils.filterWithPrefer;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeQuads;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;

@@ -143,17 +143,20 @@ public class LdpResource extends BaseLdpResource {
         getHandler.setWantDigest(digest);
         getHandler.setRange(range);
 
+        // Fetch a versioned resource
         if (nonNull(version)) {
             LOGGER.info("Getting versioned resource: {}", version.toString());
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), version.getInstant())
                 .map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
 
+        // Fetch a timemap
         } else if (nonNull(timemap) && timemap) {
             LOGGER.info("Getting timemap resource");
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
                 .map(res -> res.getTimeMapBuilder(baseUrl + path, syntax, serializationService))
                 .orElse(status(NOT_FOUND)).build();
 
+        // Fetch a timegate
         } else if (nonNull(datetime)) {
             LOGGER.info("Getting timegate resource: {}", datetime.getInstant());
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), datetime.getInstant())
@@ -161,6 +164,7 @@ public class LdpResource extends BaseLdpResource {
                 .orElse(status(NOT_FOUND)).build();
         }
 
+        // Fetch the current state of the resource
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
                 .map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
     }
@@ -184,8 +188,7 @@ public class LdpResource extends BaseLdpResource {
 
         final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, serializationService, request);
         patchHandler.setPath(path);
-        patchHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() ->
-                    uriInfo.getBaseUri().toString()));
+        patchHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
         patchHandler.setSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()));
         patchHandler.setProfile(getProfile(headers.getAcceptableMediaTypes()));
         patchHandler.setPrefer(prefer);
@@ -210,7 +213,6 @@ public class LdpResource extends BaseLdpResource {
         }
 
         final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, request);
-
         deleteHandler.setPath(path);
         deleteHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
         deleteHandler.setSession(session);
@@ -247,7 +249,6 @@ public class LdpResource extends BaseLdpResource {
         final String fullPath = path + "/" + ofNullable(slug).orElseGet(() -> randomUUID().toString());
 
         final LdpPostHandler postHandler = new LdpPostHandler(resourceService, serializationService, datastreamService);
-
         postHandler.setPath(fullPath);
         postHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
         postHandler.setSession(session);
@@ -255,6 +256,7 @@ public class LdpResource extends BaseLdpResource {
         postHandler.setLink(link);
         postHandler.setEntity(body);
 
+        // First check if this is a container
         if (resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX).map(Resource::getInteractionModel)
                 .filter(type -> ldpResourceTypes(type).anyMatch(LDP.Container::equals)).isPresent()) {
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + fullPath), MAX).map(x -> status(CONFLICT))

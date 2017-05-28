@@ -20,7 +20,6 @@ import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.http.impl.HttpUtils.checkCache;
 import static org.trellisldp.spi.RDFUtils.auditDeletion;
 
 import javax.ws.rs.WebApplicationException;

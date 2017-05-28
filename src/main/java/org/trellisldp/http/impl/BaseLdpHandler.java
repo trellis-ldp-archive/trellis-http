@@ -14,22 +14,28 @@
 package org.trellisldp.http.impl;
 
 import static java.util.Arrays.asList;
+import static java.util.Date.from;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
 import static org.apache.commons.rdf.api.RDFSyntax.NTRIPLES;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
+import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.List;
 
+import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
+import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ResourceService;
@@ -40,6 +46,8 @@ import org.trellisldp.vocabulary.Trellis;
  * @author acoburn
  */
 public class BaseLdpHandler {
+
+    private static final Logger LOGGER = getLogger(BaseLdpHandler.class);
 
     protected static final RDF rdf = getInstance();
 
@@ -79,6 +87,23 @@ public class BaseLdpHandler {
         }
         return null;
     }
+
+    /**
+     * Check the request for a cache-related response
+     * @param request the request
+     * @param modified the modified time
+     * @param etag the etag
+     * @return the ResponseBuilder, which will be null if there is not a cache-hit
+     */
+    protected static ResponseBuilder checkCache(final Request request, final Instant modified, final EntityTag etag) {
+        try {
+            return request.evaluatePreconditions(from(modified), etag);
+        } catch (final IllegalArgumentException ex) {
+            LOGGER.warn("Ignoring cache-related headers: {}", ex.getMessage());
+        }
+        return null;
+    }
+
 
     /**
      * Set the path
