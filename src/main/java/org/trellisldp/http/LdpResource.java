@@ -21,6 +21,7 @@ import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
 import static javax.ws.rs.core.Response.status;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
@@ -239,6 +240,10 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
+        if (unsupportedMediaType(contentType)) {
+            return status(UNSUPPORTED_MEDIA_TYPE).build();
+        }
+
         final String fullPath = path + "/" + ofNullable(slug).orElseGet(() -> randomUUID().toString());
 
         final LdpPostHandler postHandler = new LdpPostHandler(resourceService, serializationService, datastreamService);
@@ -276,6 +281,10 @@ public class LdpResource extends BaseLdpResource {
 
         if (path.endsWith("/")) {
             return redirectWithoutSlash(path);
+        }
+
+        if (unsupportedMediaType(contentType)) {
+            return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
         final LdpPutHandler putHandler = new LdpPutHandler(resourceService, serializationService, datastreamService,

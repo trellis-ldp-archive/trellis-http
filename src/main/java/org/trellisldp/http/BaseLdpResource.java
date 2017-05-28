@@ -13,9 +13,13 @@
  */
 package org.trellisldp.http;
 
+import static java.util.Arrays.asList;
+import static java.util.Objects.nonNull;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+
+import java.util.List;
 
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
@@ -33,6 +37,8 @@ class BaseLdpResource {
 
     protected static final Logger LOGGER = getLogger(BaseLdpResource.class);
 
+    private static final List<String> UNSUPPORTED_TYPES = asList("message/external-content");
+
     protected static final RDF rdf = getInstance();
 
     @Context
@@ -46,6 +52,10 @@ class BaseLdpResource {
 
     protected Response redirectWithoutSlash(final String path) {
         return Response.seeOther(fromUri(stripSlash(path)).build()).build();
+    }
+
+    protected Boolean unsupportedMediaType(final String contentType) {
+        return nonNull(contentType) && UNSUPPORTED_TYPES.stream().anyMatch(contentType::equals);
     }
 
     private static String stripSlash(final String path) {
