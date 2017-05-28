@@ -58,7 +58,6 @@ import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.http.domain.Range;
 import org.trellisldp.http.domain.Version;
 import org.trellisldp.http.domain.WantDigest;
-import org.trellisldp.http.impl.HttpSession;
 import org.trellisldp.http.impl.LdpDeleteHandler;
 import org.trellisldp.http.impl.LdpGetHandler;
 import org.trellisldp.http.impl.LdpPatchHandler;
@@ -68,7 +67,6 @@ import org.trellisldp.http.impl.MementoResource;
 import org.trellisldp.spi.DatastreamService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.SerializationService;
-import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.LDP;
 
 /**
@@ -86,8 +84,6 @@ public class LdpResource extends BaseLdpResource {
 
     protected final String baseUrl;
 
-    protected final Session session;
-
     /**
      * Create a LdpResource
      * @param baseUrl the baseUrl
@@ -103,8 +99,6 @@ public class LdpResource extends BaseLdpResource {
         this.resourceService = resourceService;
         this.serializationService = serializationService;
         this.datastreamService = datastreamService;
-        // TODO -- add user session
-        this.session = new HttpSession();
     }
 
     /**

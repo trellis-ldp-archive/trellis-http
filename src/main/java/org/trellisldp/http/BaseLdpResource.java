@@ -29,6 +29,8 @@ import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.rdf.api.RDF;
 import org.slf4j.Logger;
+import org.trellisldp.http.impl.HttpSession;
+import org.trellisldp.spi.Session;
 
 /**
  * @author acoburn
@@ -41,6 +43,8 @@ class BaseLdpResource {
 
     protected static final RDF rdf = getInstance();
 
+    protected final Session session;
+
     @Context
     protected UriInfo uriInfo;
 
@@ -49,6 +53,11 @@ class BaseLdpResource {
 
     @Context
     protected Request request;
+
+    protected BaseLdpResource() {
+        // TODO -- add user session here
+        this.session = new HttpSession();
+    }
 
     protected Response redirectWithoutSlash(final String path) {
         return Response.seeOther(fromUri(stripSlash(path)).build()).build();
