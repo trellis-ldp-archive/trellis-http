@@ -25,8 +25,10 @@ import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeTriples;
+import static org.trellisldp.spi.RDFUtils.auditUpdate;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.CacheControl;
@@ -36,16 +38,13 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.Graph;
-import org.apache.commons.rdf.api.IRI;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.Prefer;
-import org.trellisldp.spi.RDFUtils;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.SerializationService;
 import org.trellisldp.vocabulary.JSONLD;
-import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
 
@@ -113,6 +112,7 @@ public class LdpPatchHandler extends BaseLdpHandler {
 
         LOGGER.debug("Updating {} via PATCH", identifier);
 
+        // Update existing graph
         final Graph graph = rdf.createGraph();
         res.stream(Trellis.PreferUserManaged).forEach(graph::add);
         try {
@@ -125,15 +125,18 @@ public class LdpPatchHandler extends BaseLdpHandler {
 
         // TODO -- validate this w/ the constraint service
         // constraintService.constrainedBy(res.getInteractionModel(), graph);
-        final IRI bnode = (IRI) resourceService.skolemize(rdf.createBlankNode());
         final Dataset dataset = rdf.createDataset();
-        graph.stream().map(skolemizeTriples(resourceService, baseUrl)).map(t ->
-                rdf.createQuad(Trellis.PreferUserManaged, t.getSubject(), t.getPredicate(), t.getObject()))
+        graph.stream().map(skolemizeTriples(resourceService, baseUrl))
+            .map(t -> rdf.createQuad(Trellis.PreferUserManaged, t.getSubject(), t.getPredicate(), t.getObject()))
             .forEach(dataset::add);
 
-        dataset.add(Trellis.PreferAudit, res.getIdentifier(), PROV.wasGeneratedBy, bnode);
-        dataset.add(Trellis.PreferServerManaged, res.getIdentifier(), RDF.type, res.getInteractionModel());
-        RDFUtils.auditUpdate(bnode, session).stream().forEach(dataset::add);
+        // Add audit-related triples
+        auditUpdate(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
+            .forEach(dataset::add);
+
+        // Add existing LDP type
+        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, res.getIdentifier(), RDF.type,
+                    res.getInteractionModel()));
 
         // Save new dataset
         resourceService.put(res.getIdentifier(), dataset);
@@ -156,5 +159,4 @@ public class LdpPatchHandler extends BaseLdpHandler {
 
         return builder;
     }
-
 }

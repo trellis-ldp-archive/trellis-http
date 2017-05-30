@@ -20,6 +20,7 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.status;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
 
@@ -39,7 +40,6 @@ import org.trellisldp.spi.DatastreamService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.SerializationService;
 import org.trellisldp.vocabulary.LDP;
-import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
 
@@ -84,15 +84,19 @@ public class LdpPostHandler extends BaseLdpHandler {
             .filter(SUPPORTED_RDF_TYPES::contains);
 
         final IRI defaultType = nonNull(contentType) && !rdfSyntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
-
         final IRI iri = rdf.createIRI(identifier);
-        final IRI bnode = (IRI) resourceService.skolemize(rdf.createBlankNode());
-        final Dataset dataset = auditCreation(bnode, session);
-        dataset.add(rdf.createQuad(Trellis.PreferAudit, iri, PROV.wasGeneratedBy, bnode));
+
+        final Dataset dataset = rdf.createDataset();
+
+        // Add Audit quads
+        auditCreation(iri, session).stream().map(skolemizeQuads(resourceService, baseUrl)).forEach(dataset::add);
+
+        // Add LDP type
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, iri, RDF.type,
                     ofNullable(link).filter(l -> "type".equals(l.getRel()))
                     .map(Link::getUri).map(URI::toString).map(rdf::createIRI).orElse(defaultType)));
 
+        // Add user-supplied data
         if (nonNull(entity) && rdfSyntax.isPresent()) {
             serializationService.read(entity, identifier, rdfSyntax.get())
                 .map(skolemizeTriples(resourceService, baseUrl)).forEach(triple -> {

@@ -20,6 +20,7 @@ import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.RDFUtils.auditDeletion;
 
 import javax.ws.rs.WebApplicationException;
@@ -28,12 +29,9 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.IRI;
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.vocabulary.PROV;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * The DELETE response builder
@@ -84,9 +82,11 @@ public class LdpDeleteHandler extends BaseLdpHandler {
 
         LOGGER.debug("Deleting {}", identifier);
 
-        final IRI bnode = (IRI) resourceService.skolemize(rdf.createBlankNode());
-        final Dataset dataset = auditDeletion(bnode, session);
-        dataset.add(rdf.createQuad(Trellis.PreferAudit, res.getIdentifier(), PROV.wasGeneratedBy, bnode));
+        final Dataset dataset = rdf.createDataset();
+
+        // Add the audit quads
+        auditDeletion(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
+            .forEach(dataset::add);
 
         // delete the resource
         resourceService.put(res.getIdentifier(), dataset);

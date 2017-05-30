@@ -141,6 +141,7 @@ public final class RdfUtils {
         return triple -> rdf.createTriple((BlankNodeOrIRI) toInternalIri(svc.skolemize(triple.getSubject()), baseUrl),
                 triple.getPredicate(), toInternalIri(svc.skolemize(triple.getObject()), baseUrl));
     }
+
     /**
      * Convert quads from a skolemized form to an external form
      * @param svc the resource service
@@ -151,6 +152,18 @@ public final class RdfUtils {
         return quad -> rdf.createQuad(quad.getGraphName().orElse(Trellis.PreferUserManaged),
                     (BlankNodeOrIRI) toExternalIri(svc.unskolemize(quad.getSubject()), baseUrl),
                     quad.getPredicate(), toExternalIri(svc.unskolemize(quad.getObject()), baseUrl));
+    }
+
+    /**
+     * Convert quads from an external form to a skolemized form
+     * @param svc the resource service
+     * @param baseUrl the baseUrl
+     * @return a mapping function
+     */
+    public static Function<Quad, Quad> skolemizeQuads(final ResourceService svc, final String baseUrl) {
+        return quad -> rdf.createQuad(quad.getGraphName().orElse(Trellis.PreferUserManaged),
+                (BlankNodeOrIRI) toInternalIri(svc.skolemize(quad.getSubject()), baseUrl), quad.getPredicate(),
+                toInternalIri(svc.skolemize(quad.getObject()), baseUrl));
     }
 
     private static final Function<MediaType, Stream<IRI>> profileMapper = type -> {
