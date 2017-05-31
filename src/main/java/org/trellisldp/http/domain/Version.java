@@ -26,6 +26,8 @@ import java.util.Optional;
 import javax.ws.rs.WebApplicationException;
 
 /**
+ * A class representing a version URI parameter
+ *
  * @author acoburn
  */
 public class Version {

@@ -26,6 +26,8 @@ import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
+ * A collection of constant values used by the Trellis HTTP layer
+ *
  * @author acoburn
  */
 public final class HttpConstants {

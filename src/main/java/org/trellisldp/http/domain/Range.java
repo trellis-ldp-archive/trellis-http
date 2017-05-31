@@ -27,6 +27,8 @@ import javax.ws.rs.WebApplicationException;
 import org.slf4j.Logger;
 
 /**
+ * A class representing an HTTP Range header
+ *
  * @author acoburn
  */
 public class Range {

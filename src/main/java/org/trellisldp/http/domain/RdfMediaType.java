@@ -21,6 +21,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Variant;
 
 /**
+ * RDF-based {@link MediaType} definitions
+ *
  * @author acoburn
  */
 public final class RdfMediaType {
