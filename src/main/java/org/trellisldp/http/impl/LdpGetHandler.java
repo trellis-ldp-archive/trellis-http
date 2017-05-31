@@ -73,14 +73,14 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
 
-import org.trellisldp.api.Datastream;
+import org.trellisldp.api.Blob;
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.http.domain.Range;
 import org.trellisldp.http.domain.WantDigest;
-import org.trellisldp.spi.DatastreamService;
+import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.SerializationService;
+import org.trellisldp.spi.IOService;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.OA;
@@ -96,8 +96,8 @@ public class LdpGetHandler extends BaseLdpHandler {
 
     private static final Logger LOGGER = getLogger(LdpGetHandler.class);
 
-    private final SerializationService serializationService;
-    private final DatastreamService datastreamService;
+    private final IOService ioService;
+    private final BinaryService binaryService;
     private final Request request;
 
     private Range range = null;
@@ -106,15 +106,15 @@ public class LdpGetHandler extends BaseLdpHandler {
     /**
      * A GET response builder
      * @param resourceService the resource service
-     * @param serializationService the serialization service
-     * @param datastreamService the datastream service
+     * @param ioService the serialization service
+     * @param binaryService the binary service
      * @param request the HTTP request
      */
-    public LdpGetHandler(final ResourceService resourceService, final SerializationService serializationService,
-            final DatastreamService datastreamService, final Request request) {
+    public LdpGetHandler(final ResourceService resourceService, final IOService ioService,
+            final BinaryService binaryService, final Request request) {
         super(resourceService);
-        this.serializationService = serializationService;
-        this.datastreamService = datastreamService;
+        this.ioService = ioService;
+        this.binaryService = binaryService;
         this.request = request;
     }
 
@@ -152,7 +152,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         final ResponseBuilder builder = basicGetResponseBuilder(res, ofNullable(syntax));
 
         // Add NonRDFSource-related "describe*" link headers
-        res.getDatastream().ifPresent(ds -> {
+        res.getBlob().ifPresent(ds -> {
             if (nonNull(syntax)) {
                 builder.link(identifier + "#description", "canonical").link(identifier, "describes");
             } else {
@@ -165,7 +165,7 @@ public class LdpGetHandler extends BaseLdpHandler {
             .links(MementoResource.getMementoLinks(identifier, res.getMementos()).toArray(Link[]::new));
 
         // NonRDFSources responses (strong ETags, etc)
-        if (res.getDatastream().isPresent() && isNull(syntax)) {
+        if (res.getBlob().isPresent() && isNull(syntax)) {
             return getLdpNr(identifier, res, builder);
 
         // RDFSource responses (weak ETags, etc)
@@ -194,7 +194,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
             return builder.status(NO_CONTENT);
         } else {
-            return builder.entity(ResourceStreamer.quadStreamer(serializationService,
+            return builder.entity(ResourceStreamer.quadStreamer(ioService,
                         res.stream().filter(filterWithPrefer(prefer))
                         .map(unskolemizeQuads(resourceService, baseUrl)),
                         syntax, ofNullable(profile).orElseGet(() ->
@@ -203,41 +203,41 @@ public class LdpGetHandler extends BaseLdpHandler {
     }
 
     private ResponseBuilder getLdpNr(final String identifier, final Resource res, final ResponseBuilder builder) {
-        final Instant mod = res.getDatastream().map(Datastream::getModified).get();
+        final Instant mod = res.getBlob().map(Blob::getModified).get();
         final EntityTag etag = new EntityTag(md5Hex(mod + identifier));
         final ResponseBuilder cacheBuilder = checkCache(request, mod, etag);
         if (nonNull(cacheBuilder)) {
             return cacheBuilder;
         }
 
-        final IRI dsid = res.getDatastream().map(Datastream::getIdentifier).get();
-        final InputStream datastream = datastreamService.getContent(dsid).orElseThrow(() ->
-                new WebApplicationException("Could not load datastream resolver for " + dsid.getIRIString()));
+        final IRI dsid = res.getBlob().map(Blob::getIdentifier).get();
+        final InputStream binary = binaryService.getContent(dsid).orElseThrow(() ->
+                new WebApplicationException("Could not load binary resolver for " + dsid.getIRIString()));
         builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes")
             .header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE)).tag(etag);
 
         // Add instance digests, if Requested and supported
         ofNullable(digest).map(WantDigest::getAlgorithms).ifPresent(algs ->
-                algs.stream().filter(datastreamService.supportedAlgorithms()::contains).findFirst()
-                .ifPresent(alg -> datastreamService.getContent(dsid)
-                    .map(is -> datastreamService.hexDigest(alg, is))
+                algs.stream().filter(binaryService.supportedAlgorithms()::contains).findFirst()
+                .ifPresent(alg -> binaryService.getContent(dsid)
+                    .map(is -> binaryService.hexDigest(alg, is))
                     .ifPresent(d -> builder.header(DIGEST, d))));
 
         // Range Requests
         if (nonNull(range)) {
             try {
-                final long skipped = datastream.skip(range.getFrom());
+                final long skipped = binary.skip(range.getFrom());
                 if (skipped < range.getFrom()) {
                     LOGGER.warn("Trying to skip more data available in the input stream! {}, {}",
                             skipped, range.getFrom());
                 }
             } catch (final IOException ex) {
-                LOGGER.error("Error seeking through datastream: {}", ex.getMessage());
+                LOGGER.error("Error seeking through binary: {}", ex.getMessage());
                 return status(BAD_REQUEST).entity(ex.getMessage());
             }
-            return builder.entity(new BoundedInputStream(datastream, range.getTo() - range.getFrom()));
+            return builder.entity(new BoundedInputStream(binary, range.getTo() - range.getFrom()));
         }
-        return builder.entity(datastream);
+        return builder.entity(binary);
     }
 
     private static ResponseBuilder basicGetResponseBuilder(final Resource res, final Optional<RDFSyntax> syntax) {
@@ -253,7 +253,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         }
 
         // Add LDP-required headers
-        final IRI model = res.getDatastream().isPresent() && syntax.isPresent() ?
+        final IRI model = res.getBlob().isPresent() && syntax.isPresent() ?
                 LDP.RDFSource : res.getInteractionModel();
         ldpResourceTypes(model).forEach(type -> {
             builder.link(type.getIRIString(), "type");

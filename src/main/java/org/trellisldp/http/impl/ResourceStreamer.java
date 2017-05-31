@@ -23,14 +23,14 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.Triple;
-import org.trellisldp.spi.SerializationService;
+import org.trellisldp.spi.IOService;
 
 /**
  * @author acoburn
  */
 public class ResourceStreamer implements StreamingOutput {
 
-    private final SerializationService service;
+    private final IOService service;
     private final Stream<Triple> stream;
     private final RDFSyntax syntax;
     private final IRI[] profiles;
@@ -42,7 +42,7 @@ public class ResourceStreamer implements StreamingOutput {
      * @param syntax the RDF syntax to output
      * @param profiles the profile, if any
      */
-    protected ResourceStreamer(final SerializationService service, final Stream<Triple> stream, final RDFSyntax syntax,
+    protected ResourceStreamer(final IOService service, final Stream<Triple> stream, final RDFSyntax syntax,
             final IRI... profiles) {
         this.service = service;
         this.stream = stream;
@@ -58,7 +58,7 @@ public class ResourceStreamer implements StreamingOutput {
      * @param profiles the profile, if any
      * @return the resource streamer
      */
-    final public static ResourceStreamer tripleStreamer(final SerializationService service,
+    final public static ResourceStreamer tripleStreamer(final IOService service,
             final Stream<Triple> stream, final RDFSyntax syntax, final IRI... profiles) {
         return new ResourceStreamer(service, stream, syntax, profiles);
     }
@@ -71,7 +71,7 @@ public class ResourceStreamer implements StreamingOutput {
      * @param profiles the profile, if any
      * @return the resource streamer
      */
-    final public static ResourceStreamer quadStreamer(final SerializationService service,
+    final public static ResourceStreamer quadStreamer(final IOService service,
             final Stream<Quad> stream, final RDFSyntax syntax, final IRI... profiles) {
         return new ResourceStreamer(service, stream.map(Quad::asTriple), syntax, profiles);
     }

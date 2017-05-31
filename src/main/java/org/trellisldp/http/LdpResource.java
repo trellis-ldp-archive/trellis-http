@@ -64,9 +64,9 @@ import org.trellisldp.http.impl.LdpPatchHandler;
 import org.trellisldp.http.impl.LdpPostHandler;
 import org.trellisldp.http.impl.LdpPutHandler;
 import org.trellisldp.http.impl.MementoResource;
-import org.trellisldp.spi.DatastreamService;
+import org.trellisldp.spi.BinaryService;
+import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.SerializationService;
 import org.trellisldp.vocabulary.LDP;
 
 /**
@@ -78,9 +78,9 @@ public class LdpResource extends BaseLdpResource {
 
     protected final ResourceService resourceService;
 
-    protected final SerializationService serializationService;
+    protected final IOService ioService;
 
-    protected final DatastreamService datastreamService;
+    protected final BinaryService binaryService;
 
     protected final String baseUrl;
 
@@ -88,17 +88,17 @@ public class LdpResource extends BaseLdpResource {
      * Create a LdpResource
      * @param baseUrl the baseUrl
      * @param resourceService the resource service
-     * @param serializationService the serialization service
-     * @param datastreamService the datastream service
+     * @param ioService the i/o service
+     * @param binaryService the datastream service
      */
     public LdpResource(final String baseUrl, final ResourceService resourceService,
-            final SerializationService serializationService,
-            final DatastreamService datastreamService) {
+            final IOService ioService,
+            final BinaryService binaryService) {
         super();
         this.baseUrl = baseUrl;
         this.resourceService = resourceService;
-        this.serializationService = serializationService;
-        this.datastreamService = datastreamService;
+        this.ioService = ioService;
+        this.binaryService = binaryService;
     }
 
     /**
@@ -127,7 +127,7 @@ public class LdpResource extends BaseLdpResource {
         }
 
         final RDFSyntax syntax = getRdfSyntax(headers.getAcceptableMediaTypes());
-        final LdpGetHandler getHandler = new LdpGetHandler(resourceService, serializationService, datastreamService,
+        final LdpGetHandler getHandler = new LdpGetHandler(resourceService, ioService, binaryService,
                 request);
         getHandler.setPath(path);
         getHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
@@ -147,7 +147,7 @@ public class LdpResource extends BaseLdpResource {
         } else if (nonNull(timemap) && timemap) {
             LOGGER.info("Getting timemap resource");
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
-                .map(res -> res.getTimeMapBuilder(baseUrl + path, syntax, serializationService))
+                .map(res -> res.getTimeMapBuilder(baseUrl + path, syntax, ioService))
                 .orElse(status(NOT_FOUND)).build();
 
         // Fetch a timegate
@@ -180,7 +180,7 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, serializationService, request);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, ioService, request);
         patchHandler.setPath(path);
         patchHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
         patchHandler.setSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()));
@@ -242,7 +242,7 @@ public class LdpResource extends BaseLdpResource {
 
         final String fullPath = path + "/" + ofNullable(slug).orElseGet(() -> randomUUID().toString());
 
-        final LdpPostHandler postHandler = new LdpPostHandler(resourceService, serializationService, datastreamService);
+        final LdpPostHandler postHandler = new LdpPostHandler(resourceService, ioService, binaryService);
         postHandler.setPath(fullPath);
         postHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
         postHandler.setSession(session);
@@ -283,7 +283,7 @@ public class LdpResource extends BaseLdpResource {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
-        final LdpPutHandler putHandler = new LdpPutHandler(resourceService, serializationService, datastreamService,
+        final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, binaryService,
                 request);
         putHandler.setPath(path);
         putHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));

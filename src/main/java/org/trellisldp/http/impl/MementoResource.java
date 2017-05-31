@@ -45,7 +45,7 @@ import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.VersionRange;
-import org.trellisldp.spi.SerializationService;
+import org.trellisldp.spi.IOService;
 import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.Trellis;
 import org.trellisldp.vocabulary.XSD;
@@ -89,7 +89,7 @@ public final class MementoResource {
      * @return a response builder object
      */
     public Response.ResponseBuilder getTimeMapBuilder(final String identifier, final RDFSyntax syntax,
-            final SerializationService serializer) {
+            final IOService serializer) {
         final Response.ResponseBuilder builder = Response.ok().link(identifier, ORIGINAL + " " + TIMEGATE);
         final List<Link> links = getMementoLinks(identifier, resource.getMementos()).collect(toList());
         builder.links(links.toArray(new Link[0]));

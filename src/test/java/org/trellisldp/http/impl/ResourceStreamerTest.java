@@ -25,8 +25,8 @@ import java.util.stream.Stream;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.junit.Test;
-import org.trellisldp.io.JenaSerializationService;
-import org.trellisldp.spi.SerializationService;
+import org.trellisldp.io.JenaIOService;
+import org.trellisldp.spi.IOService;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.Trellis;
 
@@ -35,7 +35,7 @@ import org.trellisldp.vocabulary.Trellis;
  */
 public class ResourceStreamerTest {
 
-    final SerializationService svc = new JenaSerializationService(null);
+    final IOService svc = new JenaIOService(null);
     final RDF rdf = ServiceLoader.load(RDF.class).iterator().next();
 
     @Test

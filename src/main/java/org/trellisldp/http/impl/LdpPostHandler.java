@@ -36,9 +36,9 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.slf4j.Logger;
-import org.trellisldp.spi.DatastreamService;
+import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.SerializationService;
+import org.trellisldp.spi.IOService;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
@@ -52,20 +52,20 @@ public class LdpPostHandler extends BaseLdpHandler {
 
     private static final Logger LOGGER = getLogger(LdpPostHandler.class);
 
-    private final DatastreamService datastreamService;
-    private final SerializationService serializationService;
+    private final BinaryService binaryService;
+    private final IOService ioService;
 
     /**
      * Create a builder for an LDP POST response
      * @param resourceService the resource service
-     * @param serializationService the serialization service
-     * @param datastreamService the datastream service
+     * @param ioService the serialization service
+     * @param binaryService the datastream service
      */
     public LdpPostHandler(final ResourceService resourceService,
-            final SerializationService serializationService, final DatastreamService datastreamService) {
+            final IOService ioService, final BinaryService binaryService) {
         super(resourceService);
-        this.serializationService = serializationService;
-        this.datastreamService = datastreamService;
+        this.ioService = ioService;
+        this.binaryService = binaryService;
     }
 
     /**
@@ -98,7 +98,7 @@ public class LdpPostHandler extends BaseLdpHandler {
 
         // Add user-supplied data
         if (nonNull(entity) && rdfSyntax.isPresent()) {
-            serializationService.read(entity, identifier, rdfSyntax.get())
+            ioService.read(entity, identifier, rdfSyntax.get())
                 .map(skolemizeTriples(resourceService, baseUrl)).forEach(triple -> {
                     dataset.add(rdf.createQuad(Trellis.PreferUserManaged, triple.getSubject(),
                             triple.getPredicate(), triple.getObject()));

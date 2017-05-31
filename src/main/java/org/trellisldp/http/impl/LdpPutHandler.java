@@ -40,11 +40,11 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.slf4j.Logger;
-import org.trellisldp.api.Datastream;
+import org.trellisldp.api.Blob;
 import org.trellisldp.api.Resource;
-import org.trellisldp.spi.DatastreamService;
+import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.SerializationService;
+import org.trellisldp.spi.IOService;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
@@ -58,23 +58,22 @@ public class LdpPutHandler extends BaseLdpHandler {
 
     private static final Logger LOGGER = getLogger(LdpPutHandler.class);
 
-    private final DatastreamService datastreamService;
-    private final SerializationService serializationService;
+    private final BinaryService binaryService;
+    private final IOService ioService;
     private final Request request;
 
     /**
      * Create a builder for an LDP POST response
      * @param resourceService the resource service
-     * @param serializationService the serialization service
-     * @param datastreamService the datastream service
+     * @param ioService the serialization service
+     * @param binaryService the binary service
      * @param request the request
      */
-    public LdpPutHandler(final ResourceService resourceService,
-            final SerializationService serializationService, final DatastreamService datastreamService,
-            final Request request) {
+    public LdpPutHandler(final ResourceService resourceService, final IOService ioService,
+            final BinaryService binaryService, final Request request) {
         super(resourceService);
-        this.serializationService = serializationService;
-        this.datastreamService = datastreamService;
+        this.ioService = ioService;
+        this.binaryService = binaryService;
         this.request = request;
     }
 
@@ -88,9 +87,9 @@ public class LdpPutHandler extends BaseLdpHandler {
         final EntityTag etag;
         final Instant modified;
 
-        if (res.getDatastream().isPresent() &&
+        if (res.getBlob().isPresent() &&
                 !ofNullable(contentType).flatMap(RDFSyntax::byMediaType).isPresent()) {
-            modified = res.getDatastream().map(Datastream::getModified).get();
+            modified = res.getBlob().map(Blob::getModified).get();
             etag = new EntityTag(md5Hex(modified + identifier));
         } else {
             modified = res.getModified();
@@ -135,7 +134,7 @@ public class LdpPutHandler extends BaseLdpHandler {
 
         // Add user-supplied data
         if (nonNull(entity) && rdfSyntax.isPresent()) {
-            serializationService.read(entity, identifier, rdfSyntax.get())
+            ioService.read(entity, identifier, rdfSyntax.get())
                 .map(skolemizeTriples(resourceService, baseUrl)).forEach(triple -> {
                     dataset.add(rdf.createQuad(Trellis.PreferUserManaged, triple.getSubject(),
                             triple.getPredicate(), triple.getObject()));

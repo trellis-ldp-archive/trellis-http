@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.SerializationService;
+import org.trellisldp.spi.IOService;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
@@ -57,7 +57,7 @@ public class LdpPatchHandler extends BaseLdpHandler {
 
     private static final Logger LOGGER = getLogger(LdpPatchHandler.class);
 
-    private final SerializationService serializationService;
+    private final IOService ioService;
     private final Request request;
 
     private String sparqlUpdate = null;
@@ -65,13 +65,13 @@ public class LdpPatchHandler extends BaseLdpHandler {
     /**
      * Create a handler for PATCH operations
      * @param resourceService the resource service
-     * @param serializationService the serialization service
+     * @param ioService the serialization service
      * @param request the HTTP request
      */
-    public LdpPatchHandler(final ResourceService resourceService, final SerializationService serializationService,
+    public LdpPatchHandler(final ResourceService resourceService, final IOService ioService,
             final Request request) {
         super(resourceService);
-        this.serializationService = serializationService;
+        this.ioService = ioService;
         this.request = request;
     }
 
@@ -116,7 +116,7 @@ public class LdpPatchHandler extends BaseLdpHandler {
         final Graph graph = rdf.createGraph();
         res.stream(Trellis.PreferUserManaged).forEach(graph::add);
         try {
-            serializationService.update(graph, sparqlUpdate, TRELLIS_PREFIX + path);
+            ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + path);
             // TODO change this to a more specific (RepositoryRuntime) Exception
         } catch (final RuntimeException ex) {
             LOGGER.warn(ex.getMessage());
@@ -144,7 +144,7 @@ public class LdpPatchHandler extends BaseLdpHandler {
         final ResponseBuilder builder = ok();
 
         if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("representation"::equals).isPresent()) {
-            builder.entity(ResourceStreamer.tripleStreamer(serializationService,
+            builder.entity(ResourceStreamer.tripleStreamer(ioService,
                         graph.stream().map(unskolemizeTriples(resourceService, baseUrl)),
                         syntax, ofNullable(profile).orElseGet(() ->
                             RDFA_HTML.equals(syntax) ? rdf.createIRI(identifier) : JSONLD.expanded)));

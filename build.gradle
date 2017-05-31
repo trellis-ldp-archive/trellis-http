@@ -38,7 +38,7 @@ ext {
 
     /* Testing */
     junitVersion = '4.12'
-    trellisJenaSerializationVersion = '0.1.0-SNAPSHOT'
+    trellisJenaIOVersion = '0.1.0-SNAPSHOT'
     jerseyVersion = '2.25.1'
 
     /* OSGi */
@@ -62,7 +62,7 @@ dependencies {
     compile group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
 
     testCompile group: 'junit', name: 'junit', version: junitVersion
-    testCompile group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisJenaSerializationVersion
+    testCompile group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisJenaIOVersion
     testCompile group: 'org.glassfish.jersey.core', name: 'jersey-server', version: jerseyVersion
 
     buildToolsConfig 'org.trellisldp:trellis-build-tools:0.1.1'
