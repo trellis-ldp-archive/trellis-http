@@ -42,8 +42,8 @@ import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.Prefer;
-import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.IOService;
+import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;

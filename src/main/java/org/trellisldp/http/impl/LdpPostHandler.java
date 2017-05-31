@@ -37,8 +37,8 @@ import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.slf4j.Logger;
 import org.trellisldp.spi.BinaryService;
-import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.IOService;
+import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
