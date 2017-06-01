@@ -30,6 +30,8 @@ import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;
+import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
+import static javax.ws.rs.core.Response.notModified;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
@@ -38,6 +40,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
@@ -231,6 +235,21 @@ public class LdpGetHandlerTest {
         assertFalse(varies.contains(WANT_DIGEST));
         assertFalse(varies.contains(ACCEPT_DATETIME));
         assertTrue(varies.contains(PREFER));
+    }
+
+    @Test
+    public void testCache() {
+        when(mockRequest.evaluatePreconditions(eq(from(time)), any(EntityTag.class)))
+                .thenReturn(notModified());
+
+        final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
+                mockBinaryService, mockRequest);
+        getHandler.setPath("/");
+        getHandler.setBaseUrl(baseUrl);
+        getHandler.setSyntax(TURTLE);
+
+        final Response res = getHandler.getRepresentation(mockResource).build();
+        assertEquals(NOT_MODIFIED, res.getStatusInfo());
     }
 
     @Test
