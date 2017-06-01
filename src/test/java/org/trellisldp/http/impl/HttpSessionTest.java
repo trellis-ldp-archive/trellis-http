@@ -1,0 +1,46 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.trellisldp.http.impl;
+
+import static java.time.Instant.now;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.time.Instant;
+import java.util.Optional;
+
+import org.junit.Test;
+import org.trellisldp.spi.Session;
+import org.trellisldp.vocabulary.Trellis;
+
+/**
+ * @author acoburn
+ */
+public class HttpSessionTest {
+
+    @Test
+    public void testHttpSession() {
+        final Instant time = now();
+        final Session session = new HttpSession();
+        assertEquals(Trellis.AnonymousUser, session.getAgent());
+        assertEquals(Optional.empty(), session.getDelegatedBy());
+        assertTrue(session.getIdentifier().getIRIString().startsWith("trellis:session/"));
+        final Session session2 = new HttpSession();
+        assertNotEquals(session.getIdentifier(), session2.getIdentifier());
+        assertFalse(session.getCreated().isBefore(time));
+        assertFalse(session.getCreated().isAfter(session2.getCreated()));
+    }
+}
