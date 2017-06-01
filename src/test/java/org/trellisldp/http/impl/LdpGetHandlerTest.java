@@ -253,6 +253,21 @@ public class LdpGetHandlerTest {
     }
 
     @Test
+    public void testCacheError() {
+        when(mockRequest.evaluatePreconditions(eq(from(time)), any(EntityTag.class)))
+                .thenThrow(new IllegalArgumentException());
+
+        final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
+                mockBinaryService, mockRequest);
+        getHandler.setPath("/");
+        getHandler.setBaseUrl(baseUrl);
+        getHandler.setSyntax(TURTLE);
+
+        final Response res = getHandler.getRepresentation(mockResource).build();
+        assertEquals(OK, res.getStatusInfo());
+    }
+
+    @Test
     public void testExtraLinks() {
         final String inbox = "http://ldn.example.com/inbox";
         final String annService = "http://annotation.example.com/resource";
@@ -380,7 +395,7 @@ public class LdpGetHandlerTest {
 
     @Test
     public void testGetDeleted() {
-        when(mockResource.getTypes()).thenReturn(Stream.of(Trellis.DeletedResource));
+        when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
 
         final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
                 mockBinaryService, mockRequest);
