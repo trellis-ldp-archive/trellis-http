@@ -88,6 +88,18 @@ public class RdfUtilsTest {
     }
 
     @Test
+    public void testInternalize() {
+        final IRI iri1 = rdf.createIRI("trellis:repository/resource");
+        final IRI iri2 = rdf.createIRI("http://example.org/resource");
+        final Literal literal = rdf.createLiteral("Text");
+        final String externalUrl = "http://localhost/api/";
+
+        assertEquals(iri1, RdfUtils.toInternalIri(rdf.createIRI(externalUrl + "repository/resource"), externalUrl));
+        assertEquals(iri2, RdfUtils.toInternalIri(iri2, externalUrl));
+        assertEquals(literal, RdfUtils.toInternalIri(literal, externalUrl));
+    }
+
+    @Test
     public void testProfile() {
         final List<MediaType> types = asList(
                 new MediaType("application", "json"),
