@@ -73,7 +73,7 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
 
-import org.trellisldp.api.Blob;
+import org.trellisldp.api.Binary;
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.http.domain.Range;
@@ -152,7 +152,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         final ResponseBuilder builder = basicGetResponseBuilder(res, ofNullable(syntax));
 
         // Add NonRDFSource-related "describe*" link headers
-        res.getBlob().ifPresent(ds -> {
+        res.getBinary().ifPresent(ds -> {
             if (nonNull(syntax)) {
                 builder.link(identifier + "#description", "canonical").link(identifier, "describes");
             } else {
@@ -165,7 +165,7 @@ public class LdpGetHandler extends BaseLdpHandler {
             .links(MementoResource.getMementoLinks(identifier, res.getMementos()).toArray(Link[]::new));
 
         // NonRDFSources responses (strong ETags, etc)
-        if (res.getBlob().isPresent() && isNull(syntax)) {
+        if (res.getBinary().isPresent() && isNull(syntax)) {
             return getLdpNr(identifier, res, builder);
 
         // RDFSource responses (weak ETags, etc)
@@ -203,14 +203,14 @@ public class LdpGetHandler extends BaseLdpHandler {
     }
 
     private ResponseBuilder getLdpNr(final String identifier, final Resource res, final ResponseBuilder builder) {
-        final Instant mod = res.getBlob().map(Blob::getModified).get();
+        final Instant mod = res.getBinary().map(Binary::getModified).get();
         final EntityTag etag = new EntityTag(md5Hex(mod + identifier));
         final ResponseBuilder cacheBuilder = checkCache(request, mod, etag);
         if (nonNull(cacheBuilder)) {
             return cacheBuilder;
         }
 
-        final IRI dsid = res.getBlob().map(Blob::getIdentifier).get();
+        final IRI dsid = res.getBinary().map(Binary::getIdentifier).get();
         final InputStream binary = binaryService.getContent(dsid).orElseThrow(() ->
                 new WebApplicationException("Could not load binary resolver for " + dsid.getIRIString()));
         builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes")
@@ -253,7 +253,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         }
 
         // Add LDP-required headers
-        final IRI model = res.getBlob().isPresent() && syntax.isPresent() ?
+        final IRI model = res.getBinary().isPresent() && syntax.isPresent() ?
                 LDP.RDFSource : res.getInteractionModel();
         ldpResourceTypes(model).forEach(type -> {
             builder.link(type.getIRIString(), "type");

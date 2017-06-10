@@ -40,7 +40,7 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.slf4j.Logger;
-import org.trellisldp.api.Blob;
+import org.trellisldp.api.Binary;
 import org.trellisldp.api.Resource;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.IOService;
@@ -87,9 +87,9 @@ public class LdpPutHandler extends BaseLdpHandler {
         final EntityTag etag;
         final Instant modified;
 
-        if (res.getBlob().isPresent() &&
+        if (res.getBinary().isPresent() &&
                 !ofNullable(contentType).flatMap(RDFSyntax::byMediaType).isPresent()) {
-            modified = res.getBlob().map(Blob::getModified).get();
+            modified = res.getBinary().map(Binary::getModified).get();
             etag = new EntityTag(md5Hex(modified + identifier));
         } else {
             modified = res.getModified();

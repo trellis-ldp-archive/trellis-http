@@ -119,7 +119,7 @@ public class LdpGetHandlerTest {
         when(mockResource.getMementos()).thenReturn(Stream.empty());
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockResource.getModified()).thenReturn(time);
-        when(mockResource.getBlob()).thenReturn(Optional.empty());
+        when(mockResource.getBinary()).thenReturn(Optional.empty());
         when(mockResource.isMemento()).thenReturn(false);
         when(mockResource.getInbox()).thenReturn(Optional.empty());
         when(mockResource.getAnnotationService()).thenReturn(Optional.empty());
