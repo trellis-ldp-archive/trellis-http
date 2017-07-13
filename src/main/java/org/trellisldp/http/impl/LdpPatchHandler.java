@@ -72,6 +72,7 @@ public class LdpPatchHandler extends BaseLdpHandler {
      * Create a handler for PATCH operations
      * @param resourceService the resource service
      * @param ioService the serialization service
+     * @param constraintService the RDF constraint service
      * @param request the HTTP request
      */
     public LdpPatchHandler(final ResourceService resourceService, final IOService ioService,

@@ -92,6 +92,7 @@ public class LdpResource extends BaseLdpResource {
      * @param baseUrl the baseUrl
      * @param resourceService the resource service
      * @param ioService the i/o service
+     * @param constraintService the RDF constraint enforcing service
      * @param binaryService the datastream service
      */
     public LdpResource(final String baseUrl, final ResourceService resourceService,
