@@ -65,6 +65,7 @@ import org.trellisldp.http.impl.LdpPostHandler;
 import org.trellisldp.http.impl.LdpPutHandler;
 import org.trellisldp.http.impl.MementoResource;
 import org.trellisldp.spi.BinaryService;
+import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
@@ -82,6 +83,8 @@ public class LdpResource extends BaseLdpResource {
 
     protected final BinaryService binaryService;
 
+    protected final ConstraintService constraintService;
+
     protected final String baseUrl;
 
     /**
@@ -92,13 +95,14 @@ public class LdpResource extends BaseLdpResource {
      * @param binaryService the datastream service
      */
     public LdpResource(final String baseUrl, final ResourceService resourceService,
-            final IOService ioService,
+            final IOService ioService, final ConstraintService constraintService,
             final BinaryService binaryService) {
         super();
         this.baseUrl = baseUrl;
         this.resourceService = resourceService;
         this.ioService = ioService;
         this.binaryService = binaryService;
+        this.constraintService = constraintService;
     }
 
     /**
@@ -180,7 +184,8 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, ioService, request);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, ioService, constraintService,
+                request);
         patchHandler.setPath(path);
         patchHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
         patchHandler.setSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()));
@@ -242,7 +247,8 @@ public class LdpResource extends BaseLdpResource {
 
         final String fullPath = path + "/" + ofNullable(slug).orElseGet(() -> randomUUID().toString());
 
-        final LdpPostHandler postHandler = new LdpPostHandler(resourceService, ioService, binaryService);
+        final LdpPostHandler postHandler = new LdpPostHandler(resourceService, ioService, constraintService,
+                binaryService);
         postHandler.setPath(fullPath);
         postHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
         postHandler.setSession(session);
@@ -283,8 +289,8 @@ public class LdpResource extends BaseLdpResource {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
-        final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, binaryService,
-                request);
+        final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, constraintService,
+                binaryService, request);
         putHandler.setPath(path);
         putHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
         putHandler.setSession(session);

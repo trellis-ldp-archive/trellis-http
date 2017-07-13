@@ -36,15 +36,20 @@ import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
+import java.util.Optional;
+
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.Graph;
+import org.apache.commons.rdf.api.IRI;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.Prefer;
+import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.JSONLD;
+import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
 
@@ -58,6 +63,7 @@ public class LdpPatchHandler extends BaseLdpHandler {
     private static final Logger LOGGER = getLogger(LdpPatchHandler.class);
 
     private final IOService ioService;
+    private final ConstraintService constraintService;
     private final Request request;
 
     private String sparqlUpdate = null;
@@ -69,9 +75,10 @@ public class LdpPatchHandler extends BaseLdpHandler {
      * @param request the HTTP request
      */
     public LdpPatchHandler(final ResourceService resourceService, final IOService ioService,
-            final Request request) {
+            final ConstraintService constraintService, final Request request) {
         super(resourceService);
         this.ioService = ioService;
+        this.constraintService = constraintService;
         this.request = request;
     }
 
@@ -137,6 +144,13 @@ public class LdpPatchHandler extends BaseLdpHandler {
         // Add existing LDP type
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, res.getIdentifier(), RDF.type,
                     res.getInteractionModel()));
+
+        // Check any constraints
+        final Optional<String> constraint = dataset.getGraph(Trellis.PreferUserManaged)
+            .flatMap(g -> constraintService.constrainedBy(res.getInteractionModel(), g)).map(IRI::getIRIString);
+        if (constraint.isPresent()) {
+            return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
+        }
 
         // Save new dataset
         resourceService.put(res.getIdentifier(), dataset);

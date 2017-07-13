@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.trellisldp.api.Binary;
 import org.trellisldp.api.Resource;
 import org.trellisldp.spi.BinaryService;
+import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
@@ -59,6 +60,7 @@ public class LdpPutHandler extends BaseLdpHandler {
     private static final Logger LOGGER = getLogger(LdpPutHandler.class);
 
     private final BinaryService binaryService;
+    private final ConstraintService constraintService;
     private final IOService ioService;
     private final Request request;
 
@@ -70,9 +72,10 @@ public class LdpPutHandler extends BaseLdpHandler {
      * @param request the request
      */
     public LdpPutHandler(final ResourceService resourceService, final IOService ioService,
-            final BinaryService binaryService, final Request request) {
+            final ConstraintService constraintService, final BinaryService binaryService, final Request request) {
         super(resourceService);
         this.ioService = ioService;
+        this.constraintService = constraintService;
         this.binaryService = binaryService;
         this.request = request;
     }
@@ -120,6 +123,8 @@ public class LdpPutHandler extends BaseLdpHandler {
         LOGGER.info("Setting resource as {}", identifier);
 
         final IRI defaultType = nonNull(contentType) && !rdfSyntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
+        final IRI ldpType = ofNullable(link).filter(l -> "type".equals(l.getRel()))
+                    .map(Link::getUri).map(URI::toString).map(rdf::createIRI).orElse(defaultType);
 
         final IRI iri = rdf.createIRI(identifier);
         final Dataset dataset = rdf.createDataset();
@@ -128,9 +133,7 @@ public class LdpPutHandler extends BaseLdpHandler {
         auditUpdate(iri, session).stream().map(skolemizeQuads(resourceService, baseUrl)).forEach(dataset::add);
 
         // Add LDP type
-        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, iri, RDF.type,
-                    ofNullable(link).filter(l -> "type".equals(l.getRel()))
-                    .map(Link::getUri).map(URI::toString).map(rdf::createIRI).orElse(defaultType)));
+        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, iri, RDF.type, ldpType));
 
         // Add user-supplied data
         if (nonNull(entity) && rdfSyntax.isPresent()) {
@@ -139,6 +142,13 @@ public class LdpPutHandler extends BaseLdpHandler {
                     dataset.add(rdf.createQuad(Trellis.PreferUserManaged, triple.getSubject(),
                             triple.getPredicate(), triple.getObject()));
                 });
+
+            // Check for any constraints
+            final Optional<String> constraint = dataset.getGraph(Trellis.PreferUserManaged)
+                .flatMap(g -> constraintService.constrainedBy(ldpType, g)).map(IRI::getIRIString);
+            if (constraint.isPresent()) {
+                return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
+            }
         } else {
             // TODO also handle binary data
         }
