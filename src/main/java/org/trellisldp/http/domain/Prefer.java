@@ -19,6 +19,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.joining;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
 import java.util.HashMap;
@@ -142,4 +143,32 @@ public class Prefer {
     private static Function<String, String> trimQuotes = param ->
         param.startsWith("\"") && param.endsWith("\"") && param.length() > 1 ?
             param.substring(1, param.length() - 1) : param;
+
+    /**
+     * Build a Prefer object with a set of included IRIs
+     * @param includes the IRIs to include
+     * @return the Prefer object
+     */
+    public static Prefer ofInclude(final String... includes) {
+        final List<String> iris = asList(includes);
+        if (iris.isEmpty()) {
+            return new Prefer("return=representation");
+        }
+        return new Prefer("return=representation; include=\"" +
+                iris.stream().collect(joining(" ")) + "\"");
+    }
+
+    /**
+     * Build a Prefer object with a set of omitted IRIs
+     * @param omits the IRIs to omit
+     * @return the Prefer object
+     */
+    public static Prefer ofOmit(final String... omits) {
+        final List<String> iris = asList(omits);
+        if (iris.isEmpty()) {
+            return new Prefer("return=representation");
+        }
+        return new Prefer("return=representation; omit=\"" +
+                iris.stream().collect(joining(" ")) + "\"");
+    }
 }

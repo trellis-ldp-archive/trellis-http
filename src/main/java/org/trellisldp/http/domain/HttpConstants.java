@@ -32,8 +32,6 @@ import org.trellisldp.vocabulary.Trellis;
  */
 public final class HttpConstants {
 
-    public static final String APPLICATION_LINK_FORMAT = "application/link-format";
-
     public static final String ACCEPT_DATETIME = "Accept-Datetime";
 
     public static final String ACCEPT_PATCH = "Accept-Patch";
@@ -41,6 +39,10 @@ public final class HttpConstants {
     public static final String ACCEPT_POST = "Accept-Post";
 
     public static final String ACCEPT_RANGES = "Accept-Ranges";
+
+    public static final String ACL = "acl";
+
+    public static final String APPLICATION_LINK_FORMAT = "application/link-format";
 
     public static final String DIGEST = "Digest";
 
@@ -51,6 +53,8 @@ public final class HttpConstants {
     public static final String PREFERENCE_APPLIED = "Preference-Applied";
 
     public static final String RANGE = "Range";
+
+    public static final String TIMEMAP = "timemap";
 
     public static final String TRELLIS_PREFIX = "trellis:";
 

@@ -149,7 +149,7 @@ public final class MementoResource {
 
     private static Stream<Link> getTimeMap(final String identifier, final Stream<VersionRange> mementos) {
         return mementos.reduce((acc, x) -> new VersionRange(acc.getFrom(), x.getUntil()))
-                .map(x -> Link.fromUri(identifier + "?timemap=true").rel(TIMEMAP)
+                .map(x -> Link.fromUri(identifier + "?format=timemap").rel(TIMEMAP)
                         .type(APPLICATION_LINK_FORMAT)
                         .param(FROM, ofInstant(x.getFrom(), UTC).format(RFC_1123_DATE_TIME))
                         .param(UNTIL, ofInstant(x.getUntil(), UTC).format(RFC_1123_DATE_TIME)).build())

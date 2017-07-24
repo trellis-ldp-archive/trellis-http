@@ -23,8 +23,11 @@ import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
 import static javax.ws.rs.core.Response.status;
+import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
+import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.domain.Prefer.ofInclude;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
@@ -70,6 +73,7 @@ import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -115,7 +119,7 @@ public class LdpResource extends BaseLdpResource {
      * Perform a GET operation on an LDP Resource
      * @param path the path
      * @param version the version parameter
-     * @param timemap the timemap parameter
+     * @param format the format parameter
      * @param datetime the Accept-Datetime header
      * @param prefer the Prefer header
      * @param digest the Want-Digest header
@@ -126,7 +130,7 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response getResource(@PathParam("path") final String path,
             @QueryParam("version") final Version version,
-            @QueryParam("timemap") final Boolean timemap,
+            @QueryParam("format") final String format,
             @HeaderParam("Accept-Datetime") final AcceptDatetime datetime,
             @HeaderParam("Prefer") final Prefer prefer,
             @HeaderParam("Want-Digest") final WantDigest digest,
@@ -143,7 +147,11 @@ public class LdpResource extends BaseLdpResource {
         getHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
         getHandler.setSyntax(syntax);
         getHandler.setProfile(getProfile(headers.getAcceptableMediaTypes()));
-        getHandler.setPrefer(prefer);
+        if (ACL.equals(format)) {
+            getHandler.setPrefer(ofInclude(Trellis.PreferAccessControl.getIRIString()));
+        } else {
+            getHandler.setPrefer(prefer);
+        }
         getHandler.setWantDigest(digest);
         getHandler.setRange(range);
 
@@ -154,7 +162,7 @@ public class LdpResource extends BaseLdpResource {
                 .map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
 
         // Fetch a timemap
-        } else if (nonNull(timemap) && timemap) {
+        } else if (TIMEMAP.equals(format)) {
             LOGGER.info("Getting timemap resource");
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
                 .map(res -> res.getTimeMapBuilder(baseUrl + path, syntax, ioService))

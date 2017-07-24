@@ -30,13 +30,13 @@ import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeTriples;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
 
+import java.util.Optional;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
-
-import java.util.Optional;
 
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.Graph;
