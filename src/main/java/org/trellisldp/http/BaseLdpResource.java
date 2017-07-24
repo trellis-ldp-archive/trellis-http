@@ -13,12 +13,9 @@
  */
 package org.trellisldp.http;
 
-import static java.util.Arrays.asList;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.spi.RDFUtils.getInstance;
-
-import java.util.List;
 
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
@@ -39,8 +36,6 @@ class BaseLdpResource {
     protected static final Logger LOGGER = getLogger(BaseLdpResource.class);
 
     protected static final RDF rdf = getInstance();
-
-    protected static final List<String> UNSUPPORTED_TYPES = asList("message/external-body");
 
     protected final Session session;
 

@@ -35,6 +35,7 @@ import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import com.codahale.metrics.annotation.Timed;
 
 import java.io.InputStream;
+import java.util.Collection;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -87,6 +88,8 @@ public class LdpResource extends BaseLdpResource {
 
     protected final String baseUrl;
 
+    protected final Collection<String> unsupportedTypes;
+
     /**
      * Create a LdpResource
      * @param baseUrl the baseUrl
@@ -94,16 +97,18 @@ public class LdpResource extends BaseLdpResource {
      * @param ioService the i/o service
      * @param constraintService the RDF constraint enforcing service
      * @param binaryService the datastream service
+     * @param unsupportedMediaTypes any unsupported media types
      */
     public LdpResource(final String baseUrl, final ResourceService resourceService,
             final IOService ioService, final ConstraintService constraintService,
-            final BinaryService binaryService) {
+            final BinaryService binaryService, final Collection<String> unsupportedMediaTypes) {
         super();
         this.baseUrl = baseUrl;
         this.resourceService = resourceService;
         this.ioService = ioService;
         this.binaryService = binaryService;
         this.constraintService = constraintService;
+        this.unsupportedTypes = unsupportedMediaTypes;
     }
 
     /**
@@ -242,7 +247,7 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        if (UNSUPPORTED_TYPES.contains(contentType)) {
+        if (unsupportedTypes.contains(contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
@@ -286,7 +291,7 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        if (UNSUPPORTED_TYPES.contains(contentType)) {
+        if (unsupportedTypes.contains(contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
