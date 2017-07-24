@@ -42,7 +42,7 @@ public class PreferTest {
 
     @Test
     public void testPrefer1b() {
-        final Prefer prefer = Prefer.ofIncluded("http://example.org/test");
+        final Prefer prefer = Prefer.ofInclude("http://example.org/test");
         assertEquals(of("representation"), prefer.getPreference());
         assertEquals(1L, prefer.getInclude().size());
         assertTrue(prefer.getInclude().contains("http://example.org/test"));
@@ -105,7 +105,7 @@ public class PreferTest {
 
     @Test
     public void testPrefer5b() {
-        final Prefer prefer = Prefer.ofOmitted("http://example.org/test");
+        final Prefer prefer = Prefer.ofOmit("http://example.org/test");
         assertEquals(of("representation"), prefer.getPreference());
         assertTrue(prefer.getInclude().isEmpty());
         assertFalse(prefer.getOmit().isEmpty());
