@@ -146,7 +146,7 @@ public class LdpPutHandler extends BaseLdpHandler {
 
             // Check for any constraints
             final Optional<String> constraint = dataset.getGraph(Trellis.PreferUserManaged)
-                .flatMap(g -> constraintService.constrainedBy(ldpType, g)).map(IRI::getIRIString);
+                .flatMap(g -> constraintService.constrainedBy(ldpType, baseUrl, g)).map(IRI::getIRIString);
             if (constraint.isPresent()) {
                 return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
             }

@@ -109,7 +109,7 @@ public class LdpPostHandler extends BaseLdpHandler {
                             triple.getPredicate(), triple.getObject()));
                 });
             final Optional<String> constraint = dataset.getGraph(Trellis.PreferUserManaged)
-                .flatMap(g -> constraintService.constrainedBy(ldpType, g)).map(IRI::getIRIString);
+                .flatMap(g -> constraintService.constrainedBy(ldpType, baseUrl, g)).map(IRI::getIRIString);
             if (constraint.isPresent()) {
                 return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
             }
