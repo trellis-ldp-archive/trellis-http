@@ -48,6 +48,7 @@ import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
+import org.trellisldp.spi.RuntimeRepositoryException;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
@@ -125,14 +126,11 @@ public class LdpPatchHandler extends BaseLdpHandler {
         res.stream(Trellis.PreferUserManaged).forEach(graph::add);
         try {
             ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + path);
-            // TODO change this to a more specific (RepositoryRuntime) Exception
-        } catch (final RuntimeException ex) {
+        } catch (final RuntimeRepositoryException ex) {
             LOGGER.warn(ex.getMessage());
             return status(BAD_REQUEST).type(TEXT_PLAIN).entity("Invalid RDF: " + ex.getMessage());
         }
 
-        // TODO -- validate this w/ the constraint service
-        // constraintService.constrainedBy(res.getInteractionModel(), graph);
         final Dataset dataset = rdf.createDataset();
         graph.stream().map(skolemizeTriples(resourceService, baseUrl))
             .map(t -> rdf.createQuad(Trellis.PreferUserManaged, t.getSubject(), t.getPredicate(), t.getObject()))
