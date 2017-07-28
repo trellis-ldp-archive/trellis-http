@@ -38,7 +38,6 @@ import com.codahale.metrics.annotation.Timed;
 
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.function.Supplier;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -90,8 +89,6 @@ public class LdpResource extends BaseLdpResource {
 
     protected final ConstraintService constraintService;
 
-    protected final Supplier<String> idService;
-
     protected final String baseUrl;
 
     protected final Collection<String> unsupportedTypes;
@@ -103,13 +100,11 @@ public class LdpResource extends BaseLdpResource {
      * @param ioService the i/o service
      * @param constraintService the RDF constraint enforcing service
      * @param binaryService the datastream service
-     * @param idService an object that supplies identifiers
      * @param unsupportedMediaTypes any unsupported media types
      */
     public LdpResource(final String baseUrl, final ResourceService resourceService,
             final IOService ioService, final ConstraintService constraintService,
-            final BinaryService binaryService, final Supplier<String> idService,
-            final Collection<String> unsupportedMediaTypes) {
+            final BinaryService binaryService, final Collection<String> unsupportedMediaTypes) {
         super();
         this.baseUrl = baseUrl;
         this.resourceService = resourceService;
@@ -117,7 +112,6 @@ public class LdpResource extends BaseLdpResource {
         this.binaryService = binaryService;
         this.constraintService = constraintService;
         this.unsupportedTypes = unsupportedMediaTypes;
-        this.idService = idService;
     }
 
     /**
@@ -264,7 +258,7 @@ public class LdpResource extends BaseLdpResource {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
-        final String fullPath = path + "/" + ofNullable(slug).orElseGet(idService);
+        final String fullPath = path + "/" + ofNullable(slug).orElseGet(resourceService.getIdentifierSupplier());
 
         final LdpPostHandler postHandler = new LdpPostHandler(resourceService, ioService, constraintService,
                 binaryService);
