@@ -38,6 +38,7 @@ import com.codahale.metrics.annotation.Timed;
 
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -89,24 +90,22 @@ public class LdpResource extends BaseLdpResource {
 
     protected final ConstraintService constraintService;
 
-    protected final String baseUrl;
-
     protected final Collection<String> unsupportedTypes;
 
     /**
      * Create a LdpResource
-     * @param baseUrl the baseUrl
      * @param resourceService the resource service
      * @param ioService the i/o service
      * @param constraintService the RDF constraint enforcing service
      * @param binaryService the datastream service
+     * @param partitions a map of partitions for use with custom hostnames
      * @param unsupportedMediaTypes any unsupported media types
      */
-    public LdpResource(final String baseUrl, final ResourceService resourceService,
+    public LdpResource(final ResourceService resourceService,
             final IOService ioService, final ConstraintService constraintService,
-            final BinaryService binaryService, final Collection<String> unsupportedMediaTypes) {
-        super();
-        this.baseUrl = baseUrl;
+            final BinaryService binaryService, final Map<String, String> partitions,
+            final Collection<String> unsupportedMediaTypes) {
+        super(partitions);
         this.resourceService = resourceService;
         this.ioService = ioService;
         this.binaryService = binaryService;
@@ -140,10 +139,11 @@ public class LdpResource extends BaseLdpResource {
         }
 
         final RDFSyntax syntax = getRdfSyntax(headers.getAcceptableMediaTypes());
+        final String baseUrl = getBaseUrl(path);
         final LdpGetHandler getHandler = new LdpGetHandler(resourceService, ioService, binaryService,
                 request);
         getHandler.setPath(path);
-        getHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
+        getHandler.setBaseUrl(baseUrl);
         getHandler.setSyntax(syntax);
         getHandler.setProfile(getProfile(headers.getAcceptableMediaTypes()));
         if (ACL.equals(format)) {
@@ -200,7 +200,7 @@ public class LdpResource extends BaseLdpResource {
         final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, ioService, constraintService,
                 request);
         patchHandler.setPath(path);
-        patchHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
+        patchHandler.setBaseUrl(getBaseUrl(path));
         patchHandler.setSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()));
         patchHandler.setProfile(getProfile(headers.getAcceptableMediaTypes()));
         patchHandler.setPrefer(prefer);
@@ -226,7 +226,7 @@ public class LdpResource extends BaseLdpResource {
 
         final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, request);
         deleteHandler.setPath(path);
-        deleteHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
+        deleteHandler.setBaseUrl(getBaseUrl(path));
         deleteHandler.setSession(session);
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
@@ -263,7 +263,7 @@ public class LdpResource extends BaseLdpResource {
         final LdpPostHandler postHandler = new LdpPostHandler(resourceService, ioService, constraintService,
                 binaryService);
         postHandler.setPath(fullPath);
-        postHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
+        postHandler.setBaseUrl(getBaseUrl(path));
         postHandler.setSession(session);
         postHandler.setContentType(contentType);
         postHandler.setLink(link);
@@ -305,7 +305,7 @@ public class LdpResource extends BaseLdpResource {
         final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, constraintService,
                 binaryService, request);
         putHandler.setPath(path);
-        putHandler.setBaseUrl(ofNullable(baseUrl).orElseGet(() -> uriInfo.getBaseUri().toString()));
+        putHandler.setBaseUrl(getBaseUrl(path));
         putHandler.setSession(session);
         putHandler.setContentType(contentType);
         putHandler.setLink(link);

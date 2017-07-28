@@ -17,6 +17,8 @@ import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
+import java.util.Map;
+
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
@@ -37,6 +39,8 @@ class BaseLdpResource {
 
     protected static final RDF rdf = getInstance();
 
+    protected final Map<String, String> partitions;
+
     protected final Session session;
 
     @Context
@@ -48,9 +52,14 @@ class BaseLdpResource {
     @Context
     protected Request request;
 
-    protected BaseLdpResource() {
+    protected BaseLdpResource(final Map<String, String> partitions) {
         // TODO -- add user session here
         this.session = new HttpSession();
+        this.partitions = partitions;
+    }
+
+    protected String getBaseUrl(final String path) {
+        return partitions.getOrDefault(path.split("/", 2)[0], uriInfo.getBaseUri().toString());
     }
 
     protected Response redirectWithoutSlash(final String path) {
