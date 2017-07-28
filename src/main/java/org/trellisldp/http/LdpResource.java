@@ -16,7 +16,6 @@ package org.trellisldp.http;
 import static java.time.Instant.MAX;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
-import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
@@ -39,6 +38,7 @@ import com.codahale.metrics.annotation.Timed;
 
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -90,6 +90,8 @@ public class LdpResource extends BaseLdpResource {
 
     protected final ConstraintService constraintService;
 
+    protected final Supplier<String> idService;
+
     protected final String baseUrl;
 
     protected final Collection<String> unsupportedTypes;
@@ -101,11 +103,13 @@ public class LdpResource extends BaseLdpResource {
      * @param ioService the i/o service
      * @param constraintService the RDF constraint enforcing service
      * @param binaryService the datastream service
+     * @param idService an object that supplies identifiers
      * @param unsupportedMediaTypes any unsupported media types
      */
     public LdpResource(final String baseUrl, final ResourceService resourceService,
             final IOService ioService, final ConstraintService constraintService,
-            final BinaryService binaryService, final Collection<String> unsupportedMediaTypes) {
+            final BinaryService binaryService, final Supplier<String> idService,
+            final Collection<String> unsupportedMediaTypes) {
         super();
         this.baseUrl = baseUrl;
         this.resourceService = resourceService;
@@ -113,6 +117,7 @@ public class LdpResource extends BaseLdpResource {
         this.binaryService = binaryService;
         this.constraintService = constraintService;
         this.unsupportedTypes = unsupportedMediaTypes;
+        this.idService = idService;
     }
 
     /**
@@ -259,7 +264,7 @@ public class LdpResource extends BaseLdpResource {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
-        final String fullPath = path + "/" + ofNullable(slug).orElseGet(() -> randomUUID().toString());
+        final String fullPath = path + "/" + ofNullable(slug).orElseGet(idService);
 
         final LdpPostHandler postHandler = new LdpPostHandler(resourceService, ioService, constraintService,
                 binaryService);
