@@ -210,8 +210,9 @@ public class LdpGetHandler extends BaseLdpHandler {
             return cacheBuilder;
         }
 
+        final String partition = getPartition(path);
         final IRI dsid = res.getBinary().map(Binary::getIdentifier).get();
-        final InputStream binary = binaryService.getContent(dsid).orElseThrow(() ->
+        final InputStream binary = binaryService.getContent(partition, dsid).orElseThrow(() ->
                 new WebApplicationException("Could not load binary resolver for " + dsid.getIRIString()));
         builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes")
             .header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE)).tag(etag);
@@ -219,7 +220,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         // Add instance digests, if Requested and supported
         ofNullable(digest).map(WantDigest::getAlgorithms).ifPresent(algs ->
                 algs.stream().filter(binaryService.supportedAlgorithms()::contains).findFirst()
-                .ifPresent(alg -> binaryService.getContent(dsid)
+                .ifPresent(alg -> binaryService.getContent(partition, dsid)
                     .map(is -> binaryService.hexDigest(alg, is))
                     .ifPresent(d -> builder.header(DIGEST, d))));
 

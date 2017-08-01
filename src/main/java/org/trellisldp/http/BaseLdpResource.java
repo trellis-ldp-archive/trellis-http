@@ -58,8 +58,12 @@ class BaseLdpResource {
         this.partitions = partitions;
     }
 
+    protected String getPartition(final String path) {
+        return path.split("/", 2)[0];
+    }
+
     protected String getBaseUrl(final String path) {
-        return partitions.getOrDefault(path.split("/", 2)[0], uriInfo.getBaseUri().toString());
+        return partitions.getOrDefault(getPartition(path), uriInfo.getBaseUri().toString());
     }
 
     protected Response redirectWithoutSlash(final String path) {

@@ -89,6 +89,15 @@ public class BaseLdpHandler {
     }
 
     /**
+     * Get the partition name, given the path
+     * @param path the path
+     * @return the partition portion of the path
+     */
+    protected static String getPartition(final String path) {
+        return path.split("/", 2)[0];
+    }
+
+    /**
      * Check the request for a cache-related response
      * @param request the request
      * @param modified the modified time
