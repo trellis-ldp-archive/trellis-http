@@ -20,8 +20,8 @@ import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
@@ -119,13 +119,22 @@ public class RdfUtilsTest {
         final IRI anonIri = rdf.createIRI("trellis:bnode/foo");
         final Literal literal = rdf.createLiteral("A title");
         final BlankNode bnode = rdf.createBlankNode("foo");
+        final String BNODE_PREFIX = "trellis:bnode/";
 
-        when(mockResourceService.skolemize(any(BlankNode.class))).thenReturn(anonIri);
-        when(mockResourceService.skolemize(any(Literal.class))).thenReturn(literal);
-        when(mockResourceService.skolemize(any(IRI.class))).thenReturn(iri);
-        when(mockResourceService.unskolemize(eq(anonIri))).thenReturn(bnode);
-        when(mockResourceService.unskolemize(any(Literal.class))).thenReturn(literal);
-        when(mockResourceService.unskolemize(eq(iri))).thenReturn(iri);
+        when(mockResourceService.skolemize(any(Literal.class))).then(returnsFirstArg());
+        when(mockResourceService.skolemize(any(IRI.class))).then(returnsFirstArg());
+        when(mockResourceService.skolemize(any(BlankNode.class)))
+            .thenAnswer(inv -> rdf.createIRI(BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
+        when(mockResourceService.unskolemize(any(IRI.class)))
+            .thenAnswer(inv -> {
+                final String uri = ((IRI) inv.getArgument(0)).getIRIString();
+                if (uri.startsWith(BNODE_PREFIX)) {
+                    return bnode;
+                }
+                return (IRI) inv.getArgument(0);
+            });
+
+        when(mockResourceService.unskolemize(any(Literal.class))).then(returnsFirstArg());
 
         final IRI subject = rdf.createIRI("http://example.org/repository/resource");
         final Graph graph = rdf.createGraph();
@@ -139,7 +148,7 @@ public class RdfUtilsTest {
 
         assertTrue(triples.stream().anyMatch(t -> t.getSubject().equals(iri)));
         assertTrue(triples.stream().anyMatch(t -> t.getObject().equals(literal)));
-        assertTrue(triples.stream().anyMatch(t -> t.getSubject().equals(anonIri)));
+        assertTrue(triples.stream().anyMatch(t -> t.getSubject().ntriplesString().startsWith("<" + BNODE_PREFIX)));
 
         triples.stream().map(RdfUtils.unskolemizeTriples(mockResourceService, "http://example.org/"))
             .forEach(t -> assertTrue(graph.contains(t)));

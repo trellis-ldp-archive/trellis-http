@@ -13,6 +13,7 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.net.URI.create;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
@@ -22,6 +23,7 @@ import static javax.ws.rs.core.Response.status;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
+import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
 
 import java.net.URI;
@@ -121,6 +123,12 @@ public class LdpPostHandler extends BaseLdpHandler {
 
         resourceService.put(iri, dataset);
 
-        return status(CREATED);
+        final ResponseBuilder builder = status(CREATED).location(create(identifier));
+
+        // Add LDP types
+        ldpResourceTypes(ldpType).map(IRI::getIRIString)
+            .forEach(type -> builder.link(type, "type"));
+
+        return builder;
     }
 }
