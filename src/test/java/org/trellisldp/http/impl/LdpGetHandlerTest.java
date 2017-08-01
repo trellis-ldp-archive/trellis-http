@@ -27,6 +27,7 @@ import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.HttpHeaders.VARY;
+import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -36,6 +37,7 @@ import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
 import static javax.ws.rs.core.Response.notModified;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
+import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -63,17 +65,21 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.JSONLD.compacted;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
 import org.junit.Before;
@@ -375,6 +381,9 @@ public class LdpGetHandlerTest {
         assertTrue(APPLICATION_LD_JSON_TYPE.isCompatible(res.getMediaType()));
         assertTrue(res.getMediaType().isCompatible(APPLICATION_LD_JSON_TYPE));
         assertEquals(from(time), res.getLastModified());
+        assertFalse(res.getLinks().stream().anyMatch(link -> link.getRel().equals("describes")));
+        assertFalse(res.getLinks().stream().anyMatch(link -> link.getRel().equals("describedby")));
+        assertFalse(res.getLinks().stream().anyMatch(link -> link.getRel().equals("canonical")));
 
         final String acceptPost = res.getHeaderString(ACCEPT_POST);
         assertNotNull(acceptPost);
@@ -403,6 +412,28 @@ public class LdpGetHandlerTest {
     }
 
     @Test
+    public void testGetHTML() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+
+        final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
+                mockBinaryService, mockRequest);
+        getHandler.setPath("/");
+        getHandler.setBaseUrl(baseUrl);
+        getHandler.setSyntax(RDFA_HTML);
+
+        final Response res = getHandler.getRepresentation(mockResource).build();
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
+        assertNull(res.getHeaderString(PREFERENCE_APPLIED));
+        assertNull(res.getHeaderString(ACCEPT_RANGES));
+        assertTrue(TEXT_HTML_TYPE.isCompatible(res.getMediaType()));
+        assertTrue(res.getMediaType().isCompatible(TEXT_HTML_TYPE));
+    }
+
+    @Test
     public void testGetBinaryDescription() {
         when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
@@ -428,7 +459,7 @@ public class LdpGetHandlerTest {
     }
 
     @Test
-    public void testGetBinary() {
+    public void testGetBinary() throws IOException {
         when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
 
@@ -449,6 +480,22 @@ public class LdpGetHandlerTest {
         assertTrue(res.getLinks().stream()
                 .anyMatch(link -> link.getRel().equals("canonical") &&
                     !link.getUri().toString().endsWith("#description")));
+        final InputStream entity = (InputStream) res.getEntity();
+        assertEquals("Some data", IOUtils.toString(entity, UTF_8));
+    }
+
+    @Test(expected = WebApplicationException.class)
+    public void testGetBinaryError() throws IOException {
+        when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+        when(mockBinaryService.getContent(any(), any())).thenReturn(Optional.empty());
+
+        final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
+                mockBinaryService, mockRequest);
+        getHandler.setPath("/");
+        getHandler.setBaseUrl(baseUrl);
+
+        getHandler.getRepresentation(mockResource).build();
     }
 
     @Test

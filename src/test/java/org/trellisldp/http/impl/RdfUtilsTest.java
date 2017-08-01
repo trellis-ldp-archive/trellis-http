@@ -16,32 +16,46 @@ package org.trellisldp.http.impl;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.util.List;
 
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.rdf.api.BlankNode;
+import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
+import org.apache.commons.rdf.api.Triple;
 import org.trellisldp.http.domain.Prefer;
+import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.Trellis;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
 /**
  * @author acoburn
  */
+@RunWith(MockitoJUnitRunner.class)
 public class RdfUtilsTest {
 
     private static final RDF rdf = getInstance();
+
+    @Mock
+    private ResourceService mockResourceService;
 
     @Test
     public void testGetSyntax() {
@@ -97,6 +111,38 @@ public class RdfUtilsTest {
         assertEquals(iri1, RdfUtils.toInternalIri(rdf.createIRI(externalUrl + "repository/resource"), externalUrl));
         assertEquals(iri2, RdfUtils.toInternalIri(iri2, externalUrl));
         assertEquals(literal, RdfUtils.toInternalIri(literal, externalUrl));
+    }
+
+    @Test
+    public void testSkolemize() {
+        final IRI iri = rdf.createIRI("trellis:repository/resource");
+        final IRI anonIri = rdf.createIRI("trellis:bnode/foo");
+        final Literal literal = rdf.createLiteral("A title");
+        final BlankNode bnode = rdf.createBlankNode("foo");
+
+        when(mockResourceService.skolemize(any(BlankNode.class))).thenReturn(anonIri);
+        when(mockResourceService.skolemize(any(Literal.class))).thenReturn(literal);
+        when(mockResourceService.skolemize(any(IRI.class))).thenReturn(iri);
+        when(mockResourceService.unskolemize(eq(anonIri))).thenReturn(bnode);
+        when(mockResourceService.unskolemize(any(Literal.class))).thenReturn(literal);
+        when(mockResourceService.unskolemize(eq(iri))).thenReturn(iri);
+
+        final IRI subject = rdf.createIRI("http://example.org/repository/resource");
+        final Graph graph = rdf.createGraph();
+        graph.add(rdf.createTriple(subject, DC.title, literal));
+        graph.add(rdf.createTriple(subject, DC.subject, bnode));
+        graph.add(rdf.createTriple(bnode, DC.title, literal));
+
+        final List<Triple> triples = graph.stream()
+            .map(RdfUtils.skolemizeTriples(mockResourceService, "http://example.org/"))
+            .collect(toList());
+
+        assertTrue(triples.stream().anyMatch(t -> t.getSubject().equals(iri)));
+        assertTrue(triples.stream().anyMatch(t -> t.getObject().equals(literal)));
+        assertTrue(triples.stream().anyMatch(t -> t.getSubject().equals(anonIri)));
+
+        triples.stream().map(RdfUtils.unskolemizeTriples(mockResourceService, "http://example.org/"))
+            .forEach(t -> assertTrue(graph.contains(t)));
     }
 
     @Test
