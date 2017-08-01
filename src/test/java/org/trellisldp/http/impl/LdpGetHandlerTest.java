@@ -13,6 +13,7 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Instant.ofEpochSecond;
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
@@ -26,6 +27,7 @@ import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.HttpHeaders.VARY;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
@@ -60,6 +62,7 @@ import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.JSONLD.compacted;
 
+import java.io.ByteArrayInputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -79,6 +82,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import org.trellisldp.api.Binary;
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.BinaryService;
@@ -96,8 +100,11 @@ import org.trellisldp.vocabulary.Trellis;
 public class LdpGetHandlerTest {
 
     private final static Instant time = ofEpochSecond(1496262729);
+    private final static Instant binaryTime = ofEpochSecond(1496262750);
     private final static String baseUrl = "http://localhost:8080/repo";
     private final static RDF rdf = getInstance();
+
+    private Binary testBinary = new Binary(rdf.createIRI("file:testResource.txt"), binaryTime, "text/plain", 100L);
 
     @Mock
     private ResourceService mockResourceService;
@@ -125,6 +132,8 @@ public class LdpGetHandlerTest {
         when(mockResource.getAnnotationService()).thenReturn(Optional.empty());
         when(mockResource.getTypes()).thenAnswer(x -> Stream.empty());
         when(mockResource.stream()).thenReturn(Stream.empty());
+        when(mockBinaryService.getContent(any(), any()))
+            .thenReturn(Optional.of(new ByteArrayInputStream("Some data".getBytes(UTF_8))));
     }
 
     @Test
@@ -391,6 +400,55 @@ public class LdpGetHandlerTest {
         assertFalse(varies.contains(WANT_DIGEST));
         assertTrue(varies.contains(ACCEPT_DATETIME));
         assertTrue(varies.contains(PREFER));
+    }
+
+    @Test
+    public void testGetBinaryDescription() {
+        when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+
+        final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
+                mockBinaryService, mockRequest);
+        getHandler.setPath("/");
+        getHandler.setBaseUrl(baseUrl);
+        getHandler.setSyntax(TURTLE);
+
+        final Response res = getHandler.getRepresentation(mockResource).build();
+        assertTrue(res.getMediaType().isCompatible(TEXT_TURTLE_TYPE));
+        assertEquals(-1, res.getLength());
+        assertEquals(from(time), res.getLastModified());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream()
+                .anyMatch(link -> link.getRel().equals("describes") &&
+                    !link.getUri().toString().endsWith("#description")));
+        assertTrue(res.getLinks().stream()
+                .anyMatch(link -> link.getRel().equals("canonical") &&
+                    link.getUri().toString().endsWith("#description")));
+    }
+
+    @Test
+    public void testGetBinary() {
+        when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+
+        final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
+                mockBinaryService, mockRequest);
+        getHandler.setPath("/");
+        getHandler.setBaseUrl(baseUrl);
+
+        final Response res = getHandler.getRepresentation(mockResource).build();
+        assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
+        assertEquals(-1, res.getLength());
+        assertEquals(from(binaryTime), res.getLastModified());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertTrue(res.getLinks().stream()
+                .anyMatch(link -> link.getRel().equals("describedby") &&
+                    link.getUri().toString().endsWith("#description")));
+        assertTrue(res.getLinks().stream()
+                .anyMatch(link -> link.getRel().equals("canonical") &&
+                    !link.getUri().toString().endsWith("#description")));
     }
 
     @Test

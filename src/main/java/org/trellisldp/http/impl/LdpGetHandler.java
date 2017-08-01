@@ -210,6 +210,9 @@ public class LdpGetHandler extends BaseLdpHandler {
             return cacheBuilder;
         }
 
+        // Set last-modified to be the binary's last-modified value
+        builder.lastModified(from(mod));
+
         final String partition = getPartition(path);
         final IRI dsid = res.getBinary().map(Binary::getIdentifier).get();
         final InputStream binary = binaryService.getContent(partition, dsid).orElseThrow(() ->
