@@ -39,6 +39,19 @@ public class ResourceStreamerTest {
     final RDF rdf = ServiceLoader.load(RDF.class).iterator().next();
 
     @Test
+    public void testResourceTriplesStreamer() throws IOException {
+        final Stream<Quad> quads = of(rdf.createQuad(
+                    Trellis.PreferUserManaged,
+                    rdf.createIRI("trellis:repository/foo"),
+                    DC.title, rdf.createLiteral("A title")));
+
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final ResourceStreamer streamer = ResourceStreamer.tripleStreamer(svc, quads.map(Quad::asTriple), NQUADS);
+        streamer.write(out);
+        assertEquals("<trellis:repository/foo> <http://purl.org/dc/terms/title> \"A title\" .\n",
+                out.toString("UTF-8"));
+    }
+    @Test
     public void testResourceStreamer() throws IOException {
         final Stream<Quad> quads = of(rdf.createQuad(
                     Trellis.PreferUserManaged,

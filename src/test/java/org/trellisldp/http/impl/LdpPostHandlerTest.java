@@ -13,8 +13,10 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.net.URI.create;
 import static java.time.Instant.ofEpochSecond;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Link.fromUri;
 import static org.junit.Assert.assertEquals;
@@ -22,12 +24,19 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Link;
@@ -49,7 +58,9 @@ import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
+import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -114,6 +125,132 @@ public class LdpPostHandlerTest {
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
         assertEquals(create(baseUrl + "/newresource"), res.getLocation());
+    }
+
+    @Test
+    public void testDefaultType1() {
+        final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService);
+        postHandler.setPath("/newresource");
+        postHandler.setBaseUrl(baseUrl);
+        postHandler.setSession(new HttpSession());
+
+        final Response res = postHandler.createResource().build();
+        assertEquals(CREATED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertEquals(create(baseUrl + "/newresource"), res.getLocation());
+    }
+
+    @Test
+    public void testDefaultType2() {
+        final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService);
+        postHandler.setPath("/newresource");
+        postHandler.setBaseUrl(baseUrl);
+        postHandler.setSession(new HttpSession());
+        postHandler.setContentType("text/plain");
+
+        final Response res = postHandler.createResource().build();
+        assertEquals(CREATED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertEquals(create(baseUrl + "/newresource"), res.getLocation());
+    }
+
+    @Test
+    public void testDefaultType3() {
+        final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService);
+        postHandler.setPath("/newresource");
+        postHandler.setBaseUrl(baseUrl);
+        postHandler.setSession(new HttpSession());
+        postHandler.setContentType("text/turtle");
+        postHandler.setSyntax(TURTLE);
+
+        final Response res = postHandler.createResource().build();
+        assertEquals(CREATED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertEquals(create(baseUrl + "/newresource"), res.getLocation());
+    }
+
+    @Test
+    public void testEntity() {
+        when(mockIoService.read(any(), any(), eq(TURTLE))).thenAnswer(x -> Stream.of(
+                    rdf.createTriple(rdf.createIRI("http://example.org/repository/newresource"), DC.title,
+                        rdf.createLiteral("A title"))));
+        final InputStream entity = new ByteArrayInputStream("<> <http://purl.org/dc/terms/title> \"A title\" ."
+                .getBytes(UTF_8));
+        final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService);
+        postHandler.setPath("/newresource");
+        postHandler.setBaseUrl(baseUrl);
+        postHandler.setSession(new HttpSession());
+        postHandler.setContentType("text/turtle");
+        postHandler.setSyntax(TURTLE);
+        postHandler.setEntity(entity);
+
+        final Response res = postHandler.createResource().build();
+        assertEquals(CREATED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertEquals(create(baseUrl + "/newresource"), res.getLocation());
+        verify(mockIoService).read(eq(entity), eq(baseUrl + "/newresource"), eq(TURTLE));
+        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any());
+    }
+
+    @Test
+    public void testEntity2() {
+        final InputStream entity = new ByteArrayInputStream("Some data".getBytes(UTF_8));
+        final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService);
+        postHandler.setPath("/newresource");
+        postHandler.setBaseUrl(baseUrl);
+        postHandler.setSession(new HttpSession());
+        postHandler.setContentType("text/plain");
+        postHandler.setEntity(entity);
+
+        final Response res = postHandler.createResource().build();
+        assertEquals(CREATED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertEquals(create(baseUrl + "/newresource"), res.getLocation());
+        verify(mockIoService, never()).read(any(), any(), any());
+        verify(mockConstraintService, never()).constrainedBy(any(), eq(baseUrl), any());
+    }
+
+    @Test
+    public void testConstraint() {
+        when(mockIoService.read(any(), any(), eq(TURTLE))).thenAnswer(x -> Stream.of(
+                    rdf.createTriple(rdf.createIRI("http://example.org/repository/newresource"), DC.title,
+                        rdf.createLiteral("A title"))));
+        when(mockConstraintService.constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any()))
+            .thenReturn(Optional.of(Trellis.InvalidRange));
+        final InputStream entity = new ByteArrayInputStream("<> <http://purl.org/dc/terms/title> \"A title\" ."
+                .getBytes(UTF_8));
+        final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService);
+        postHandler.setPath("/newresource");
+        postHandler.setBaseUrl(baseUrl);
+        postHandler.setSession(new HttpSession());
+        postHandler.setContentType("text/turtle");
+        postHandler.setSyntax(TURTLE);
+        postHandler.setEntity(entity);
+
+        final Response res = postHandler.createResource().build();
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasLink(Trellis.InvalidRange, LDP.constrainedBy.getIRIString())));
     }
 
     private static Predicate<Link> hasLink(final IRI iri, final String rel) {
