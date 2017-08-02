@@ -13,18 +13,37 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Optional.empty;
+import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Link.fromUri;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.AdditionalAnswers.returnsFirstArg;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
+import java.io.ByteArrayInputStream;
 import java.time.Instant;
+import java.util.function.Predicate;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Request;
+import javax.ws.rs.core.Response;
 
+import org.apache.commons.rdf.api.BlankNode;
+import org.apache.commons.rdf.api.Dataset;
+import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
 
 import org.junit.Before;
@@ -77,6 +96,12 @@ public class LdpPutHandlerTest {
     public void setUp() {
         when(mockResource.getBinary()).thenReturn(empty());
         when(mockResource.getModified()).thenReturn(time);
+        when(mockBinaryService.getIdentifierSupplier(anyString())).thenReturn(() -> "file:" + randomUUID());
+        when(mockResourceService.put(any(IRI.class), any(Dataset.class))).thenReturn(true);
+        when(mockResourceService.skolemize(any(Literal.class))).then(returnsFirstArg());
+        when(mockResourceService.skolemize(any(IRI.class))).then(returnsFirstArg());
+        when(mockResourceService.skolemize(any(BlankNode.class)))
+            .thenAnswer(inv -> rdf.createIRI(BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
     }
 
     @Test(expected = WebApplicationException.class)
@@ -101,5 +126,54 @@ public class LdpPutHandlerTest {
         putHandler.setLink(fromUri(LDP.Container.getIRIString()).rel("type").build());
 
         putHandler.setResource(mockResource);
+    }
+
+    @Test
+    public void testPutLdpResource() {
+        final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService, mockRequest);
+        putHandler.setPath("resource");
+        putHandler.setBaseUrl(baseUrl);
+        putHandler.setSyntax(TURTLE);
+        putHandler.setContentType(TEXT_TURTLE);
+        putHandler.setEntity(
+                new ByteArrayInputStream("<> <http://purl.org/dc/terms/title> \"A title\" .".getBytes(UTF_8)));
+        putHandler.setSession(new HttpSession());
+        putHandler.setLink(fromUri(LDP.Resource.getIRIString()).rel("type").build());
+
+        final Response res = putHandler.setResource(mockResource).build();
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    @Test
+    public void testPutLdpResource2() {
+        final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService, mockRequest);
+        putHandler.setPath("resource");
+        putHandler.setBaseUrl(baseUrl);
+        putHandler.setContentType(TEXT_PLAIN);
+        putHandler.setEntity(
+                new ByteArrayInputStream("Some data".getBytes(UTF_8)));
+        putHandler.setSession(new HttpSession());
+        putHandler.setLink(fromUri(LDP.Resource.getIRIString()).rel("type").build());
+
+        final Response res = putHandler.setResource(mockResource).build();
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    private static Predicate<Link> hasLink(final IRI iri, final String rel) {
+        return link -> rel.equals(link.getRel()) && iri.getIRIString().equals(link.getUri().toString());
+    }
+
+    private static Predicate<Link> hasType(final IRI iri) {
+        return hasLink(iri, "type");
     }
 }
