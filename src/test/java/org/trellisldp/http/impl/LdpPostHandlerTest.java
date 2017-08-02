@@ -301,12 +301,12 @@ public class LdpPostHandlerTest {
 
     @Test
     public void testError() {
-        when(mockResourceService.put(eq(rdf.createIRI(TRELLIS_PREFIX + "newresource")), any(Dataset.class)))
+        when(mockResourceService.put(eq(rdf.createIRI(TRELLIS_PREFIX + "partition/newresource")), any(Dataset.class)))
             .thenReturn(false);
 
         final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService);
-        postHandler.setPath("newresource");
+        postHandler.setPath("partition/newresource");
         postHandler.setBaseUrl(baseUrl);
         postHandler.setSession(new HttpSession());
         postHandler.setContentType("text/turtle");

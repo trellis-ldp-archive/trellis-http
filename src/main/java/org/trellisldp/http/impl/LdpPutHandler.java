@@ -24,6 +24,7 @@ import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
@@ -133,14 +134,16 @@ public class LdpPutHandler extends BaseLdpHandler {
                     .map(Link::getUri).map(URI::toString).map(rdf::createIRI)
                     .filter(l -> !LDP.Resource.equals(l)).orElse(defaultType);
 
-        final IRI iri = rdf.createIRI(identifier);
+        final IRI internalIdentifier = rdf.createIRI(TRELLIS_PREFIX + path);
+
         final Dataset dataset = rdf.createDataset();
 
         // Add audit quads
-        auditUpdate(iri, session).stream().map(skolemizeQuads(resourceService, baseUrl)).forEach(dataset::add);
+        auditUpdate(rdf.createIRI(identifier), session).stream().map(skolemizeQuads(resourceService, baseUrl))
+            .forEach(dataset::add);
 
         // Add LDP type
-        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, iri, RDF.type, ldpType));
+        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalIdentifier, RDF.type, ldpType));
 
         // Add user-supplied data
         if (nonNull(entity) && rdfSyntax.isPresent()) {
@@ -160,12 +163,12 @@ public class LdpPutHandler extends BaseLdpHandler {
             final String partition = getPartition(path);
             final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(partition).get());
             binaryService.setContent(partition, binaryLocation, entity);
-            dataset.add(rdf.createQuad(Trellis.PreferServerManaged, iri, DC.hasPart, binaryLocation));
+            dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalIdentifier, DC.hasPart, binaryLocation));
             dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.format,
                         rdf.createLiteral(ofNullable(contentType).orElse(APPLICATION_OCTET_STREAM))));
         }
 
-        if (resourceService.put(iri, dataset)) {
+        if (resourceService.put(internalIdentifier, dataset)) {
             final ResponseBuilder builder = status(NO_CONTENT);
 
             ldpResourceTypes(ldpType).map(IRI::getIRIString)
@@ -173,7 +176,7 @@ public class LdpPutHandler extends BaseLdpHandler {
             return builder;
         }
 
-        LOGGER.error("Unable to persist data to location at {}", iri.getIRIString());
+        LOGGER.error("Unable to persist data to location at {}", internalIdentifier.getIRIString());
         return serverError().type(TEXT_PLAIN)
             .entity("Unable to persist data. Please consult the logs for more information");
     }
