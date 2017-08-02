@@ -16,13 +16,17 @@ package org.trellisldp.http.impl;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.CREATED;
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
+import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
 
 import java.net.URI;
@@ -46,6 +50,7 @@ import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
+import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
@@ -125,7 +130,8 @@ public class LdpPutHandler extends BaseLdpHandler {
 
         final IRI defaultType = nonNull(contentType) && !rdfSyntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
         final IRI ldpType = ofNullable(link).filter(l -> "type".equals(l.getRel()))
-                    .map(Link::getUri).map(URI::toString).map(rdf::createIRI).orElse(defaultType);
+                    .map(Link::getUri).map(URI::toString).map(rdf::createIRI)
+                    .filter(l -> !LDP.Resource.equals(l)).orElse(defaultType);
 
         final IRI iri = rdf.createIRI(identifier);
         final Dataset dataset = rdf.createDataset();
@@ -150,12 +156,25 @@ public class LdpPutHandler extends BaseLdpHandler {
             if (constraint.isPresent()) {
                 return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
             }
-        } else {
-            // TODO also handle binary data
+        } else if (nonNull(entity)) {
+            final String partition = getPartition(path);
+            final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(partition).get());
+            binaryService.setContent(partition, binaryLocation, entity);
+            dataset.add(rdf.createQuad(Trellis.PreferServerManaged, iri, DC.hasPart, binaryLocation));
+            dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.format,
+                        rdf.createLiteral(ofNullable(contentType).orElse(APPLICATION_OCTET_STREAM))));
         }
 
-        resourceService.put(iri, dataset);
+        if (resourceService.put(iri, dataset)) {
+            final ResponseBuilder builder = status(NO_CONTENT);
 
-        return status(CREATED);
+            ldpResourceTypes(ldpType).map(IRI::getIRIString)
+                .forEach(type -> builder.link(type, "type"));
+            return builder;
+        }
+
+        LOGGER.error("Unable to persist data to location at {}", iri.getIRIString());
+        return serverError().type(TEXT_PLAIN)
+            .entity("Unable to persist data. Please consult the logs for more information");
     }
 }

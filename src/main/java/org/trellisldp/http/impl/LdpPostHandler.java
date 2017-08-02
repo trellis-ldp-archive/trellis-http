@@ -138,10 +138,10 @@ public class LdpPostHandler extends BaseLdpHandler {
                 .forEach(type -> builder.link(type, "type"));
 
             return builder;
-        } else {
-            LOGGER.error("Unable to persist data to location at {}", iri.getIRIString());
-            return serverError().type(TEXT_PLAIN)
-                .entity("Unable to persist data. Please consult the logs for more information");
         }
+
+        LOGGER.error("Unable to persist data to location at {}", iri.getIRIString());
+        return serverError().type(TEXT_PLAIN)
+            .entity("Unable to persist data. Please consult the logs for more information");
     }
 }
