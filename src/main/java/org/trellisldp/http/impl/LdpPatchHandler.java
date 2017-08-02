@@ -20,6 +20,7 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.ok;
+import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
@@ -28,6 +29,7 @@ import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeTriples;
+import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
 
 import java.util.Optional;
@@ -153,24 +155,32 @@ public class LdpPatchHandler extends BaseLdpHandler {
         }
 
         // Save new dataset
-        resourceService.put(res.getIdentifier(), dataset);
+        if (resourceService.put(res.getIdentifier(), dataset)) {
 
-        final ResponseBuilder builder = ok();
+            final ResponseBuilder builder = ok();
 
-        if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("representation"::equals).isPresent()) {
-            builder.entity(ResourceStreamer.tripleStreamer(ioService,
-                        graph.stream().map(unskolemizeTriples(resourceService, baseUrl)),
-                        syntax, ofNullable(profile).orElseGet(() ->
-                            RDFA_HTML.equals(syntax) ? rdf.createIRI(identifier) : JSONLD.expanded)));
-        } else {
-            builder.status(NO_CONTENT);
+            ldpResourceTypes(res.getInteractionModel()).map(IRI::getIRIString)
+                .forEach(type -> builder.link(type, "type"));
+
+            if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("representation"::equals).isPresent()) {
+                builder.entity(ResourceStreamer.tripleStreamer(ioService,
+                            graph.stream().map(unskolemizeTriples(resourceService, baseUrl)),
+                            syntax, ofNullable(profile).orElseGet(() ->
+                                RDFA_HTML.equals(syntax) ? rdf.createIRI(identifier) : JSONLD.expanded)));
+            } else {
+                return builder.status(NO_CONTENT);
+            }
+
+            // Set no-cache directive
+            final CacheControl cc = new CacheControl();
+            cc.setNoCache(true);
+            builder.cacheControl(cc);
+
+            return builder;
         }
 
-        // Set no-cache directive
-        final CacheControl cc = new CacheControl();
-        cc.setNoCache(true);
-        builder.cacheControl(cc);
-
-        return builder;
+        LOGGER.error("Unable to persist data to location at {}", res.getIdentifier().getIRIString());
+        return serverError().type(TEXT_PLAIN)
+            .entity("Unable to persist data. Please consult the logs for more information");
     }
 }

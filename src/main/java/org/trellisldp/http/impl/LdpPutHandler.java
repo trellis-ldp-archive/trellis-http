@@ -139,7 +139,7 @@ public class LdpPutHandler extends BaseLdpHandler {
         final Dataset dataset = rdf.createDataset();
 
         // Add audit quads
-        auditUpdate(rdf.createIRI(identifier), session).stream().map(skolemizeQuads(resourceService, baseUrl))
+        auditUpdate(internalIdentifier, session).stream().map(skolemizeQuads(resourceService, baseUrl))
             .forEach(dataset::add);
 
         // Add LDP type
