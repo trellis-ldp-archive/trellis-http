@@ -102,9 +102,10 @@ public class LdpPostHandler extends BaseLdpHandler {
         // Add Audit quads
         auditCreation(iri, session).stream().map(skolemizeQuads(resourceService, baseUrl)).forEach(dataset::add);
 
-        // Add LDP type
+        // Add LDP type (ldp:Resource results in the defaultType)
         final IRI ldpType = ofNullable(link).filter(l -> "type".equals(l.getRel()))
-                    .map(Link::getUri).map(URI::toString).map(rdf::createIRI).orElse(defaultType);
+                    .map(Link::getUri).map(URI::toString).map(rdf::createIRI)
+                    .filter(l -> !LDP.Resource.equals(l)).orElse(defaultType);
 
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, iri, RDF.type, ldpType));
 

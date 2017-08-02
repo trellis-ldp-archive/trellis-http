@@ -13,14 +13,15 @@
  */
 package org.trellisldp.http.impl;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.net.URI.create;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Instant.ofEpochSecond;
 import static java.util.UUID.randomUUID;
+import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
-import static javax.ws.rs.core.Link.fromUri;
+import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -31,9 +32,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
-import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
-import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -171,6 +171,43 @@ public class LdpPostHandlerTest {
 
     @Test
     public void testDefaultType3() {
+        final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService);
+        postHandler.setPath("newresource");
+        postHandler.setBaseUrl(baseUrl);
+        postHandler.setSession(new HttpSession());
+        postHandler.setLink(fromUri(LDP.Resource.getIRIString()).rel("type").build());
+
+        final Response res = postHandler.createResource().build();
+        assertEquals(CREATED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertEquals(create(baseUrl + "newresource"), res.getLocation());
+    }
+
+    @Test
+    public void testDefaultType4() {
+        final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService);
+        postHandler.setPath("newresource");
+        postHandler.setBaseUrl(baseUrl);
+        postHandler.setSession(new HttpSession());
+        postHandler.setContentType("text/plain");
+        postHandler.setLink(fromUri(LDP.Resource.getIRIString()).rel("type").build());
+
+        final Response res = postHandler.createResource().build();
+        assertEquals(CREATED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertEquals(create(baseUrl + "newresource"), res.getLocation());
+    }
+
+    @Test
+    public void testDefaultType5() {
         final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService);
         postHandler.setPath("newresource");
