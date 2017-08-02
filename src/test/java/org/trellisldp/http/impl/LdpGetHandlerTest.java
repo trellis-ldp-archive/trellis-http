@@ -504,8 +504,8 @@ public class LdpGetHandlerTest {
 
         final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
                 mockBinaryService, mockRequest);
-        getHandler.setPath("/");
-        getHandler.setBaseUrl(baseUrl);
+        getHandler.setPath("");
+        getHandler.setBaseUrl(baseUrl + "/");
         getHandler.setSyntax(TURTLE);
 
         final Response res = getHandler.getRepresentation(mockResource).build();

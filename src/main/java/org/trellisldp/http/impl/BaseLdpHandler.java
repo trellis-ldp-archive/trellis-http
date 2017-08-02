@@ -119,7 +119,11 @@ public class BaseLdpHandler {
      * @param path the path
      */
     public void setPath(final String path) {
-        this.path = path;
+        if (path.startsWith("/")) {
+            this.path = path.substring(1);
+        } else {
+            this.path = path;
+        }
     }
 
     /**
@@ -167,7 +171,11 @@ public class BaseLdpHandler {
      * @param baseUrl the baseUrl
      */
     public void setBaseUrl(final String baseUrl) {
-        this.baseUrl = baseUrl;
+        if (baseUrl.endsWith("/")) {
+            this.baseUrl = baseUrl;
+        } else {
+            this.baseUrl = baseUrl + "/";
+        }
     }
 
     /**
