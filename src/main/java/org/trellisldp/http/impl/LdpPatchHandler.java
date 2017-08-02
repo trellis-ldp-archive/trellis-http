@@ -125,7 +125,8 @@ public class LdpPatchHandler extends BaseLdpHandler {
 
         // Update existing graph
         final Graph graph = rdf.createGraph();
-        res.stream(Trellis.PreferUserManaged).forEach(graph::add);
+        final IRI graphName = acl ? Trellis.PreferAccessControl : Trellis.PreferUserManaged;
+        res.stream(graphName).forEach(graph::add);
         try {
             ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + path);
         } catch (final RuntimeRepositoryException ex) {
@@ -135,7 +136,7 @@ public class LdpPatchHandler extends BaseLdpHandler {
 
         final Dataset dataset = rdf.createDataset();
         graph.stream().map(skolemizeTriples(resourceService, baseUrl))
-            .map(t -> rdf.createQuad(Trellis.PreferUserManaged, t.getSubject(), t.getPredicate(), t.getObject()))
+            .map(t -> rdf.createQuad(graphName, t.getSubject(), t.getPredicate(), t.getObject()))
             .forEach(dataset::add);
 
         // Add audit-related triples
@@ -147,7 +148,7 @@ public class LdpPatchHandler extends BaseLdpHandler {
                     res.getInteractionModel()));
 
         // Check any constraints
-        final Optional<String> constraint = dataset.getGraph(Trellis.PreferUserManaged)
+        final Optional<String> constraint = dataset.getGraph(graphName)
             .flatMap(g -> constraintService.constrainedBy(res.getInteractionModel(), baseUrl, g))
             .map(IRI::getIRIString);
         if (constraint.isPresent()) {

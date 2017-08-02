@@ -44,6 +44,7 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_RANGES;
 import static org.trellisldp.http.domain.HttpConstants.DIGEST;
 import static org.trellisldp.http.domain.HttpConstants.MEMENTO_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.NOT_ACCEPTABLE_ERROR;
+import static org.trellisldp.http.domain.HttpConstants.PATCH;
 import static org.trellisldp.http.domain.HttpConstants.PREFER;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.RANGE;
@@ -183,10 +184,12 @@ public class LdpGetHandler extends BaseLdpHandler {
             return cacheBuilder;
         }
         builder.tag(etag);
-        if (res.getInteractionModel().equals(LDP.RDFSource)) {
-            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE, "PATCH"));
+        if (acl) {
+            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH));
+        } else if (res.getInteractionModel().equals(LDP.RDFSource)) {
+            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE, PATCH));
         } else {
-            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, POST, DELETE, "PATCH"));
+            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, POST, DELETE, PATCH));
         }
         ofNullable(prefer).ifPresent(p ->
                 builder.header(PREFERENCE_APPLIED, "return=" + p.getPreference().orElse("representation")));

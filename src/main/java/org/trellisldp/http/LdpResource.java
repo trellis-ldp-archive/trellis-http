@@ -153,6 +153,7 @@ public class LdpResource extends BaseLdpResource {
         }
         getHandler.setWantDigest(digest);
         getHandler.setRange(range);
+        getHandler.setAcl(ACL.equals(format));
 
         // Fetch a versioned resource
         if (nonNull(version)) {
@@ -183,6 +184,7 @@ public class LdpResource extends BaseLdpResource {
     /**
      * Perform a PATCH operation on an LDP Resource
      * @param path the path
+     * @param format a format parameter
      * @param prefer the Prefer header
      * @param body the body
      * @return the response
@@ -191,6 +193,7 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     @Consumes("application/sparql-update")
     public Response updateResource(@PathParam("path") final String path,
+            @QueryParam("format") final String format,
             @HeaderParam("Prefer") final Prefer prefer, final String body) {
 
         if (path.endsWith("/")) {
@@ -206,6 +209,7 @@ public class LdpResource extends BaseLdpResource {
         patchHandler.setPrefer(prefer);
         patchHandler.setSession(session);
         patchHandler.setSparqlUpdate(body);
+        patchHandler.setAcl(ACL.equals(format));
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
                 .map(patchHandler::updateResource).orElse(status(NOT_FOUND)).build();
@@ -213,15 +217,21 @@ public class LdpResource extends BaseLdpResource {
 
     /**
      * Perform a DELETE operation on an LDP Resource
+     * @param format a format parameter
      * @param path the path
      * @return the response
      */
     @DELETE
     @Timed
-    public Response deleteResource(@PathParam("path") final String path) {
+    public Response deleteResource(@PathParam("path") final String path,
+            @QueryParam("format") final String format) {
 
         if (path.endsWith("/")) {
             return redirectWithoutSlash(path);
+        }
+
+        if (nonNull(format)) {
+            return status(METHOD_NOT_ALLOWED).build();
         }
 
         final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, request);
@@ -236,6 +246,7 @@ public class LdpResource extends BaseLdpResource {
     /**
      * Perform a POST operation on a LDP Resource
      * @param path the path
+     * @param format a format parameter
      * @param link the LDP interaction model
      * @param contentType the content-type
      * @param slug the slug header
@@ -245,6 +256,7 @@ public class LdpResource extends BaseLdpResource {
     @POST
     @Timed
     public Response createResource(@PathParam("path") final String path,
+            @QueryParam("format") final String format,
             @HeaderParam("Link") final Link link,
             @HeaderParam("Content-Type") final String contentType,
             @HeaderParam("Slug") final String slug,
@@ -256,6 +268,10 @@ public class LdpResource extends BaseLdpResource {
 
         if (unsupportedTypes.contains(contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
+        }
+
+        if (nonNull(format)) {
+            return status(METHOD_NOT_ALLOWED).build();
         }
 
         final String fullPath = path + "/" + ofNullable(slug).orElseGet(resourceService.getIdentifierSupplier());
@@ -282,6 +298,7 @@ public class LdpResource extends BaseLdpResource {
     /**
      * Perform a PUT operation on a LDP Resource
      * @param path the path
+     * @param format the format parameter
      * @param link the LDP interaction model
      * @param contentType the content-type
      * @param body the body
@@ -290,6 +307,7 @@ public class LdpResource extends BaseLdpResource {
     @PUT
     @Timed
     public Response setResource(@PathParam("path") final String path,
+            @QueryParam("format") final String format,
             @HeaderParam("Link") final Link link,
             @HeaderParam("Content-Type") final String contentType,
             final InputStream body) {
@@ -300,6 +318,10 @@ public class LdpResource extends BaseLdpResource {
 
         if (unsupportedTypes.contains(contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
+        }
+
+        if (nonNull(format)) {
+            return status(METHOD_NOT_ALLOWED).build();
         }
 
         final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, constraintService,

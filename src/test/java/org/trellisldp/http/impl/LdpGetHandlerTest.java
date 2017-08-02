@@ -52,6 +52,7 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_RANGES;
 import static org.trellisldp.http.domain.HttpConstants.MEMENTO_DATETIME;
+import static org.trellisldp.http.domain.HttpConstants.PATCH;
 import static org.trellisldp.http.domain.HttpConstants.PREFER;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.RANGE;
@@ -169,7 +170,7 @@ public class LdpGetHandlerTest {
         assertTrue(allow.contains(OPTIONS));
         assertTrue(allow.contains(PUT));
         assertTrue(allow.contains(DELETE));
-        assertTrue(allow.contains("PATCH"));
+        assertTrue(allow.contains(PATCH));
         assertFalse(allow.contains(POST));
 
         final EntityTag etag = res.getEntityTag();
@@ -238,7 +239,7 @@ public class LdpGetHandlerTest {
         assertTrue(allow.contains(OPTIONS));
         assertTrue(allow.contains(PUT));
         assertTrue(allow.contains(DELETE));
-        assertTrue(allow.contains("PATCH"));
+        assertTrue(allow.contains(PATCH));
         assertFalse(allow.contains(POST));
 
         final EntityTag etag = res.getEntityTag();
@@ -345,7 +346,7 @@ public class LdpGetHandlerTest {
         assertTrue(allow.contains(OPTIONS));
         assertTrue(allow.contains(PUT));
         assertTrue(allow.contains(DELETE));
-        assertTrue(allow.contains("PATCH"));
+        assertTrue(allow.contains(PATCH));
         assertFalse(allow.contains(POST));
 
         final EntityTag etag = res.getEntityTag();
@@ -397,7 +398,7 @@ public class LdpGetHandlerTest {
         assertTrue(allow.contains(OPTIONS));
         assertTrue(allow.contains(PUT));
         assertTrue(allow.contains(DELETE));
-        assertTrue(allow.contains("PATCH"));
+        assertTrue(allow.contains(PATCH));
         assertTrue(allow.contains(POST));
 
         final EntityTag etag = res.getEntityTag();
@@ -496,6 +497,30 @@ public class LdpGetHandlerTest {
         getHandler.setBaseUrl(baseUrl);
 
         getHandler.getRepresentation(mockResource).build();
+    }
+
+    @Test
+    public void testGetAcl() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+
+        final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
+                mockBinaryService, mockRequest);
+        getHandler.setPath("");
+        getHandler.setBaseUrl(baseUrl + "/");
+        getHandler.setSyntax(TURTLE);
+        getHandler.setAcl(true);
+
+        final Response res = getHandler.getRepresentation(mockResource).build();
+        assertEquals(OK, res.getStatusInfo());
+
+        final String allow = res.getHeaderString(ALLOW);
+        assertTrue(allow.contains(GET));
+        assertTrue(allow.contains(HEAD));
+        assertTrue(allow.contains(OPTIONS));
+        assertFalse(allow.contains(PUT));
+        assertFalse(allow.contains(DELETE));
+        assertTrue(allow.contains(PATCH));
+        assertFalse(allow.contains(POST));
     }
 
     @Test

@@ -48,6 +48,8 @@ public final class HttpConstants {
 
     public static final String MEMENTO_DATETIME = "Memento-Datetime";
 
+    public static final String PATCH = "PATCH";
+
     public static final String PREFER = "Prefer";
 
     public static final String PREFERENCE_APPLIED = "Preference-Applied";

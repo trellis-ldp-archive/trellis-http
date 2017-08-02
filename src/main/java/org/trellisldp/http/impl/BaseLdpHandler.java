@@ -64,6 +64,7 @@ public class BaseLdpHandler {
     protected Link link = null;
     protected InputStream entity = null;
     protected String contentType = null;
+    protected Boolean acl = false;
 
     /**
      * A base class for response handling
@@ -132,6 +133,14 @@ public class BaseLdpHandler {
      */
     public void setSyntax(final RDFSyntax syntax) {
         this.syntax = syntax;
+    }
+
+    /**
+     * Set whether an ACL is being targeted
+     * @param acl true if the request is for an ACL; false otherwise
+     */
+    public void setAcl(final Boolean acl) {
+        this.acl = acl;
     }
 
     /**
