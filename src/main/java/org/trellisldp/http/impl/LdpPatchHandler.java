@@ -24,7 +24,9 @@ import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
+import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
@@ -163,7 +165,9 @@ public class LdpPatchHandler extends BaseLdpHandler {
                 .forEach(type -> builder.link(type, "type"));
 
             if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("representation"::equals).isPresent()) {
-                builder.entity(ResourceStreamer.tripleStreamer(ioService,
+                builder.header(PREFERENCE_APPLIED, "return=representation")
+                       .type(ofNullable(syntax).orElse(TURTLE).mediaType)
+                       .entity(ResourceStreamer.tripleStreamer(ioService,
                             graph.stream().map(unskolemizeTriples(resourceService, baseUrl)),
                             syntax, ofNullable(profile).orElseGet(() ->
                                 RDFA_HTML.equals(syntax) ? rdf.createIRI(identifier) : JSONLD.expanded)));
