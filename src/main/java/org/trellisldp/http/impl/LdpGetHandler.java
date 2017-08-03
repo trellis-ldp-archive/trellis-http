@@ -29,6 +29,7 @@ import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
+import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
@@ -268,7 +269,9 @@ public class LdpGetHandler extends BaseLdpHandler {
             // Mementos don't accept POST or PATCH
             if (LDP.Container.equals(type) && !res.isMemento()) {
                 builder.header(ACCEPT_POST, VARIANTS.stream().map(Variant::getMediaType)
-                        .map(mt -> mt.getType() + "/" + mt.getSubtype()).collect(joining(",")));
+                        .map(mt -> mt.getType() + "/" + mt.getSubtype())
+                        // text/html is excluded
+                        .filter(mt -> !TEXT_HTML.equals(mt)).collect(joining(",")));
             } else if (LDP.RDFSource.equals(type) && !res.isMemento()) {
                 builder.header(ACCEPT_PATCH, APPLICATION_SPARQL_UPDATE);
             }

@@ -44,6 +44,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
+import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -64,6 +65,7 @@ import org.trellisldp.http.domain.Version;
 import org.trellisldp.http.domain.WantDigest;
 import org.trellisldp.http.impl.LdpDeleteHandler;
 import org.trellisldp.http.impl.LdpGetHandler;
+import org.trellisldp.http.impl.LdpOptionsHandler;
 import org.trellisldp.http.impl.LdpPatchHandler;
 import org.trellisldp.http.impl.LdpPostHandler;
 import org.trellisldp.http.impl.LdpPutHandler;
@@ -140,6 +142,7 @@ public class LdpResource extends BaseLdpResource {
 
         final RDFSyntax syntax = getRdfSyntax(headers.getAcceptableMediaTypes());
         final String baseUrl = getBaseUrl(path);
+
         final LdpGetHandler getHandler = new LdpGetHandler(resourceService, ioService, binaryService,
                 request);
         getHandler.setPath(path);
@@ -182,6 +185,44 @@ public class LdpResource extends BaseLdpResource {
     }
 
     /**
+     * Perform an OPTIONS operation on an LDP Resource
+     * @param path the path
+     * @param version the version parameter
+     * @param ext an extension parameter
+     * @return the response
+     */
+    @OPTIONS
+    @Timed
+    public Response options(@PathParam("path") final String path,
+            @QueryParam("version") final Version version,
+            @QueryParam("ext") final String ext) {
+
+        if (path.endsWith("/")) {
+            return redirectWithoutSlash(path);
+        }
+
+        final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(resourceService);
+        optionsHandler.setPath(path);
+        optionsHandler.setBaseUrl(getBaseUrl(path));
+        if (ACL.equals(ext)) {
+            optionsHandler.setGraphName(Trellis.PreferAccessControl);
+        }
+
+        if (nonNull(version)) {
+            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), version.getInstant())
+                .map(optionsHandler::ldpOptions).orElse(status(NOT_FOUND)).build();
+
+        } else if (TIMEMAP.equals(ext)) {
+            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
+                .map(optionsHandler::ldpOptions).orElse(status(NOT_FOUND)).build();
+        }
+
+        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
+            .map(optionsHandler::ldpOptions).orElse(status(NOT_FOUND)).build();
+    }
+
+
+    /**
      * Perform a PATCH operation on an LDP Resource
      * @param path the path
      * @param ext an extension parameter
@@ -219,8 +260,8 @@ public class LdpResource extends BaseLdpResource {
 
     /**
      * Perform a DELETE operation on an LDP Resource
-     * @param ext an extension parameter
      * @param path the path
+     * @param ext an extension parameter
      * @return the response
      */
     @DELETE
