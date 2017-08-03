@@ -508,7 +508,7 @@ public class LdpGetHandlerTest {
         getHandler.setPath("");
         getHandler.setBaseUrl(baseUrl + "/");
         getHandler.setSyntax(TURTLE);
-        getHandler.setAcl(true);
+        getHandler.setGraphName(Trellis.PreferAccessControl);
 
         final Response res = getHandler.getRepresentation(mockResource).build();
         assertEquals(OK, res.getStatusInfo());

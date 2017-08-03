@@ -64,7 +64,7 @@ public class BaseLdpHandler {
     protected Link link = null;
     protected InputStream entity = null;
     protected String contentType = null;
-    protected Boolean acl = false;
+    protected IRI graphName = Trellis.PreferUserManaged;
 
     /**
      * A base class for response handling
@@ -136,11 +136,11 @@ public class BaseLdpHandler {
     }
 
     /**
-     * Set whether an ACL is being targeted
-     * @param acl true if the request is for an ACL; false otherwise
+     * Set the graph being targed for updates
+     * @param graphName the name of the graph
      */
-    public void setAcl(final Boolean acl) {
-        this.acl = acl;
+    public void setGraphName(final IRI graphName) {
+        this.graphName = graphName;
     }
 
     /**

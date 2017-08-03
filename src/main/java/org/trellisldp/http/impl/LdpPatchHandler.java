@@ -125,7 +125,6 @@ public class LdpPatchHandler extends BaseLdpHandler {
 
         // Update existing graph
         final Graph graph = rdf.createGraph();
-        final IRI graphName = acl ? Trellis.PreferAccessControl : Trellis.PreferUserManaged;
         res.stream(graphName).forEach(graph::add);
         try {
             ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + path);

@@ -117,7 +117,7 @@ public class LdpResource extends BaseLdpResource {
      * Perform a GET operation on an LDP Resource
      * @param path the path
      * @param version the version parameter
-     * @param format the format parameter
+     * @param ext an extension parameter
      * @param datetime the Accept-Datetime header
      * @param prefer the Prefer header
      * @param digest the Want-Digest header
@@ -128,7 +128,7 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response getResource(@PathParam("path") final String path,
             @QueryParam("version") final Version version,
-            @QueryParam("format") final String format,
+            @QueryParam("ext") final String ext,
             @HeaderParam("Accept-Datetime") final AcceptDatetime datetime,
             @HeaderParam("Prefer") final Prefer prefer,
             @HeaderParam("Want-Digest") final WantDigest digest,
@@ -146,14 +146,14 @@ public class LdpResource extends BaseLdpResource {
         getHandler.setBaseUrl(baseUrl);
         getHandler.setSyntax(syntax);
         getHandler.setProfile(getProfile(headers.getAcceptableMediaTypes()));
-        if (ACL.equals(format)) {
+        if (ACL.equals(ext)) {
             getHandler.setPrefer(ofInclude(Trellis.PreferAccessControl.getIRIString()));
+            getHandler.setGraphName(Trellis.PreferAccessControl);
         } else {
             getHandler.setPrefer(prefer);
         }
         getHandler.setWantDigest(digest);
         getHandler.setRange(range);
-        getHandler.setAcl(ACL.equals(format));
 
         // Fetch a versioned resource
         if (nonNull(version)) {
@@ -162,7 +162,7 @@ public class LdpResource extends BaseLdpResource {
                 .map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
 
         // Fetch a timemap
-        } else if (TIMEMAP.equals(format)) {
+        } else if (TIMEMAP.equals(ext)) {
             LOGGER.info("Getting timemap resource");
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
                 .map(res -> res.getTimeMapBuilder(baseUrl + path, syntax, ioService))
@@ -184,7 +184,7 @@ public class LdpResource extends BaseLdpResource {
     /**
      * Perform a PATCH operation on an LDP Resource
      * @param path the path
-     * @param format a format parameter
+     * @param ext an extension parameter
      * @param prefer the Prefer header
      * @param body the body
      * @return the response
@@ -193,7 +193,7 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     @Consumes("application/sparql-update")
     public Response updateResource(@PathParam("path") final String path,
-            @QueryParam("format") final String format,
+            @QueryParam("ext") final String ext,
             @HeaderParam("Prefer") final Prefer prefer, final String body) {
 
         if (path.endsWith("/")) {
@@ -209,7 +209,9 @@ public class LdpResource extends BaseLdpResource {
         patchHandler.setPrefer(prefer);
         patchHandler.setSession(session);
         patchHandler.setSparqlUpdate(body);
-        patchHandler.setAcl(ACL.equals(format));
+        if (ACL.equals(ext)) {
+            patchHandler.setGraphName(Trellis.PreferAccessControl);
+        }
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
                 .map(patchHandler::updateResource).orElse(status(NOT_FOUND)).build();
@@ -217,20 +219,20 @@ public class LdpResource extends BaseLdpResource {
 
     /**
      * Perform a DELETE operation on an LDP Resource
-     * @param format a format parameter
+     * @param ext an extension parameter
      * @param path the path
      * @return the response
      */
     @DELETE
     @Timed
     public Response deleteResource(@PathParam("path") final String path,
-            @QueryParam("format") final String format) {
+            @QueryParam("ext") final String ext) {
 
         if (path.endsWith("/")) {
             return redirectWithoutSlash(path);
         }
 
-        if (nonNull(format)) {
+        if (nonNull(ext)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
@@ -246,7 +248,7 @@ public class LdpResource extends BaseLdpResource {
     /**
      * Perform a POST operation on a LDP Resource
      * @param path the path
-     * @param format a format parameter
+     * @param ext an extension parameter
      * @param link the LDP interaction model
      * @param contentType the content-type
      * @param slug the slug header
@@ -256,7 +258,7 @@ public class LdpResource extends BaseLdpResource {
     @POST
     @Timed
     public Response createResource(@PathParam("path") final String path,
-            @QueryParam("format") final String format,
+            @QueryParam("ext") final String ext,
             @HeaderParam("Link") final Link link,
             @HeaderParam("Content-Type") final String contentType,
             @HeaderParam("Slug") final String slug,
@@ -270,7 +272,7 @@ public class LdpResource extends BaseLdpResource {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
-        if (nonNull(format)) {
+        if (nonNull(ext)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
@@ -298,7 +300,7 @@ public class LdpResource extends BaseLdpResource {
     /**
      * Perform a PUT operation on a LDP Resource
      * @param path the path
-     * @param format the format parameter
+     * @param ext an extension parameter
      * @param link the LDP interaction model
      * @param contentType the content-type
      * @param body the body
@@ -307,7 +309,7 @@ public class LdpResource extends BaseLdpResource {
     @PUT
     @Timed
     public Response setResource(@PathParam("path") final String path,
-            @QueryParam("format") final String format,
+            @QueryParam("ext") final String ext,
             @HeaderParam("Link") final Link link,
             @HeaderParam("Content-Type") final String contentType,
             final InputStream body) {
@@ -320,7 +322,7 @@ public class LdpResource extends BaseLdpResource {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
-        if (nonNull(format)) {
+        if (nonNull(ext)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 

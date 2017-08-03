@@ -85,6 +85,7 @@ import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.OA;
+import org.trellisldp.vocabulary.Trellis;
 
 /**
  * The GET response builder
@@ -184,7 +185,7 @@ public class LdpGetHandler extends BaseLdpHandler {
             return cacheBuilder;
         }
         builder.tag(etag);
-        if (acl) {
+        if (Trellis.PreferAccessControl.equals(graphName)) {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH));
         } else if (res.getInteractionModel().equals(LDP.RDFSource)) {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE, PATCH));
