@@ -42,6 +42,7 @@ ext {
     mockitoVersion = '2.8.47'
     trellisJenaIOVersion = '0.1.0-SNAPSHOT'
     jerseyVersion = '2.25.1'
+    logbackVersion = '1.2.3'
 
     /* OSGi */
     spiflyVersion = '1.0.8'
@@ -67,6 +68,8 @@ dependencies {
     testCompile group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
     testCompile group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisJenaIOVersion
     testCompile group: 'org.glassfish.jersey.core', name: 'jersey-server', version: jerseyVersion
+    testCompile group: 'org.glassfish.jersey.test-framework.providers', name: 'jersey-test-framework-provider-inmemory', version: jerseyVersion
+    testCompile group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
 
     buildToolsConfig 'org.trellisldp:trellis-build-tools:0.1.1'
 }
