@@ -26,7 +26,6 @@ import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
-import static org.trellisldp.http.domain.Prefer.ofInclude;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
@@ -150,7 +149,12 @@ public class LdpResource extends BaseLdpResource {
         getHandler.setSyntax(syntax);
         getHandler.setProfile(getProfile(headers.getAcceptableMediaTypes()));
         if (ACL.equals(ext)) {
-            getHandler.setPrefer(ofInclude(Trellis.PreferAccessControl.getIRIString()));
+            // TODO make this more compact?
+            getHandler.setPrefer(new Prefer("return=representation; include=\"" +
+                        Trellis.PreferAccessControl.getIRIString() + "\"; omit=\"" +
+                        Trellis.PreferUserManaged.getIRIString() + " " +
+                        LDP.PreferContainment.getIRIString() + " " +
+                        LDP.PreferMembership.getIRIString() + "\""));
             getHandler.setGraphName(Trellis.PreferAccessControl);
         } else {
             getHandler.setPrefer(prefer);

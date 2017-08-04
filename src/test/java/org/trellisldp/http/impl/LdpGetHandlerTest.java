@@ -237,9 +237,9 @@ public class LdpGetHandlerTest {
         assertTrue(allow.contains(GET));
         assertTrue(allow.contains(HEAD));
         assertTrue(allow.contains(OPTIONS));
-        assertTrue(allow.contains(PUT));
-        assertTrue(allow.contains(DELETE));
-        assertTrue(allow.contains(PATCH));
+        assertFalse(allow.contains(PUT));
+        assertFalse(allow.contains(DELETE));
+        assertFalse(allow.contains(PATCH));
         assertFalse(allow.contains(POST));
 
         final EntityTag etag = res.getEntityTag();

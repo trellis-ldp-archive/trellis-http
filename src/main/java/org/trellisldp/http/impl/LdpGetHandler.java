@@ -164,8 +164,11 @@ public class LdpGetHandler extends BaseLdpHandler {
             }
         });
 
-        builder.link(identifier, "original timegate")
-            .links(MementoResource.getMementoLinks(identifier, res.getMementos()).toArray(Link[]::new));
+        // TODO -- review this conditional (should ACLs be excluded?)
+        if (Trellis.PreferUserManaged.equals(graphName)) {
+            builder.link(identifier, "original timegate")
+                .links(MementoResource.getMementoLinks(identifier, res.getMementos()).toArray(Link[]::new));
+        }
 
         // NonRDFSources responses (strong ETags, etc)
         if (res.getBinary().isPresent() && isNull(syntax)) {
@@ -186,7 +189,9 @@ public class LdpGetHandler extends BaseLdpHandler {
             return cacheBuilder;
         }
         builder.tag(etag);
-        if (Trellis.PreferAccessControl.equals(graphName)) {
+        if (res.isMemento()) {
+            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
+        } else if (Trellis.PreferAccessControl.equals(graphName)) {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH));
         } else if (res.getInteractionModel().equals(LDP.RDFSource)) {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE, PATCH));
@@ -222,8 +227,13 @@ public class LdpGetHandler extends BaseLdpHandler {
         final IRI dsid = res.getBinary().map(Binary::getIdentifier).get();
         final InputStream binary = binaryService.getContent(partition, dsid).orElseThrow(() ->
                 new WebApplicationException("Could not load binary resolver for " + dsid.getIRIString()));
-        builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes")
-            .header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE)).tag(etag);
+        builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes").tag(etag);
+
+        if (res.isMemento()) {
+            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
+        } else {
+            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE));
+        }
 
         // Add instance digests, if Requested and supported
         ofNullable(digest).map(WantDigest::getAlgorithms).ifPresent(algs ->

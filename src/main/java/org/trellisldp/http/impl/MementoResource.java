@@ -13,6 +13,7 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.lang.String.join;
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.time.ZonedDateTime.parse;
@@ -22,6 +23,10 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
 import static java.util.stream.Stream.empty;
+import static javax.ws.rs.HttpMethod.GET;
+import static javax.ws.rs.HttpMethod.HEAD;
+import static javax.ws.rs.HttpMethod.OPTIONS;
+import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.Response.Status.FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
@@ -46,6 +51,7 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.VersionRange;
 import org.trellisldp.spi.IOService;
+import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.Trellis;
 import org.trellisldp.vocabulary.XSD;
@@ -92,10 +98,15 @@ public final class MementoResource {
             final IOService serializer) {
         final Response.ResponseBuilder builder = Response.ok().link(identifier, ORIGINAL + " " + TIMEGATE);
         final List<Link> links = getMementoLinks(identifier, resource.getMementos()).collect(toList());
-        builder.links(links.toArray(new Link[0]));
+        builder.links(links.toArray(new Link[0]))
+               .header(ALLOW, join(",", GET, HEAD, OPTIONS));
+        builder.link(LDP.Resource.getIRIString(), "type");
+        builder.link(LDP.RDFSource.getIRIString(), "type");
         if (nonNull(syntax)) {
+            builder.type(syntax.mediaType);
             builder.entity(ResourceStreamer.quadStreamer(serializer, links.stream().flatMap(linkToQuads), syntax));
         } else {
+            builder.type(APPLICATION_LINK_FORMAT);
             builder.entity(links.stream().map(Link::toString).collect(joining(",\n")) + "\n");
         }
         return builder;

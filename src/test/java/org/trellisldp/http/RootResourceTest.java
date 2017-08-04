@@ -52,10 +52,10 @@ import org.trellisldp.vocabulary.LDP;
 public class RootResourceTest extends JerseyTest {
 
     final static ObjectMapper MAPPER = new ObjectMapper();
+    final static IOService ioService = new JenaIOService(null);
 
     @Override
     public Application configure() {
-        final IOService ioService = new JenaIOService(null);
 
         final Map<String, String> partitions = new HashMap<>();
         partitions.put("repo1", "http://example.org/");
