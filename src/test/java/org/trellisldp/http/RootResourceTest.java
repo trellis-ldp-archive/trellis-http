@@ -75,7 +75,6 @@ public class RootResourceTest extends JerseyTest {
 
     @Test
     public void testJsonLd() throws IOException {
-
         final Response res = target("").request().accept("application/ld+json").get();
 
         assertEquals(OK, res.getStatusInfo());
@@ -151,7 +150,6 @@ public class RootResourceTest extends JerseyTest {
 
     @Test
     public void testJsonLdCompact() throws IOException {
-
         final Response res = target("").request()
             .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
 

@@ -52,6 +52,7 @@ import org.trellisldp.spi.IOService;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.RDFS;
 
 /**
@@ -125,9 +126,11 @@ public class RootResource extends BaseLdpResource {
         mappings.put("title", DC.title);
         mappings.put("description", DC.description);
         mappings.put("publisher", DC.publisher);
+        mappings.put("isVersionOf", DC.isVersionOf);
         mappings.put("label", RDFS.label);
         mappings.put("comment", RDFS.comment);
         mappings.put("seeAlso", RDFS.seeAlso);
+        mappings.put("type", RDF.type);
         return mappings;
     }
 }
