@@ -16,6 +16,7 @@ package org.trellisldp.http.impl;
 import static java.net.URI.create;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Instant.ofEpochSecond;
+import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -34,11 +35,11 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.vocabulary.RDF.type;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -48,13 +49,17 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.BlankNode;
 import org.apache.commons.rdf.api.Dataset;
+import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
+import org.apache.commons.rdf.api.Triple;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -74,7 +79,7 @@ import org.trellisldp.vocabulary.Trellis;
 public class LdpPostHandlerTest {
 
     private final static Instant time = ofEpochSecond(1496262729);
-    private final static String baseUrl = "http://localhost:8080/repo/";
+    private final static String baseUrl = "http://example.org/repo/";
     private final static RDF rdf = getInstance();
     private final static String BNODE_PREFIX = "trellis:bnode/";
 
@@ -92,6 +97,15 @@ public class LdpPostHandlerTest {
 
     @Mock
     private Resource mockResource;
+
+    @Captor
+    private ArgumentCaptor<IRI> iriArgument;
+
+    @Captor
+    private ArgumentCaptor<Graph> graphArgument;
+
+    @Captor
+    private ArgumentCaptor<Dataset> datasetArgument;
 
     @Before
     public void setUp() {
@@ -227,14 +241,16 @@ public class LdpPostHandlerTest {
 
     @Test
     public void testEntity() {
-        when(mockIoService.read(any(), any(), eq(TURTLE))).thenAnswer(x -> Stream.of(
-                    rdf.createTriple(rdf.createIRI("http://example.org/repository/newresource"), DC.title,
-                        rdf.createLiteral("A title"))));
+        final String path = "partition/newresource";
+        final IRI identifier = rdf.createIRI("trellis:" + path);
+        final Triple triple = rdf.createTriple(rdf.createIRI(baseUrl + path), DC.title,
+                        rdf.createLiteral("A title"));
+        when(mockIoService.read(any(), any(), eq(TURTLE))).thenAnswer(x -> Stream.of(triple));
         final InputStream entity = new ByteArrayInputStream("<> <http://purl.org/dc/terms/title> \"A title\" ."
                 .getBytes(UTF_8));
         final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService);
-        postHandler.setPath("partition/newresource");
+        postHandler.setPath(path);
         postHandler.setBaseUrl(baseUrl);
         postHandler.setSession(new HttpSession());
         postHandler.setContentType("text/turtle");
@@ -247,14 +263,30 @@ public class LdpPostHandlerTest {
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
-        assertEquals(create(baseUrl + "partition/newresource"), res.getLocation());
-        verify(mockIoService).read(eq(entity), eq(baseUrl + "partition/newresource"), eq(TURTLE));
-        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any());
+        assertEquals(create(baseUrl + path), res.getLocation());
+
         verify(mockBinaryService, never()).setContent(eq("partition"), any(IRI.class), any(InputStream.class));
+
+        verify(mockIoService).read(eq(entity), eq(baseUrl + path), eq(TURTLE));
+
+        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq(baseUrl), graphArgument.capture());
+        assertEquals(1L, graphArgument.getValue().size());
+        assertTrue(graphArgument.getValue().contains(rdf.createTriple(
+                        identifier, triple.getPredicate(), triple.getObject())));
+
+        verify(mockResourceService).put(eq(identifier), datasetArgument.capture());
+        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferUserManaged,
+                        identifier, triple.getPredicate(), triple.getObject())));
+        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
+                        identifier, type, LDP.RDFSource)));
+
+        // Audit adds 5 triples + 1 interaction model + 1 user triple
+        assertEquals(7L, datasetArgument.getValue().size());
     }
 
     @Test
     public void testEntity2() {
+        final IRI identifier = rdf.createIRI("trellis:partition/newresource");
         final InputStream entity = new ByteArrayInputStream("Some data".getBytes(UTF_8));
         final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService);
@@ -271,9 +303,25 @@ public class LdpPostHandlerTest {
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
         assertEquals(create(baseUrl + "partition/newresource"), res.getLocation());
+
         verify(mockIoService, never()).read(any(), any(), any());
         verify(mockConstraintService, never()).constrainedBy(any(), eq(baseUrl), any());
-        verify(mockBinaryService).setContent(eq("partition"), any(IRI.class), any(InputStream.class));
+
+        verify(mockBinaryService).setContent(eq("partition"), iriArgument.capture(), eq(entity));
+        assertTrue(iriArgument.getValue().getIRIString().startsWith("file:"));
+
+        verify(mockResourceService).put(eq(identifier), datasetArgument.capture());
+        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
+                        iriArgument.getValue(), DC.format, rdf.createLiteral("text/plain"))));
+        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
+                        identifier, DC.hasPart, iriArgument.getValue())));
+        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
+                        identifier, type, LDP.NonRDFSource)));
+
+        // Audit adds 5 triples + 3 server managed + 0 user managed
+        assertEquals(5L, datasetArgument.getValue().stream(of(Trellis.PreferAudit), null, null, null).count());
+        assertEquals(3L, datasetArgument.getValue().stream(of(Trellis.PreferServerManaged), null, null, null).count());
+        assertEquals(0L, datasetArgument.getValue().stream(of(Trellis.PreferUserManaged), null, null, null).count());
     }
 
     @Test
@@ -282,7 +330,7 @@ public class LdpPostHandlerTest {
                     rdf.createTriple(rdf.createIRI("http://example.org/repository/newresource"), DC.title,
                         rdf.createLiteral("A title"))));
         when(mockConstraintService.constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any()))
-            .thenReturn(Optional.of(Trellis.InvalidRange));
+            .thenReturn(of(Trellis.InvalidRange));
         final InputStream entity = new ByteArrayInputStream("<> <http://purl.org/dc/terms/title> \"A title\" ."
                 .getBytes(UTF_8));
         final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,

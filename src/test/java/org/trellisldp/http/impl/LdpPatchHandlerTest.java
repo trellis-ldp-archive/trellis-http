@@ -41,6 +41,7 @@ import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.vocabulary.RDF.type;
 
 import java.time.Instant;
 import java.util.Date;
@@ -60,10 +61,13 @@ import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
+import org.apache.commons.rdf.api.Triple;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -74,6 +78,7 @@ import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.RuntimeRepositoryException;
 import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.RDFS;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
@@ -103,6 +108,12 @@ public class LdpPatchHandlerTest {
 
     @Mock
     private Request mockRequest;
+
+    @Captor
+    private ArgumentCaptor<Graph> graphArgument;
+
+    @Captor
+    private ArgumentCaptor<Dataset> datasetArgument;
 
     @Before
     public void setUp() {
@@ -156,6 +167,10 @@ public class LdpPatchHandlerTest {
 
     @Test
     public void testEntity() {
+        final Triple triple = rdf.createTriple(identifier, RDFS.label, rdf.createLiteral("A label"));
+
+        when(mockResource.stream(eq(Trellis.PreferUserManaged))).thenAnswer(x -> Stream.of(triple));
+
         final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,
                 mockConstraintService, mockRequest);
         patchHandler.setPath("partition/resource");
@@ -167,8 +182,21 @@ public class LdpPatchHandlerTest {
 
         final Response res = patchHandler.updateResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
-        verify(mockIoService).update(any(Graph.class), eq(insert), eq(identifier.getIRIString()));
-        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any());
+
+        verify(mockIoService).update(graphArgument.capture(), eq(insert), eq(identifier.getIRIString()));
+        assertTrue(graphArgument.getValue().contains(triple));
+
+        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq(baseUrl), graphArgument.capture());
+        assertTrue(graphArgument.getValue().contains(triple));
+
+        verify(mockResourceService).put(eq(identifier), datasetArgument.capture());
+        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferUserManaged,
+                        triple.getSubject(), triple.getPredicate(), triple.getObject())));
+        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
+                        triple.getSubject(), type, LDP.RDFSource)));
+
+        // Audit adds 5 triples + 1 interaction model + 1 user triple
+        assertEquals(7L, datasetArgument.getValue().size());
     }
 
     @Test
