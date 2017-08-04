@@ -133,6 +133,7 @@ public class LdpResourceTest extends JerseyTest {
         partitions.put("repo3", "http://example.org/");
         partitions.put("repo4", "http://example.org/");
 
+        // Junit runner doesn't seem to work very well with JerseyTest
         initMocks(this);
 
         final ResourceConfig config = new ResourceConfig();
