@@ -13,6 +13,7 @@
  */
 package org.trellisldp.http;
 
+import static java.util.Objects.isNull;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.spi.RDFUtils.getInstance;
@@ -23,12 +24,14 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.rdf.api.RDF;
 import org.slf4j.Logger;
 import org.trellisldp.http.impl.HttpSession;
 import org.trellisldp.spi.Session;
+import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -41,8 +44,6 @@ class BaseLdpResource {
 
     protected final Map<String, String> partitions;
 
-    protected final Session session;
-
     @Context
     protected UriInfo uriInfo;
 
@@ -52,10 +53,19 @@ class BaseLdpResource {
     @Context
     protected Request request;
 
+    @Context
+    protected SecurityContext security;
+
     protected BaseLdpResource(final Map<String, String> partitions) {
-        // TODO -- add user session here
-        this.session = new HttpSession();
         this.partitions = partitions;
+    }
+
+    protected Session getSession() {
+        if (isNull(security.getUserPrincipal())) {
+            return new HttpSession();
+        }
+        // TODO -- look up user session in agentService here
+        return new HttpSession(Trellis.RepositoryAdministrator);
     }
 
     protected String getPartition(final String path) {

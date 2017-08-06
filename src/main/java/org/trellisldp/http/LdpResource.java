@@ -252,7 +252,7 @@ public class LdpResource extends BaseLdpResource {
         patchHandler.setSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()));
         patchHandler.setProfile(getProfile(headers.getAcceptableMediaTypes()));
         patchHandler.setPrefer(prefer);
-        patchHandler.setSession(session);
+        patchHandler.setSession(getSession());
         patchHandler.setSparqlUpdate(body);
         if (ACL.equals(ext)) {
             patchHandler.setGraphName(Trellis.PreferAccessControl);
@@ -284,7 +284,7 @@ public class LdpResource extends BaseLdpResource {
         final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, request);
         deleteHandler.setPath(path);
         deleteHandler.setBaseUrl(getBaseUrl(path));
-        deleteHandler.setSession(session);
+        deleteHandler.setSession(getSession());
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
             .map(deleteHandler::deleteResource).orElse(status(NOT_FOUND)).build();
@@ -327,7 +327,7 @@ public class LdpResource extends BaseLdpResource {
                 binaryService);
         postHandler.setPath(fullPath);
         postHandler.setBaseUrl(getBaseUrl(path));
-        postHandler.setSession(session);
+        postHandler.setSession(getSession());
         postHandler.setContentType(contentType);
         postHandler.setLink(link);
         postHandler.setEntity(body);
@@ -375,7 +375,7 @@ public class LdpResource extends BaseLdpResource {
                 binaryService, request);
         putHandler.setPath(path);
         putHandler.setBaseUrl(getBaseUrl(path));
-        putHandler.setSession(session);
+        putHandler.setSession(getSession());
         putHandler.setContentType(contentType);
         putHandler.setLink(link);
         putHandler.setEntity(body);
