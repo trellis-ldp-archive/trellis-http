@@ -14,6 +14,7 @@
 package org.trellisldp.http;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.HashMap;
@@ -42,7 +43,8 @@ public class LdpAdminResourceTest extends AbstractLdpResourceTest {
 
         final ResourceConfig config = new ResourceConfig();
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService, mockBinaryService,
-                    mockAgentService, mockAccessControlService, partitions, emptyList(), emptyList()));
+                    mockAgentService, mockAccessControlService, partitions, emptyList(),
+                    singletonList("invalid/type")));
         config.register(new TestAuthenticationFilter("testUser", "admin"));
         return config;
     }

@@ -14,15 +14,21 @@
 package org.trellisldp.http;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.Instant.MAX;
 import static java.time.Instant.ofEpochSecond;
 import static java.time.ZonedDateTime.parse;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 import static java.util.Arrays.asList;
 import static java.util.Date.from;
 import static java.util.stream.Collectors.toList;
+import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.HttpHeaders.VARY;
+import static javax.ws.rs.core.Response.Status.CREATED;
+import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
+import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -31,6 +37,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
@@ -135,7 +142,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     public void setUpMocks() {
         when(mockResourceService.get(any(IRI.class), any(Instant.class)))
             .thenReturn(Optional.of(mockVersionedResource));
-        when(mockResourceService.get(any(IRI.class))).thenReturn(Optional.of(mockResource));
+        when(mockResourceService.get(eq(identifier))).thenReturn(Optional.of(mockResource));
+        when(mockResourceService.getIdentifierSupplier()).thenReturn(() -> "randomValue");
 
         when(mockAgentService.asAgent(anyString())).thenReturn(agent);
         when(mockAccessControlService.anyMatch(any(Session.class), any(IRI.class), any())).thenReturn(true);
@@ -503,6 +511,181 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(varies.contains(ACCEPT_DATETIME));
         assertTrue(varies.contains(PREFER));
     }
+
+    @Test
+    public void testPost() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResourceService.get(eq(rdf.createIRI("trellis:repo1/resource/randomValue")), eq(MAX)))
+            .thenReturn(Optional.empty());
+
+        final Response res = target("repo1/resource").request()
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(CREATED, res.getStatusInfo());
+        assertEquals("http://example.org/repo1/resource/randomValue", res.getLocation().toString());
+    }
+
+    @Test
+    public void testPostSlug() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResourceService.get(eq(rdf.createIRI("trellis:repo1/resource/test")), eq(MAX)))
+            .thenReturn(Optional.empty());
+
+        final Response res = target("repo1/resource").request()
+            .header("Slug", "test")
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(CREATED, res.getStatusInfo());
+        assertEquals("http://example.org/repo1/resource/test", res.getLocation().toString());
+    }
+
+    @Test
+    public void testPostAcl() {
+        final Response res = target("repo1/resource").queryParam("ext", "acl").request()
+            .header("Slug", "test")
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPostInvalidContent() {
+        final Response res = target("repo1/resource").request()
+            .post(entity("blah blah blah", "invalid/type"));
+
+        assertEquals(UNSUPPORTED_MEDIA_TYPE, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPostSlash() {
+        final Response res = target("repo1/resource/").request()
+            .header("Slug", "test")
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(OK, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutExisting() {
+        final Response res = target("repo1/resource").request()
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutNew() {
+        when(mockResourceService.get(eq(rdf.createIRI("trellis:repo1/resource/test")), eq(MAX)))
+            .thenReturn(Optional.empty());
+
+        final Response res = target("repo1/resource/test").request()
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutAcl() {
+        final Response res = target("repo1/resource").queryParam("ext", "acl").request()
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutInvalidContent() {
+        final Response res = target("repo1/resource").request()
+            .put(entity("blah blah blah", "invalid/type"));
+
+        assertEquals(UNSUPPORTED_MEDIA_TYPE, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutSlash() {
+        final Response res = target("repo1/resource/").request()
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(OK, res.getStatusInfo());
+    }
+
+    @Test
+    public void testDeleteExisting() {
+        final Response res = target("repo1/resource").request().delete();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+    }
+
+    @Test
+    public void testDeleteNonExistant() {
+        when(mockResourceService.get(eq(rdf.createIRI("trellis:repo1/resource/test")), eq(MAX)))
+            .thenReturn(Optional.empty());
+
+        final Response res = target("repo1/resource/test").request().delete();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testDeleteAcl() {
+        final Response res = target("repo1/resource").queryParam("ext", "acl").request().delete();
+
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testDeleteSlash() {
+        final Response res = target("repo1/resource/").request().delete();
+
+        assertEquals(OK, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPatchExisting() {
+        final Response res = target("repo1/resource").request()
+            .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
+                        APPLICATION_SPARQL_UPDATE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPatchNew() {
+        when(mockResourceService.get(eq(rdf.createIRI("trellis:repo1/resource/test")), eq(MAX)))
+            .thenReturn(Optional.empty());
+
+        final Response res = target("repo1/resource/test").request()
+            .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
+                        APPLICATION_SPARQL_UPDATE));
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPatchAcl() {
+        final Response res = target("repo1/resource").queryParam("ext", "acl").request()
+            .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
+                        APPLICATION_SPARQL_UPDATE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPatchInvalidContent() {
+        final Response res = target("repo1/resource").request()
+            .method("PATCH", entity("blah blah blah", "invalid/type"));
+
+        assertEquals(UNSUPPORTED_MEDIA_TYPE, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPatchSlash() {
+        final Response res = target("repo1/resource/").request()
+            .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
+                        APPLICATION_SPARQL_UPDATE));
+
+        assertEquals(OK, res.getStatusInfo());
+    }
+
 
     protected static Predicate<Link> hasLink(final IRI iri, final String rel) {
         return link -> rel.equals(link.getRel()) && iri.getIRIString().equals(link.getUri().toString());

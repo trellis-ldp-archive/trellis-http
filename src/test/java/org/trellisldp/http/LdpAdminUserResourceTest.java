@@ -13,7 +13,6 @@
  */
 package org.trellisldp.http;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
 import static org.mockito.ArgumentMatchers.any;
@@ -49,7 +48,7 @@ public class LdpAdminUserResourceTest extends AbstractLdpResourceTest {
         final ResourceConfig config = new ResourceConfig();
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService,
                     mockBinaryService, mockAgentService, mockAccessControlService, partitions,
-                    singletonList(BASIC_AUTH), emptyList()));
+                    singletonList(BASIC_AUTH), singletonList("invalid/type")));
         config.register(new TestAuthenticationFilter("testUser", "groupname"));
         return config;
     }

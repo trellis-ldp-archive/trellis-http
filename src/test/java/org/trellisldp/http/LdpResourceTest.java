@@ -14,6 +14,7 @@
 package org.trellisldp.http;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.HashMap;
@@ -42,7 +43,7 @@ public class LdpResourceTest extends AbstractLdpResourceTest {
 
         final ResourceConfig config = new ResourceConfig();
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService,
-                    mockBinaryService, null, null, partitions, emptyList(), emptyList()));
+                    mockBinaryService, null, null, partitions, emptyList(), singletonList("invalid/type")));
         return config;
     }
 }
