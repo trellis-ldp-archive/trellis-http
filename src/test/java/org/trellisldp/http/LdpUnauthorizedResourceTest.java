@@ -15,6 +15,7 @@ package org.trellisldp.http;
 
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Collections.emptyList;
+import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
@@ -22,6 +23,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
+import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE_TYPE;
+import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES_TYPE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.time.Instant;
@@ -60,7 +63,7 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
-public class LdpNoAuthResourceTest extends JerseyTest {
+public class LdpUnauthorizedResourceTest extends JerseyTest {
 
     private final static IOService ioService = new JenaIOService(null);
 
@@ -234,6 +237,81 @@ public class LdpNoAuthResourceTest extends JerseyTest {
     public void testGetAclJsonCompact() {
         final Response res = target("repo1/resource").queryParam("ext", "acl").request()
             .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
+
+        assertEquals(UNAUTHORIZED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPatch1() {
+        final Response res = target("repo1/resource").queryParam("ext", "acl").request()
+            .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
+                        APPLICATION_SPARQL_UPDATE_TYPE));
+
+        assertEquals(UNAUTHORIZED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPatch2() {
+        final Response res = target("repo1/resource").request()
+            .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
+                        APPLICATION_SPARQL_UPDATE_TYPE));
+
+        assertEquals(UNAUTHORIZED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPost1() {
+        final Response res = target("repo1/resource").queryParam("ext", "acl").request()
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" . ",
+                    APPLICATION_N_TRIPLES_TYPE));
+
+        assertEquals(UNAUTHORIZED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPost2() {
+        final Response res = target("repo1/resource").request()
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" . ",
+                    APPLICATION_N_TRIPLES_TYPE));
+
+        assertEquals(UNAUTHORIZED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPut1() {
+        final Response res = target("repo1/resource").queryParam("ext", "acl").request()
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" . ",
+                    APPLICATION_N_TRIPLES_TYPE));
+
+        assertEquals(UNAUTHORIZED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPut2() {
+        final Response res = target("repo1/resource").request()
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" . ",
+                    APPLICATION_N_TRIPLES_TYPE));
+
+        assertEquals(UNAUTHORIZED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testDelete1() {
+        final Response res = target("repo1/resource").queryParam("ext", "acl").request().delete();
+
+        assertEquals(UNAUTHORIZED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testDelete2() {
+        final Response res = target("repo1/resource").request().delete();
+
+        assertEquals(UNAUTHORIZED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testDelete3() {
+        final Response res = target("repo1/resource/").request().delete();
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
     }

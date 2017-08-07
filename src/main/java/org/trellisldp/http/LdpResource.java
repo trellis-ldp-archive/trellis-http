@@ -303,12 +303,12 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
+        final Session session = getSession();
+        verifyCanWrite(session, path);
+
         if (nonNull(ext)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
-
-        final Session session = getSession();
-        verifyCanWrite(session, path);
 
         final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, request);
         deleteHandler.setPath(path);
@@ -342,6 +342,9 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
+        final Session session = getSession();
+        verifyCanAppend(session, path);
+
         if (unsupportedTypes.contains(contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
@@ -349,9 +352,6 @@ public class LdpResource extends BaseLdpResource {
         if (nonNull(ext)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
-
-        final Session session = getSession();
-        verifyCanAppend(session, path);
 
         final String fullPath = path + "/" + ofNullable(slug).orElseGet(resourceService.getIdentifierSupplier());
 
@@ -395,6 +395,9 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
+        final Session session = getSession();
+        verifyCanWrite(session, path);
+
         if (unsupportedTypes.contains(contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
@@ -402,9 +405,6 @@ public class LdpResource extends BaseLdpResource {
         if (nonNull(ext)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
-
-        final Session session = getSession();
-        verifyCanWrite(session, path);
 
         final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, constraintService,
                 binaryService, request);
