@@ -14,12 +14,16 @@
 package org.trellisldp.http;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.util.Map;
 
+import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
@@ -30,7 +34,10 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.commons.rdf.api.RDF;
 import org.slf4j.Logger;
 import org.trellisldp.http.impl.HttpSession;
+import org.trellisldp.spi.AgentService;
+import org.trellisldp.spi.AccessControlService;
 import org.trellisldp.spi.Session;
+import org.trellisldp.vocabulary.ACL;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
@@ -43,6 +50,10 @@ class BaseLdpResource {
     protected static final RDF rdf = getInstance();
 
     protected final Map<String, String> partitions;
+
+    protected final AgentService agentService;
+
+    protected final AccessControlService accessService;
 
     @Context
     protected UriInfo uriInfo;
@@ -57,15 +68,65 @@ class BaseLdpResource {
     protected SecurityContext security;
 
     protected BaseLdpResource(final Map<String, String> partitions) {
+        this(partitions, null, null);
+    }
+
+    protected BaseLdpResource(final Map<String, String> partitions, final AgentService agentService,
+            final AccessControlService accessService) {
         this.partitions = partitions;
+        this.agentService = agentService;
+        this.accessService = accessService;
     }
 
     protected Session getSession() {
-        if (isNull(security.getUserPrincipal())) {
+        if (isNull(security.getUserPrincipal()) || isNull(agentService)) {
             return new HttpSession();
+            // TODO make "admin" role configurable?
+        } else if (security.isUserInRole("admin")) {
+            return new HttpSession(Trellis.RepositoryAdministrator);
         }
-        // TODO -- look up user session in agentService here
-        return new HttpSession(Trellis.RepositoryAdministrator);
+        return new HttpSession(agentService.asAgent(security.getUserPrincipal().getName()));
+    }
+
+    protected void verifyCanAppend(final Session session, final String path) {
+        if (!Trellis.RepositoryAdministrator.equals(session.getAgent()) && nonNull(accessService) &&
+                !accessService.anyMatch(session, rdf.createIRI(TRELLIS_PREFIX + path),
+                    iri -> ACL.Append.equals(iri) || ACL.Write.equals(iri))) {
+            if (Trellis.AnonymousUser.equals(session.getAgent())) {
+                throw new NotAuthorizedException("The client is not authorized");
+            }
+            throw new ForbiddenException("The client is forbidden from viewing this resource");
+        }
+    }
+
+    protected void verifyCanControl(final Session session, final String path) {
+        if (!Trellis.RepositoryAdministrator.equals(session.getAgent()) && nonNull(accessService) &&
+                !accessService.canControl(session, rdf.createIRI(TRELLIS_PREFIX + path))) {
+            if (Trellis.AnonymousUser.equals(session.getAgent())) {
+                throw new NotAuthorizedException("The client is not authorized");
+            }
+            throw new ForbiddenException("The client is forbidden from viewing this resource");
+        }
+    }
+
+    protected void verifyCanWrite(final Session session, final String path) {
+        if (!Trellis.RepositoryAdministrator.equals(session.getAgent()) && nonNull(accessService) &&
+                !accessService.canWrite(session, rdf.createIRI(TRELLIS_PREFIX + path))) {
+            if (Trellis.AnonymousUser.equals(session.getAgent())) {
+                throw new NotAuthorizedException("The client is not authorized");
+            }
+            throw new ForbiddenException("The client is forbidden from viewing this resource");
+        }
+    }
+
+    protected void verifyCanRead(final Session session, final String path) {
+        if (!Trellis.RepositoryAdministrator.equals(session.getAgent()) && nonNull(accessService) &&
+                !accessService.canRead(session, rdf.createIRI(TRELLIS_PREFIX + path))) {
+            if (Trellis.AnonymousUser.equals(session.getAgent())) {
+                throw new NotAuthorizedException("The client is not authorized");
+            }
+            throw new ForbiddenException("The client is forbidden from viewing this resource");
+        }
     }
 
     protected String getPartition(final String path) {

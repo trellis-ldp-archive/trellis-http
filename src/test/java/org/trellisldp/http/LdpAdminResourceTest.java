@@ -26,7 +26,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 /**
  * @author acoburn
  */
-public class LdpResourceTest extends AbstractLdpResourceTest {
+public class LdpAdminResourceTest extends AbstractLdpResourceTest {
 
     @Override
     public Application configure() {
@@ -42,7 +42,8 @@ public class LdpResourceTest extends AbstractLdpResourceTest {
 
         final ResourceConfig config = new ResourceConfig();
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService,
-                    mockBinaryService, null, null, partitions, emptyList()));
+                    mockBinaryService, mockAgentService, mockAccessControlService, partitions, emptyList()));
+        config.register(new TestAuthenticationFilter("testUser", "admin"));
         return config;
     }
 }

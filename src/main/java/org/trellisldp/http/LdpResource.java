@@ -69,10 +69,13 @@ import org.trellisldp.http.impl.LdpPatchHandler;
 import org.trellisldp.http.impl.LdpPostHandler;
 import org.trellisldp.http.impl.LdpPutHandler;
 import org.trellisldp.http.impl.MementoResource;
+import org.trellisldp.spi.AccessControlService;
+import org.trellisldp.spi.AgentService;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
+import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.Trellis;
 
@@ -99,14 +102,16 @@ public class LdpResource extends BaseLdpResource {
      * @param ioService the i/o service
      * @param constraintService the RDF constraint enforcing service
      * @param binaryService the datastream service
+     * @param agentService the agent service
+     * @param accessService the access control service
      * @param partitions a map of partitions for use with custom hostnames
      * @param unsupportedMediaTypes any unsupported media types
      */
-    public LdpResource(final ResourceService resourceService,
-            final IOService ioService, final ConstraintService constraintService,
-            final BinaryService binaryService, final Map<String, String> partitions,
-            final Collection<String> unsupportedMediaTypes) {
-        super(partitions);
+    public LdpResource(final ResourceService resourceService, final IOService ioService,
+            final ConstraintService constraintService, final BinaryService binaryService,
+            final AgentService agentService, final AccessControlService accessService,
+            final Map<String, String> partitions, final Collection<String> unsupportedMediaTypes) {
+        super(partitions, agentService, accessService);
         this.resourceService = resourceService;
         this.ioService = ioService;
         this.binaryService = binaryService;
@@ -141,6 +146,13 @@ public class LdpResource extends BaseLdpResource {
 
         final RDFSyntax syntax = getRdfSyntax(headers.getAcceptableMediaTypes());
         final String baseUrl = getBaseUrl(path);
+
+        final Session session = getSession();
+        if (ACL.equals(ext)) {
+            verifyCanControl(session, path);
+        } else {
+            verifyCanRead(session, path);
+        }
 
         final LdpGetHandler getHandler = new LdpGetHandler(resourceService, ioService, binaryService,
                 request);
@@ -205,6 +217,13 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
+        final Session session = getSession();
+        if (ACL.equals(ext)) {
+            verifyCanControl(session, path);
+        } else {
+            verifyCanRead(session, path);
+        }
+
         final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(resourceService);
         optionsHandler.setPath(path);
         optionsHandler.setBaseUrl(getBaseUrl(path));
@@ -245,6 +264,13 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
+        final Session session = getSession();
+        if (ACL.equals(ext)) {
+            verifyCanControl(session, path);
+        } else {
+            verifyCanWrite(session, path);
+        }
+
         final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, ioService, constraintService,
                 request);
         patchHandler.setPath(path);
@@ -252,7 +278,7 @@ public class LdpResource extends BaseLdpResource {
         patchHandler.setSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()));
         patchHandler.setProfile(getProfile(headers.getAcceptableMediaTypes()));
         patchHandler.setPrefer(prefer);
-        patchHandler.setSession(getSession());
+        patchHandler.setSession(session);
         patchHandler.setSparqlUpdate(body);
         if (ACL.equals(ext)) {
             patchHandler.setGraphName(Trellis.PreferAccessControl);
@@ -281,10 +307,13 @@ public class LdpResource extends BaseLdpResource {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
+        final Session session = getSession();
+        verifyCanWrite(session, path);
+
         final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, request);
         deleteHandler.setPath(path);
         deleteHandler.setBaseUrl(getBaseUrl(path));
-        deleteHandler.setSession(getSession());
+        deleteHandler.setSession(session);
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
             .map(deleteHandler::deleteResource).orElse(status(NOT_FOUND)).build();
@@ -321,13 +350,16 @@ public class LdpResource extends BaseLdpResource {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
+        final Session session = getSession();
+        verifyCanAppend(session, path);
+
         final String fullPath = path + "/" + ofNullable(slug).orElseGet(resourceService.getIdentifierSupplier());
 
         final LdpPostHandler postHandler = new LdpPostHandler(resourceService, ioService, constraintService,
                 binaryService);
         postHandler.setPath(fullPath);
         postHandler.setBaseUrl(getBaseUrl(path));
-        postHandler.setSession(getSession());
+        postHandler.setSession(session);
         postHandler.setContentType(contentType);
         postHandler.setLink(link);
         postHandler.setEntity(body);
@@ -370,6 +402,9 @@ public class LdpResource extends BaseLdpResource {
         if (nonNull(ext)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
+
+        final Session session = getSession();
+        verifyCanWrite(session, path);
 
         final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, constraintService,
                 binaryService, request);
