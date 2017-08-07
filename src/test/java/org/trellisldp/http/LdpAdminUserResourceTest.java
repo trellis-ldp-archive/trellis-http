@@ -16,19 +16,22 @@ package org.trellisldp.http;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.core.Application;
 
+import org.apache.commons.rdf.api.IRI;
 import org.glassfish.jersey.server.ResourceConfig;
 
 /**
  * @author acoburn
  */
-public class LdpUserResourceTest extends AbstractLdpResourceTest {
+public class LdpAdminUserResourceTest extends AbstractLdpResourceTest {
 
     @Override
     public Application configure() {
@@ -41,12 +44,13 @@ public class LdpUserResourceTest extends AbstractLdpResourceTest {
 
         // Junit runner doesn't seem to work very well with JerseyTest
         initMocks(this);
+        when(mockAgentService.isAdmin(any(IRI.class))).thenReturn(true);
 
         final ResourceConfig config = new ResourceConfig();
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService,
                     mockBinaryService, mockAgentService, mockAccessControlService, partitions,
                     singletonList(BASIC_AUTH), emptyList()));
-        config.register(new TestAuthenticationFilter("testUser", "group"));
+        config.register(new TestAuthenticationFilter("testUser", "groupname"));
         return config;
     }
 }

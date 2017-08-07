@@ -37,6 +37,7 @@ import com.codahale.metrics.annotation.Timed;
 
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.Consumes;
@@ -105,13 +106,15 @@ public class LdpResource extends BaseLdpResource {
      * @param agentService the agent service
      * @param accessService the access control service
      * @param partitions a map of partitions for use with custom hostnames
+     * @param authChallenges a list of auth protocols supported
      * @param unsupportedMediaTypes any unsupported media types
      */
     public LdpResource(final ResourceService resourceService, final IOService ioService,
             final ConstraintService constraintService, final BinaryService binaryService,
             final AgentService agentService, final AccessControlService accessService,
-            final Map<String, String> partitions, final Collection<String> unsupportedMediaTypes) {
-        super(partitions, agentService, accessService);
+            final Map<String, String> partitions, final List<String> authChallenges,
+            final Collection<String> unsupportedMediaTypes) {
+        super(partitions, authChallenges, agentService, accessService);
         this.resourceService = resourceService;
         this.ioService = ioService;
         this.binaryService = binaryService;

@@ -13,13 +13,16 @@
  */
 package org.trellisldp.http;
 
+import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
+import static java.util.Optional.ofNullable;
+import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.ForbiddenException;
@@ -34,8 +37,8 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.commons.rdf.api.RDF;
 import org.slf4j.Logger;
 import org.trellisldp.http.impl.HttpSession;
-import org.trellisldp.spi.AgentService;
 import org.trellisldp.spi.AccessControlService;
+import org.trellisldp.spi.AgentService;
 import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.ACL;
 import org.trellisldp.vocabulary.Trellis;
@@ -55,6 +58,8 @@ class BaseLdpResource {
 
     protected final AccessControlService accessService;
 
+    protected final List<String> challenges;
+
     @Context
     protected UriInfo uriInfo;
 
@@ -68,14 +73,15 @@ class BaseLdpResource {
     protected SecurityContext security;
 
     protected BaseLdpResource(final Map<String, String> partitions) {
-        this(partitions, null, null);
+        this(partitions, singletonList(BASIC_AUTH), null, null);
     }
 
-    protected BaseLdpResource(final Map<String, String> partitions, final AgentService agentService,
-            final AccessControlService accessService) {
+    protected BaseLdpResource(final Map<String, String> partitions, final List<String> challenges,
+            final AgentService agentService, final AccessControlService accessService) {
         this.partitions = partitions;
         this.agentService = agentService;
         this.accessService = accessService;
+        this.challenges = challenges.isEmpty() ? singletonList(BASIC_AUTH) : challenges;
     }
 
     protected Session getSession() {
@@ -88,44 +94,49 @@ class BaseLdpResource {
         return new HttpSession(agentService.asAgent(security.getUserPrincipal().getName()));
     }
 
+    private Boolean isAdmin(final Session session) {
+        return Trellis.RepositoryAdministrator.equals(session.getAgent()) ||
+            ofNullable(agentService).filter(svc -> svc.isAdmin(session.getAgent())).isPresent();
+    }
+
     protected void verifyCanAppend(final Session session, final String path) {
-        if (!Trellis.RepositoryAdministrator.equals(session.getAgent()) && nonNull(accessService) &&
-                !accessService.anyMatch(session, rdf.createIRI(TRELLIS_PREFIX + path),
-                    iri -> ACL.Append.equals(iri) || ACL.Write.equals(iri))) {
+        if (!isAdmin(session) && ofNullable(accessService)
+                .filter(svc -> !svc.anyMatch(session, rdf.createIRI(TRELLIS_PREFIX + path),
+                        iri -> ACL.Append.equals(iri) || ACL.Write.equals(iri))).isPresent()) {
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
-                throw new NotAuthorizedException("The client is not authorized");
+                throw new NotAuthorizedException(challenges.toArray());
             }
-            throw new ForbiddenException("The client is forbidden from viewing this resource");
+            throw new ForbiddenException();
         }
     }
 
     protected void verifyCanControl(final Session session, final String path) {
-        if (!Trellis.RepositoryAdministrator.equals(session.getAgent()) && nonNull(accessService) &&
-                !accessService.canControl(session, rdf.createIRI(TRELLIS_PREFIX + path))) {
+        if (!isAdmin(session) && ofNullable(accessService)
+                .filter(svc -> !svc.canControl(session, rdf.createIRI(TRELLIS_PREFIX + path))).isPresent()) {
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
-                throw new NotAuthorizedException("The client is not authorized");
+                throw new NotAuthorizedException(challenges.toArray());
             }
-            throw new ForbiddenException("The client is forbidden from viewing this resource");
+            throw new ForbiddenException();
         }
     }
 
     protected void verifyCanWrite(final Session session, final String path) {
-        if (!Trellis.RepositoryAdministrator.equals(session.getAgent()) && nonNull(accessService) &&
-                !accessService.canWrite(session, rdf.createIRI(TRELLIS_PREFIX + path))) {
+        if (!isAdmin(session) && ofNullable(accessService)
+                .filter(svc -> !svc.canWrite(session, rdf.createIRI(TRELLIS_PREFIX + path))).isPresent()) {
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
-                throw new NotAuthorizedException("The client is not authorized");
+                throw new NotAuthorizedException(challenges.toArray());
             }
-            throw new ForbiddenException("The client is forbidden from viewing this resource");
+            throw new ForbiddenException();
         }
     }
 
     protected void verifyCanRead(final Session session, final String path) {
-        if (!Trellis.RepositoryAdministrator.equals(session.getAgent()) && nonNull(accessService) &&
-                !accessService.canRead(session, rdf.createIRI(TRELLIS_PREFIX + path))) {
+        if (!isAdmin(session) && ofNullable(accessService)
+                .filter(svc -> !svc.canRead(session, rdf.createIRI(TRELLIS_PREFIX + path))).isPresent()) {
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
-                throw new NotAuthorizedException("The client is not authorized");
+                throw new NotAuthorizedException(challenges.toArray());
             }
-            throw new ForbiddenException("The client is forbidden from viewing this resource");
+            throw new ForbiddenException();
         }
     }
 

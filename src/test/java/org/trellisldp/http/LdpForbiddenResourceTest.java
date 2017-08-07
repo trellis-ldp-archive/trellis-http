@@ -114,8 +114,8 @@ public class LdpForbiddenResourceTest extends JerseyTest {
         initMocks(this);
 
         final ResourceConfig config = new ResourceConfig();
-        config.register(new LdpResource(mockResourceService, ioService, mockConstraintService,
-                    mockBinaryService, mockAgentService, mockAccessControlService, partitions, emptyList()));
+        config.register(new LdpResource(mockResourceService, ioService, mockConstraintService, mockBinaryService,
+                    mockAgentService, mockAccessControlService, partitions, emptyList(), emptyList()));
         config.register(new TestAuthenticationFilter("testUser", "group"));
         return config;
     }
