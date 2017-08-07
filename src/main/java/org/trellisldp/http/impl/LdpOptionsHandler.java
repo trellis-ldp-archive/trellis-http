@@ -52,12 +52,22 @@ public class LdpOptionsHandler extends BaseLdpHandler {
 
     private static final Logger LOGGER = getLogger(LdpOptionsHandler.class);
 
+    private Boolean isTimemap = false;
+
     /**
      * An OPTIONS response builder
      * @param resourceService the resource service
      */
     public LdpOptionsHandler(final ResourceService resourceService) {
         super(resourceService);
+    }
+
+    /**
+     * Set whether this is a timemap resource
+     * @param isTimemap true if this is a timemap; false otherwise
+     */
+    public void setIsTimemap(final Boolean isTimemap) {
+        this.isTimemap = isTimemap;
     }
 
     /**
@@ -78,7 +88,7 @@ public class LdpOptionsHandler extends BaseLdpHandler {
 
         final ResponseBuilder builder = status(NO_CONTENT);
 
-        if (res.isMemento()) {
+        if (res.isMemento() || isTimemap) {
             // Mementos are read-only
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
         } else {

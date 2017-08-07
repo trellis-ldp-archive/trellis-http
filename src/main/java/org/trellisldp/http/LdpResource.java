@@ -230,6 +230,8 @@ public class LdpResource extends BaseLdpResource {
         final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(resourceService);
         optionsHandler.setPath(path);
         optionsHandler.setBaseUrl(getBaseUrl(path));
+        optionsHandler.setIsTimemap(TIMEMAP.equals(ext));
+
         if (ACL.equals(ext)) {
             optionsHandler.setGraphName(Trellis.PreferAccessControl);
         }

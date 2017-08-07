@@ -334,6 +334,24 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testOptions5() {
+        final Response res = target("repo1/resource").queryParam("ext", "timemap").request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertNull(res.getHeaderString(ACCEPT_PATCH));
+        assertNull(res.getHeaderString(ACCEPT_POST));
+    }
+
+    @Test
     public void testGetJsonCompact() throws IOException {
         final Response res = target("repo1/resource").request()
             .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
@@ -523,6 +541,17 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         assertEquals(CREATED, res.getStatusInfo());
         assertEquals("http://example.org/repo1/resource/randomValue", res.getLocation().toString());
+    }
+
+    @Test
+    public void testPostToLdpRs() {
+        when(mockResourceService.get(eq(rdf.createIRI("trellis:repo1/resource/randomValue")), eq(MAX)))
+            .thenReturn(Optional.empty());
+
+        final Response res = target("repo1/resource").request()
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
     }
 
     @Test
