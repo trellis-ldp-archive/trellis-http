@@ -17,9 +17,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.ws.rs.core.Application;
 
 import org.glassfish.jersey.server.ResourceConfig;
@@ -31,12 +28,6 @@ public class LdpAdminResourceTest extends AbstractLdpResourceTest {
 
     @Override
     public Application configure() {
-
-        final Map<String, String> partitions = new HashMap<>();
-        partitions.put("repo1", "http://example.org/");
-        partitions.put("repo2", "http://example.org/");
-        partitions.put("repo3", "http://example.org/");
-        partitions.put("repo4", "http://example.org/");
 
         // Junit runner doesn't seem to work very well with JerseyTest
         initMocks(this);

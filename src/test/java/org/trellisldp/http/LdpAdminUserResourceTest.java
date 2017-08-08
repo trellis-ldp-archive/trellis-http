@@ -19,9 +19,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.mockito.Mockito.when;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.ws.rs.core.Application;
 
 import org.apache.commons.rdf.api.IRI;
@@ -34,12 +31,6 @@ public class LdpAdminUserResourceTest extends AbstractLdpResourceTest {
 
     @Override
     public Application configure() {
-
-        final Map<String, String> partitions = new HashMap<>();
-        partitions.put("repo1", "http://example.org/");
-        partitions.put("repo2", "http://example.org/");
-        partitions.put("repo3", "http://example.org/");
-        partitions.put("repo4", "http://example.org/");
 
         // Junit runner doesn't seem to work very well with JerseyTest
         initMocks(this);
