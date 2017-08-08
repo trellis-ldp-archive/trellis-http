@@ -52,8 +52,6 @@ public class LdpOptionsHandler extends BaseLdpHandler {
 
     private static final Logger LOGGER = getLogger(LdpOptionsHandler.class);
 
-    private Boolean isTimemap = false;
-
     /**
      * An OPTIONS response builder
      * @param resourceService the resource service
