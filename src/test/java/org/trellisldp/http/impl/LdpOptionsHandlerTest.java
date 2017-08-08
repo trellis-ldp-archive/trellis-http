@@ -205,6 +205,7 @@ public class LdpOptionsHandlerTest {
 
     @Test
     public void testOptionsDeleted() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
 
         final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(mockResourceService);

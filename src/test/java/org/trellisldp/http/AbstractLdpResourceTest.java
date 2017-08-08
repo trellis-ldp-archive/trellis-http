@@ -27,6 +27,7 @@ import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.HttpHeaders.LINK;
 import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.Response.Status.CREATED;
+import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
@@ -86,6 +87,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
+import org.trellisldp.api.Binary;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.VersionRange;
 import org.trellisldp.io.JenaIOService;
@@ -128,9 +130,31 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     private final static String REPO4 = "repo4";
     private final static String BASE_URL = "http://example.org/";
 
-    private final static String PATH = REPO1 + "/resource";
+    private final static String RANDOM_VALUE = "randomValue";
 
-    private final static IRI identifier = rdf.createIRI("trellis:" + PATH);
+    private final static String RESOURCE_PATH = REPO1 + "/resource";
+
+    private final static String CHILD_PATH = RESOURCE_PATH + "/child";
+
+    private final static String BINARY_PATH = REPO1 + "/binary";
+
+    private final static String NON_EXISTENT_PATH = REPO1 + "/nonexistent";
+
+    private final static String DELETED_PATH = REPO1 + "/deleted";
+
+    private final static String USER_DELETED_PATH = REPO1 + "/userdeleted";
+
+    private final static IRI identifier = rdf.createIRI("trellis:" + RESOURCE_PATH);
+
+    private final static IRI binaryIdentifier = rdf.createIRI("trellis:" + BINARY_PATH);
+
+    private final static IRI nonexistentIdentifier = rdf.createIRI("trellis:" + NON_EXISTENT_PATH);
+
+    private final static IRI childIdentifier = rdf.createIRI("trellis:" + CHILD_PATH);
+
+    private final static IRI deletedIdentifier = rdf.createIRI("trellis:" + DELETED_PATH);
+
+    private final static IRI userDeletedIdentifier = rdf.createIRI("trellis:" + USER_DELETED_PATH);
 
     protected final static Map<String, String> partitions = new HashMap<String, String>() { {
         put(REPO1, BASE_URL);
@@ -149,23 +173,37 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     protected BinaryService mockBinaryService;
 
     @Mock
-    protected Resource mockResource;
-
-    @Mock
-    protected Resource mockVersionedResource;
-
-    @Mock
     protected AccessControlService mockAccessControlService;
 
     @Mock
     protected AgentService mockAgentService;
+
+    @Mock
+    private Resource mockResource, mockVersionedResource, mockBinaryResource, mockDeletedResource,
+            mockUserDeletedResource;
+
+    @Mock
+    private Binary mockBinary;
 
     @Before
     public void setUpMocks() {
         when(mockResourceService.get(any(IRI.class), any(Instant.class)))
             .thenReturn(Optional.of(mockVersionedResource));
         when(mockResourceService.get(eq(identifier))).thenReturn(Optional.of(mockResource));
-        when(mockResourceService.getIdentifierSupplier()).thenReturn(() -> "randomValue");
+        when(mockResourceService.get(eq(childIdentifier))).thenReturn(Optional.empty());
+        when(mockResourceService.get(eq(childIdentifier), any(Instant.class))).thenReturn(Optional.empty());
+        when(mockResourceService.get(eq(binaryIdentifier))).thenReturn(Optional.of(mockBinaryResource));
+        when(mockResourceService.get(eq(nonexistentIdentifier))).thenReturn(Optional.empty());
+        when(mockResourceService.get(eq(nonexistentIdentifier), any(Instant.class))).thenReturn(Optional.empty());
+        when(mockResourceService.get(eq(deletedIdentifier))).thenReturn(Optional.of(mockDeletedResource));
+        when(mockResourceService.get(eq(deletedIdentifier), any(Instant.class)))
+            .thenReturn(Optional.of(mockDeletedResource));
+        when(mockResourceService.getIdentifierSupplier()).thenReturn(() -> RANDOM_VALUE);
+
+        when(mockResourceService.get(eq(userDeletedIdentifier))).thenReturn(Optional.of(mockUserDeletedResource));
+        when(mockResourceService.get(eq(userDeletedIdentifier), any(Instant.class)))
+            .thenReturn(Optional.of(mockUserDeletedResource));
+
 
         when(mockAgentService.asAgent(anyString())).thenReturn(agent);
         when(mockAccessControlService.anyMatch(any(Session.class), any(IRI.class), any())).thenReturn(true);
@@ -186,6 +224,16 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockVersionedResource.getAnnotationService()).thenReturn(Optional.empty());
         when(mockVersionedResource.getTypes()).thenAnswer(x -> Stream.empty());
 
+        when(mockBinaryResource.getMementos()).thenAnswer(x -> Stream.empty());
+        when(mockBinaryResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+        when(mockBinaryResource.getModified()).thenReturn(time);
+        when(mockBinaryResource.getBinary()).thenReturn(Optional.of(mockBinary));
+        when(mockBinaryResource.isMemento()).thenReturn(false);
+        when(mockBinaryResource.getIdentifier()).thenReturn(identifier);
+        when(mockBinaryResource.getInbox()).thenReturn(Optional.empty());
+        when(mockBinaryResource.getAnnotationService()).thenReturn(Optional.empty());
+        when(mockBinaryResource.getTypes()).thenAnswer(x -> Stream.empty());
+
         when(mockResource.getMementos()).thenAnswer(x -> Stream.empty());
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockResource.getModified()).thenReturn(time);
@@ -195,6 +243,26 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockResource.getInbox()).thenReturn(Optional.empty());
         when(mockResource.getAnnotationService()).thenReturn(Optional.empty());
         when(mockResource.getTypes()).thenAnswer(x -> Stream.empty());
+
+        when(mockDeletedResource.getMementos()).thenAnswer(x -> Stream.empty());
+        when(mockDeletedResource.getInteractionModel()).thenReturn(LDP.Resource);
+        when(mockDeletedResource.getModified()).thenReturn(time);
+        when(mockDeletedResource.getBinary()).thenReturn(Optional.empty());
+        when(mockDeletedResource.isMemento()).thenReturn(false);
+        when(mockDeletedResource.getIdentifier()).thenReturn(identifier);
+        when(mockDeletedResource.getInbox()).thenReturn(Optional.empty());
+        when(mockDeletedResource.getAnnotationService()).thenReturn(Optional.empty());
+        when(mockDeletedResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
+
+        when(mockUserDeletedResource.getMementos()).thenAnswer(x -> Stream.empty());
+        when(mockUserDeletedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockUserDeletedResource.getModified()).thenReturn(time);
+        when(mockUserDeletedResource.getBinary()).thenReturn(Optional.empty());
+        when(mockUserDeletedResource.isMemento()).thenReturn(false);
+        when(mockUserDeletedResource.getIdentifier()).thenReturn(identifier);
+        when(mockUserDeletedResource.getInbox()).thenReturn(Optional.empty());
+        when(mockUserDeletedResource.getAnnotationService()).thenReturn(Optional.empty());
+        when(mockUserDeletedResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
 
         when(mockResourceService.unskolemize(any(IRI.class)))
             .thenAnswer(inv -> {
@@ -218,7 +286,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testGetJson() throws IOException {
-        final Response res = target("/" + PATH).request().accept("application/ld+json").get();
+        final Response res = target("/" + RESOURCE_PATH).request().accept("application/ld+json").get();
 
         assertEquals(OK, res.getStatusInfo());
         assertTrue(APPLICATION_LD_JSON_TYPE.isCompatible(res.getMediaType()));
@@ -262,7 +330,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testDefaultType() {
-        final Response res = target(PATH).request().get();
+        final Response res = target(RESOURCE_PATH).request().get();
 
         assertEquals(OK, res.getStatusInfo());
         assertTrue(TEXT_TURTLE_TYPE.isCompatible(res.getMediaType()));
@@ -271,7 +339,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testGetDatetime() {
-        final Response res = target(PATH).request()
+        final Response res = target(RESOURCE_PATH).request()
             .header(ACCEPT_DATETIME, RFC_1123_DATE_TIME.withZone(UTC).format(time)).get();
 
         assertEquals(OK, res.getStatusInfo());
@@ -283,25 +351,25 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
                         .equals(l.getParams().get("datetime")) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?version=1496260729000")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496260729000")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 1000))
                         .equals(l.getParams().get("datetime")) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?version=1496261729000")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496261729000")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(time).equals(l.getParams().get("datetime")) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?version=1496262729000")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496262729000")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timemap") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
                         .equals(l.getParams().get("from")) &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp + 1000))
                         .equals(l.getParams().get("until")) &&
                     APPLICATION_LINK_FORMAT.equals(l.getType()) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?ext=timemap")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?ext=timemap")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timegate") &&
-                    l.getUri().toString().equals(BASE_URL + PATH)));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("original") &&
-                    l.getUri().toString().equals(BASE_URL + PATH)));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(links.stream().anyMatch(hasType(LDP.Resource)));
         assertTrue(links.stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(links.stream().anyMatch(hasType(LDP.Container)));
@@ -309,19 +377,40 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testTrailingSlash() {
-        final Response res = target(PATH + "/").request().get();
+        final Response res = target(RESOURCE_PATH + "/").request().get();
 
         assertEquals(OK, res.getStatusInfo());
         assertEquals(from(time), res.getLastModified());
-        assertTrue(res.getLinks().stream()
-                .anyMatch(l -> l.getRel().contains("timegate") && l.getUri().toString().equals(BASE_URL + PATH)));
-        assertTrue(res.getLinks().stream()
-                .anyMatch(l -> l.getRel().contains("original") && l.getUri().toString().equals(BASE_URL + PATH)));
+        assertTrue(res.getLinks().stream().anyMatch(l ->
+                    l.getRel().contains("timegate") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+        assertTrue(res.getLinks().stream().anyMatch(l ->
+                    l.getRel().contains("original") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+    }
+
+    @Test
+    public void testUserDeleted() {
+        final Response res = target(USER_DELETED_PATH).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+    }
+
+    @Test
+    public void testGetNotFound() {
+        final Response res = target(NON_EXISTENT_PATH).request().get();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testGone() {
+        final Response res = target(DELETED_PATH).request().get();
+
+        assertEquals(GONE, res.getStatusInfo());
     }
 
     @Test
     public void testOptions1() {
-        final Response res = target(PATH).request().options();
+        final Response res = target(RESOURCE_PATH).request().options();
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
@@ -345,7 +434,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testOptions2() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
-        final Response res = target(PATH).request().options();
+        final Response res = target(RESOURCE_PATH).request().options();
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
 
@@ -375,7 +464,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testOptions3() {
-        final Response res = target(PATH).queryParam("ext", "acl").request().options();
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request().options();
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
 
@@ -393,8 +482,22 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testOptionsNonexistent() {
+        final Response res = target(NON_EXISTENT_PATH).request().options();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testOptionsGone() {
+        final Response res = target(DELETED_PATH).request().options();
+
+        assertEquals(GONE, res.getStatusInfo());
+    }
+
+    @Test
     public void testOptionsSlash() {
-        final Response res = target(PATH + "/").request().options();
+        final Response res = target(RESOURCE_PATH + "/").request().options();
 
         assertEquals(OK, res.getStatusInfo());
 
@@ -418,7 +521,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
                 new VersionRange(ofEpochSecond(timestamp - 1000), time),
                 new VersionRange(time, ofEpochSecond(timestamp + 1000))));
 
-        final Response res = target(PATH).queryParam("ext", "timemap").request().options();
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "timemap").request().options();
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
 
@@ -437,7 +540,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testOptions6() {
-        final Response res = target(PATH).queryParam("version", timestamp).request().options();
+        final Response res = target(RESOURCE_PATH).queryParam("version", timestamp).request().options();
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
 
@@ -455,7 +558,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testGetJsonCompact() throws IOException {
-        final Response res = target(PATH).request()
+        final Response res = target(RESOURCE_PATH).request()
             .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
 
         assertEquals(OK, res.getStatusInfo());
@@ -468,10 +571,10 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
         assertNull(res.getHeaderString(ACCEPT_RANGES));
         assertEquals(from(time), res.getLastModified());
-        assertTrue(res.getLinks().stream()
-                .anyMatch(l -> l.getRel().contains("timegate") && l.getUri().toString().equals(BASE_URL + PATH)));
-        assertTrue(res.getLinks().stream()
-                .anyMatch(l -> l.getRel().contains("original") && l.getUri().toString().equals(BASE_URL + PATH)));
+        assertTrue(res.getLinks().stream().anyMatch(l ->
+                    l.getRel().contains("timegate") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+        assertTrue(res.getLinks().stream().anyMatch(l ->
+                    l.getRel().contains("original") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(res.hasEntity());
 
         assertTrue(res.getAllowedMethods().contains("PATCH"));
@@ -506,7 +609,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
                 new VersionRange(ofEpochSecond(timestamp - 1000), time),
                 new VersionRange(time, ofEpochSecond(timestamp + 1000))));
 
-        final Response res = target(PATH).queryParam("ext", "timemap").request()
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "timemap").request()
             .accept(APPLICATION_LINK_FORMAT).get();
 
         assertEquals(OK, res.getStatusInfo());
@@ -522,25 +625,25 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
                         .equals(l.getParams().get("datetime")) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?version=1496260729000")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496260729000")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 1000))
                         .equals(l.getParams().get("datetime")) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?version=1496261729000")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496261729000")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(time).equals(l.getParams().get("datetime")) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?version=1496262729000")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496262729000")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timemap") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
                         .equals(l.getParams().get("from")) &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp + 1000))
                         .equals(l.getParams().get("until")) &&
                     APPLICATION_LINK_FORMAT.equals(l.getType()) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?ext=timemap")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?ext=timemap")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timegate") &&
-                    l.getUri().toString().equals(BASE_URL + PATH)));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("original") &&
-                    l.getUri().toString().equals(BASE_URL + PATH)));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(links.stream().anyMatch(hasType(LDP.Resource)));
         assertTrue(links.stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(links.stream().anyMatch(hasType(LDP.Container)));
@@ -567,7 +670,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
                 new VersionRange(ofEpochSecond(timestamp - 1000), time),
                 new VersionRange(time, ofEpochSecond(timestamp + 1000))));
 
-        final Response res = target(PATH).queryParam("ext", "timemap").request()
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "timemap").request()
             .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
 
         assertEquals(OK, res.getStatusInfo());
@@ -584,25 +687,25 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
                         .equals(l.getParams().get("datetime")) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?version=1496260729000")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496260729000")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 1000))
                         .equals(l.getParams().get("datetime")) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?version=1496261729000")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496261729000")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(time).equals(l.getParams().get("datetime")) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?version=1496262729000")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496262729000")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timemap") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
                         .equals(l.getParams().get("from")) &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp + 1000))
                         .equals(l.getParams().get("until")) &&
                     APPLICATION_LINK_FORMAT.equals(l.getType()) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?ext=timemap")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?ext=timemap")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timegate") &&
-                    l.getUri().toString().equals(BASE_URL + PATH)));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("original") &&
-                    l.getUri().toString().equals(BASE_URL + PATH)));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(links.stream().anyMatch(hasType(LDP.Resource)));
         assertTrue(links.stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(links.stream().anyMatch(hasType(LDP.Container)));
@@ -622,23 +725,23 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         assertEquals(4L, obj.size());
         assertTrue(obj.stream().anyMatch(x -> x.containsKey("@id") &&
-                    x.get("@id").equals(BASE_URL + PATH + "?ext=timemap") &&
+                    x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?ext=timemap") &&
                     x.containsKey("http://www.w3.org/ns/prov#startedAtTime") &&
                     x.containsKey("http://www.w3.org/ns/prov#endedAtTime")));
         assertTrue(obj.stream().anyMatch(x -> x.containsKey("@id") &&
-                    x.get("@id").equals(BASE_URL + PATH + "?version=1496260729000") &&
+                    x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?version=1496260729000") &&
                     x.containsKey("http://www.w3.org/ns/prov#atTime")));
         assertTrue(obj.stream().anyMatch(x -> x.containsKey("@id") &&
-                    x.get("@id").equals(BASE_URL + PATH + "?version=1496261729000") &&
+                    x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?version=1496261729000") &&
                     x.containsKey("http://www.w3.org/ns/prov#atTime")));
         assertTrue(obj.stream().anyMatch(x -> x.containsKey("@id") &&
-                    x.get("@id").equals(BASE_URL + PATH + "?version=1496262729000") &&
+                    x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?version=1496262729000") &&
                     x.containsKey("http://www.w3.org/ns/prov#atTime")));
     }
 
     @Test
     public void testGetVersionJson() throws IOException {
-        final Response res = target(PATH).queryParam("version", timestamp).request()
+        final Response res = target(RESOURCE_PATH).queryParam("version", timestamp).request()
             .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
 
         assertEquals(OK, res.getStatusInfo());
@@ -655,25 +758,25 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
                         .equals(l.getParams().get("datetime")) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?version=1496260729000")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496260729000")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 1000))
                         .equals(l.getParams().get("datetime")) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?version=1496261729000")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496261729000")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(time).equals(l.getParams().get("datetime")) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?version=1496262729000")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496262729000")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timemap") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
                         .equals(l.getParams().get("from")) &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp + 1000))
                         .equals(l.getParams().get("until")) &&
                     APPLICATION_LINK_FORMAT.equals(l.getType()) &&
-                    l.getUri().toString().equals(BASE_URL + PATH + "?ext=timemap")));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?ext=timemap")));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timegate") &&
-                    l.getUri().toString().equals(BASE_URL + PATH)));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("original") &&
-                    l.getUri().toString().equals(BASE_URL + PATH)));
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(links.stream().anyMatch(hasType(LDP.Resource)));
         assertTrue(links.stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(links.stream().anyMatch(hasType(LDP.Container)));
@@ -690,7 +793,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testGetAclJsonCompact() throws IOException {
-        final Response res = target(PATH).queryParam("ext", "acl").request()
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request()
             .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
 
         assertEquals(OK, res.getStatusInfo());
@@ -704,10 +807,10 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertNull(res.getHeaderString(ACCEPT_RANGES));
         assertEquals(from(time), res.getLastModified());
         // The next two assertions may change at some point
-        assertFalse(res.getLinks().stream()
-                .anyMatch(l -> l.getRel().contains("timegate") && l.getUri().toString().equals(BASE_URL + PATH)));
-        assertFalse(res.getLinks().stream()
-                .anyMatch(l -> l.getRel().contains("original") && l.getUri().toString().equals(BASE_URL + PATH)));
+        assertFalse(res.getLinks().stream().anyMatch(l ->
+                    l.getRel().contains("timegate") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+        assertFalse(res.getLinks().stream().anyMatch(l ->
+                    l.getRel().contains("original") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
 
         assertTrue(res.hasEntity());
         final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
@@ -736,22 +839,25 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testPost() {
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
-        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + PATH + "/randomValue")), eq(MAX)))
+        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + RESOURCE_PATH + "/randomValue")), eq(MAX)))
             .thenReturn(Optional.empty());
 
-        final Response res = target(PATH).request()
+        final Response res = target(RESOURCE_PATH).request()
             .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(CREATED, res.getStatusInfo());
-        assertEquals(BASE_URL + PATH + "/randomValue", res.getLocation().toString());
+        assertEquals(BASE_URL + RESOURCE_PATH + "/randomValue", res.getLocation().toString());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
     }
 
     @Test
     public void testPostToLdpRs() {
-        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + PATH + "/randomValue")), eq(MAX)))
+        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + RESOURCE_PATH + "/randomValue")), eq(MAX)))
             .thenReturn(Optional.empty());
 
-        final Response res = target(PATH).request()
+        final Response res = target(RESOURCE_PATH).request()
             .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
@@ -760,19 +866,20 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testPostSlug() {
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
-        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + PATH + "/test")), eq(MAX)))
-            .thenReturn(Optional.empty());
 
-        final Response res = target(PATH).request().header("Slug", "test")
+        final Response res = target(RESOURCE_PATH).request().header("Slug", "child")
             .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(CREATED, res.getStatusInfo());
-        assertEquals(BASE_URL + PATH + "/test", res.getLocation().toString());
+        assertEquals(BASE_URL + CHILD_PATH, res.getLocation().toString());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
     }
 
     @Test
     public void testPostVersion() {
-        final Response res = target(PATH).queryParam("version", timestamp).request().header("Slug", "test")
+        final Response res = target(RESOURCE_PATH).queryParam("version", timestamp).request().header("Slug", "test")
             .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
@@ -780,22 +887,38 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostAcl() {
-        final Response res = target(PATH).queryParam("ext", "acl").request().header("Slug", "test")
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request().header("Slug", "test")
             .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
     }
 
     @Test
+    public void testPostNonexistent() {
+        final Response res = target(NON_EXISTENT_PATH).request()
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPostGone() {
+        final Response res = target(DELETED_PATH).request()
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(GONE, res.getStatusInfo());
+    }
+
+    @Test
     public void testPostInvalidContent() {
-        final Response res = target(PATH).request().post(entity("blah blah blah", "invalid/type"));
+        final Response res = target(RESOURCE_PATH).request().post(entity("blah blah blah", "invalid/type"));
 
         assertEquals(UNSUPPORTED_MEDIA_TYPE, res.getStatusInfo());
     }
 
     @Test
     public void testPostSlash() {
-        final Response res = target(PATH + "/").request().header("Slug", "test")
+        final Response res = target(RESOURCE_PATH + "/").request().header("Slug", "test")
             .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(OK, res.getStatusInfo());
@@ -803,26 +926,34 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPutExisting() {
-        final Response res = target(PATH).request()
+        final Response res = target(RESOURCE_PATH).request()
             .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
     @Test
     public void testPutNew() {
-        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + PATH + "/test")), eq(MAX)))
+        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + RESOURCE_PATH + "/test")), eq(MAX)))
             .thenReturn(Optional.empty());
 
-        final Response res = target(PATH + "/test").request()
+        final Response res = target(RESOURCE_PATH + "/test").request()
             .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
     @Test
     public void testPutVersion() {
-        final Response res = target(PATH).queryParam("version", timestamp).request()
+        final Response res = target(RESOURCE_PATH).queryParam("version", timestamp).request()
             .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
@@ -830,7 +961,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPutAcl() {
-        final Response res = target(PATH).queryParam("ext", "acl").request()
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request()
             .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
@@ -838,7 +969,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPutInvalidContent() {
-        final Response res = target(PATH).request().put(entity("blah blah blah", "invalid/type"));
+        final Response res = target(RESOURCE_PATH).request().put(entity("blah blah blah", "invalid/type"));
 
         assertEquals(UNSUPPORTED_MEDIA_TYPE, res.getStatusInfo());
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
@@ -846,7 +977,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPutSlash() {
-        final Response res = target(PATH + "/").request()
+        final Response res = target(RESOURCE_PATH + "/").request()
             .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(OK, res.getStatusInfo());
@@ -855,7 +986,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testDeleteExisting() {
-        final Response res = target(PATH).request().delete();
+        final Response res = target(RESOURCE_PATH).request().delete();
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
@@ -863,7 +994,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testDeleteVersion() {
-        final Response res = target(PATH).queryParam("version", timestamp).request().delete();
+        final Response res = target(RESOURCE_PATH).queryParam("version", timestamp).request().delete();
 
         assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
@@ -871,10 +1002,10 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testDeleteNonExistant() {
-        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + PATH + "/test")), eq(MAX)))
+        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + RESOURCE_PATH + "/test")), eq(MAX)))
             .thenReturn(Optional.empty());
 
-        final Response res = target(PATH + "/test").request().delete();
+        final Response res = target(RESOURCE_PATH + "/test").request().delete();
 
         assertEquals(NOT_FOUND, res.getStatusInfo());
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
@@ -882,7 +1013,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testDeleteAcl() {
-        final Response res = target(PATH).queryParam("ext", "acl").request().delete();
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request().delete();
 
         assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
@@ -890,15 +1021,18 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testDeleteSlash() {
-        final Response res = target(PATH + "/").request().delete();
+        final Response res = target(RESOURCE_PATH + "/").request().delete();
 
         assertEquals(OK, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
     @Test
     public void testPatchVersion() {
-        final Response res = target(PATH).queryParam("version", timestamp).request()
+        final Response res = target(RESOURCE_PATH).queryParam("version", timestamp).request()
             .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
                         APPLICATION_SPARQL_UPDATE));
 
@@ -907,20 +1041,23 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPatchExisting() {
-        final Response res = target(PATH).request()
+        final Response res = target(RESOURCE_PATH).request()
             .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
                         APPLICATION_SPARQL_UPDATE));
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
     @Test
     public void testPatchNew() {
-        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + PATH + "/test")), eq(MAX)))
+        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + RESOURCE_PATH + "/test")), eq(MAX)))
             .thenReturn(Optional.empty());
 
-        final Response res = target(PATH + "/test").request()
+        final Response res = target(RESOURCE_PATH + "/test").request()
             .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
                         APPLICATION_SPARQL_UPDATE));
 
@@ -930,17 +1067,20 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPatchAcl() {
-        final Response res = target(PATH).queryParam("ext", "acl").request()
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request()
             .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
                         APPLICATION_SPARQL_UPDATE));
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
     @Test
     public void testPatchInvalidContent() {
-        final Response res = target(PATH).request().method("PATCH", entity("blah blah blah", "invalid/type"));
+        final Response res = target(RESOURCE_PATH).request().method("PATCH", entity("blah blah blah", "invalid/type"));
 
         assertEquals(UNSUPPORTED_MEDIA_TYPE, res.getStatusInfo());
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
@@ -948,7 +1088,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPatchSlash() {
-        final Response res = target(PATH + "/").request()
+        final Response res = target(RESOURCE_PATH + "/").request()
             .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
                         APPLICATION_SPARQL_UPDATE));
 

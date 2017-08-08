@@ -525,6 +525,7 @@ public class LdpGetHandlerTest {
 
     @Test
     public void testGetDeleted() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
 
         final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,

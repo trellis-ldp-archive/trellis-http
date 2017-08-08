@@ -47,6 +47,7 @@ import org.trellisldp.api.Resource;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.AS;
+import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.Trellis;
 import org.trellisldp.vocabulary.XSD;
@@ -130,6 +131,7 @@ public class LdpDeleteHandlerTest {
 
     @Test
     public void testGetDeleted() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
 
         final LdpDeleteHandler handler = new LdpDeleteHandler(mockResourceService, mockRequest);

@@ -268,6 +268,7 @@ public class LdpPatchHandlerTest {
 
     @Test
     public void testDeleted() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
 
         final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,

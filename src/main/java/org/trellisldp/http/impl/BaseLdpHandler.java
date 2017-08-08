@@ -40,6 +40,7 @@ import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.Session;
+import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
@@ -82,7 +83,7 @@ public class BaseLdpHandler {
      * @return if the resource has been deleted, return an HTTP response builder, otherwise null
      */
     protected ResponseBuilder checkDeleted(final Resource res, final String identifier) {
-       if (res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
+       if (LDP.Resource.equals(res.getInteractionModel()) && res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
             return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
                     .toArray(Link[]::new));
         }

@@ -18,6 +18,7 @@ import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
+import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
@@ -39,6 +40,7 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -54,6 +56,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.trellisldp.api.Resource;
@@ -379,13 +382,20 @@ public class LdpResource extends BaseLdpResource {
         postHandler.setEntity(body);
 
         // First check if this is a container
-        if (resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX).map(Resource::getInteractionModel)
-                .filter(type -> ldpResourceTypes(type).anyMatch(LDP.Container::equals)).isPresent()) {
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + fullPath), MAX).map(x -> status(CONFLICT))
-                .orElseGet(postHandler::createResource).build();
-        } else {
+        final Optional<Resource> parent = resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX);
+        if (parent.isPresent()) {
+            final Optional<IRI> ixModel = parent.map(Resource::getInteractionModel);
+            if (ixModel.filter(type -> ldpResourceTypes(type).anyMatch(LDP.Container::equals)).isPresent()) {
+
+                return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + fullPath), MAX).map(x -> status(CONFLICT))
+                    .orElseGet(postHandler::createResource).build();
+            } else if (ixModel.filter(LDP.Resource::equals).isPresent() &&
+                    parent.get().getTypes().anyMatch(Trellis.DeletedResource::equals)) {
+                return status(GONE).build();
+            }
             return status(METHOD_NOT_ALLOWED).build();
         }
+        return status(NOT_FOUND).build();
     }
 
     /**
