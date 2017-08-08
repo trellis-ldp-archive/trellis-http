@@ -175,6 +175,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -183,6 +184,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -191,6 +193,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -199,6 +202,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -208,6 +212,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -217,6 +222,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -226,6 +232,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -235,6 +242,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -244,6 +252,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -253,6 +262,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -263,6 +273,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -273,6 +284,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -283,6 +295,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -293,6 +306,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -303,6 +317,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -313,6 +328,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -321,6 +337,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -329,6 +346,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 
     @Test
@@ -337,5 +355,6 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         assertEquals(UNAUTHORIZED, res.getStatusInfo());
         assertNotNull(res.getHeaders().get(WWW_AUTHENTICATE));
+        assertEquals(BASIC_AUTH, res.getHeaderString(WWW_AUTHENTICATE));
     }
 }

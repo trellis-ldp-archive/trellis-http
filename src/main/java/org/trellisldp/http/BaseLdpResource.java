@@ -104,7 +104,8 @@ class BaseLdpResource {
                 .filter(svc -> !svc.anyMatch(session, rdf.createIRI(TRELLIS_PREFIX + path),
                         iri -> ACL.Append.equals(iri) || ACL.Write.equals(iri))).isPresent()) {
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
-                throw new NotAuthorizedException(challenges.toArray());
+                throw new NotAuthorizedException(challenges.get(0),
+                        challenges.subList(1, challenges.size()).toArray());
             }
             throw new ForbiddenException();
         }
@@ -114,7 +115,8 @@ class BaseLdpResource {
         if (!isAdmin(session) && ofNullable(accessService)
                 .filter(svc -> !svc.canControl(session, rdf.createIRI(TRELLIS_PREFIX + path))).isPresent()) {
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
-                throw new NotAuthorizedException(challenges.toArray());
+                throw new NotAuthorizedException(challenges.get(0),
+                        challenges.subList(1, challenges.size()).toArray());
             }
             throw new ForbiddenException();
         }
@@ -124,7 +126,8 @@ class BaseLdpResource {
         if (!isAdmin(session) && ofNullable(accessService)
                 .filter(svc -> !svc.canWrite(session, rdf.createIRI(TRELLIS_PREFIX + path))).isPresent()) {
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
-                throw new NotAuthorizedException(challenges.toArray());
+                throw new NotAuthorizedException(challenges.get(0),
+                        challenges.subList(1, challenges.size()).toArray());
             }
             throw new ForbiddenException();
         }
@@ -134,7 +137,8 @@ class BaseLdpResource {
         if (!isAdmin(session) && ofNullable(accessService)
                 .filter(svc -> !svc.canRead(session, rdf.createIRI(TRELLIS_PREFIX + path))).isPresent()) {
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
-                throw new NotAuthorizedException(challenges.toArray());
+                throw new NotAuthorizedException(challenges.get(0),
+                        challenges.subList(1, challenges.size()).toArray());
             }
             throw new ForbiddenException();
         }
