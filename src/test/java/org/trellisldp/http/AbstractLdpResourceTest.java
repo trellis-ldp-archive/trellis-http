@@ -284,6 +284,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
                 rdf.createQuad(Trellis.PreferAccessControl, identifier, ACL.mode, ACL.Control)));
     }
 
+    /* ******************************* *
+     *            GET Tests
+     * ******************************* */
     @Test
     public void testGetJson() throws IOException {
         final Response res = target("/" + RESOURCE_PATH).request().accept("application/ld+json").get();
@@ -329,7 +332,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
-    public void testDefaultType() {
+    public void testGetDefaultType() {
         final Response res = target(RESOURCE_PATH).request().get();
 
         assertEquals(OK, res.getStatusInfo());
@@ -376,7 +379,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
-    public void testTrailingSlash() {
+    public void testGetTrailingSlash() {
         final Response res = target(RESOURCE_PATH + "/").request().get();
 
         assertEquals(OK, res.getStatusInfo());
@@ -385,175 +388,6 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
                     l.getRel().contains("timegate") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(res.getLinks().stream().anyMatch(l ->
                     l.getRel().contains("original") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
-    }
-
-    @Test
-    public void testUserDeleted() {
-        final Response res = target(USER_DELETED_PATH).request().get();
-
-        assertEquals(OK, res.getStatusInfo());
-    }
-
-    @Test
-    public void testGetNotFound() {
-        final Response res = target(NON_EXISTENT_PATH).request().get();
-
-        assertEquals(NOT_FOUND, res.getStatusInfo());
-    }
-
-    @Test
-    public void testGone() {
-        final Response res = target(DELETED_PATH).request().get();
-
-        assertEquals(GONE, res.getStatusInfo());
-    }
-
-    @Test
-    public void testOptions1() {
-        final Response res = target(RESOURCE_PATH).request().options();
-
-        assertEquals(NO_CONTENT, res.getStatusInfo());
-        assertNull(res.getHeaderString(MEMENTO_DATETIME));
-
-        assertTrue(res.getAllowedMethods().contains("PATCH"));
-        assertTrue(res.getAllowedMethods().contains("PUT"));
-        assertTrue(res.getAllowedMethods().contains("DELETE"));
-        assertTrue(res.getAllowedMethods().contains("GET"));
-        assertTrue(res.getAllowedMethods().contains("HEAD"));
-        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
-        assertFalse(res.getAllowedMethods().contains("POST"));
-
-        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
-
-        // LDP type links are not part of OPTIONS responses
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
-    }
-
-    @Test
-    public void testOptions2() {
-        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
-        final Response res = target(RESOURCE_PATH).request().options();
-
-        assertEquals(NO_CONTENT, res.getStatusInfo());
-
-        assertTrue(res.getAllowedMethods().contains("PATCH"));
-        assertTrue(res.getAllowedMethods().contains("PUT"));
-        assertTrue(res.getAllowedMethods().contains("DELETE"));
-        assertTrue(res.getAllowedMethods().contains("GET"));
-        assertTrue(res.getAllowedMethods().contains("HEAD"));
-        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
-        assertTrue(res.getAllowedMethods().contains("POST"));
-
-        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
-        assertNotNull(res.getHeaderString(ACCEPT_POST));
-        final List<String> acceptPost = asList(res.getHeaderString(ACCEPT_POST).split(","));
-        assertEquals(3L, acceptPost.size());
-        assertTrue(acceptPost.contains("text/turtle"));
-        assertTrue(acceptPost.contains(APPLICATION_LD_JSON));
-        assertTrue(acceptPost.contains(APPLICATION_N_TRIPLES));
-
-        assertNull(res.getHeaderString(MEMENTO_DATETIME));
-
-        // LDP type links are not part of OPTIONS responses
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
-    }
-
-    @Test
-    public void testOptions3() {
-        final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request().options();
-
-        assertEquals(NO_CONTENT, res.getStatusInfo());
-
-        assertTrue(res.getAllowedMethods().contains("PATCH"));
-        assertFalse(res.getAllowedMethods().contains("PUT"));
-        assertFalse(res.getAllowedMethods().contains("DELETE"));
-        assertTrue(res.getAllowedMethods().contains("GET"));
-        assertTrue(res.getAllowedMethods().contains("HEAD"));
-        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
-        assertFalse(res.getAllowedMethods().contains("POST"));
-
-        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
-        assertNull(res.getHeaderString(ACCEPT_POST));
-        assertNull(res.getHeaderString(MEMENTO_DATETIME));
-    }
-
-    @Test
-    public void testOptionsNonexistent() {
-        final Response res = target(NON_EXISTENT_PATH).request().options();
-
-        assertEquals(NOT_FOUND, res.getStatusInfo());
-    }
-
-    @Test
-    public void testOptionsGone() {
-        final Response res = target(DELETED_PATH).request().options();
-
-        assertEquals(GONE, res.getStatusInfo());
-    }
-
-    @Test
-    public void testOptionsSlash() {
-        final Response res = target(RESOURCE_PATH + "/").request().options();
-
-        assertEquals(OK, res.getStatusInfo());
-
-        assertTrue(res.getAllowedMethods().contains("PATCH"));
-        assertTrue(res.getAllowedMethods().contains("PUT"));
-        assertTrue(res.getAllowedMethods().contains("DELETE"));
-        assertTrue(res.getAllowedMethods().contains("GET"));
-        assertTrue(res.getAllowedMethods().contains("HEAD"));
-        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
-        assertFalse(res.getAllowedMethods().contains("POST"));
-
-        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
-        assertNull(res.getHeaderString(ACCEPT_POST));
-        assertNull(res.getHeaderString(MEMENTO_DATETIME));
-    }
-
-    @Test
-    public void testOptions5() {
-        when(mockResource.getMementos()).thenAnswer(x -> Stream.of(
-                new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),
-                new VersionRange(ofEpochSecond(timestamp - 1000), time),
-                new VersionRange(time, ofEpochSecond(timestamp + 1000))));
-
-        final Response res = target(RESOURCE_PATH).queryParam("ext", "timemap").request().options();
-
-        assertEquals(NO_CONTENT, res.getStatusInfo());
-
-        assertFalse(res.getAllowedMethods().contains("PATCH"));
-        assertFalse(res.getAllowedMethods().contains("PUT"));
-        assertFalse(res.getAllowedMethods().contains("DELETE"));
-        assertTrue(res.getAllowedMethods().contains("GET"));
-        assertTrue(res.getAllowedMethods().contains("HEAD"));
-        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
-        assertFalse(res.getAllowedMethods().contains("POST"));
-
-        assertNull(res.getHeaderString(ACCEPT_PATCH));
-        assertNull(res.getHeaderString(ACCEPT_POST));
-        assertNull(res.getHeaderString(MEMENTO_DATETIME));
-    }
-
-    @Test
-    public void testOptions6() {
-        final Response res = target(RESOURCE_PATH).queryParam("version", timestamp).request().options();
-
-        assertEquals(NO_CONTENT, res.getStatusInfo());
-
-        assertFalse(res.getAllowedMethods().contains("PATCH"));
-        assertFalse(res.getAllowedMethods().contains("PUT"));
-        assertFalse(res.getAllowedMethods().contains("DELETE"));
-        assertTrue(res.getAllowedMethods().contains("GET"));
-        assertTrue(res.getAllowedMethods().contains("HEAD"));
-        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
-        assertFalse(res.getAllowedMethods().contains("POST"));
-
-        assertNull(res.getHeaderString(ACCEPT_PATCH));
-        assertNull(res.getHeaderString(ACCEPT_POST));
     }
 
     @Test
@@ -837,6 +671,207 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testGetUserDeleted() {
+        // Just setting the Trellis.DeletedResource type shouldn't, itself, lead to a 410 GONE response
+        final Response res = target(USER_DELETED_PATH).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+    }
+
+    @Test
+    public void testGetNotFound() {
+        final Response res = target(NON_EXISTENT_PATH).request().get();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testGetGone() {
+        final Response res = target(DELETED_PATH).request().get();
+
+        assertEquals(GONE, res.getStatusInfo());
+    }
+
+    /* ******************************* *
+     *            OPTIONS Tests
+     * ******************************* */
+    @Test
+    public void testOptionsLDPRS() {
+        final Response res = target(RESOURCE_PATH).request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        assertTrue(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
+
+        // LDP type links are not part of OPTIONS responses
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+    }
+
+    @Test
+    public void testOptionsLDPNR() {
+        final Response res = target(BINARY_PATH).request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+
+        assertTrue(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertTrue(res.getAllowedMethods().contains("POST"));
+
+        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
+        assertEquals("*/*", res.getHeaderString(ACCEPT_POST));
+
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        // LDP type links are not part of OPTIONS responses
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+    }
+
+    @Test
+    public void testOptionsLDPC() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        final Response res = target(RESOURCE_PATH).request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+
+        assertTrue(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertTrue(res.getAllowedMethods().contains("POST"));
+
+        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
+        assertNotNull(res.getHeaderString(ACCEPT_POST));
+        final List<String> acceptPost = asList(res.getHeaderString(ACCEPT_POST).split(","));
+        assertEquals(3L, acceptPost.size());
+        assertTrue(acceptPost.contains("text/turtle"));
+        assertTrue(acceptPost.contains(APPLICATION_LD_JSON));
+        assertTrue(acceptPost.contains(APPLICATION_N_TRIPLES));
+
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        // LDP type links are not part of OPTIONS responses
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+    }
+
+    @Test
+    public void testOptionsACL() {
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+
+        assertTrue(res.getAllowedMethods().contains("PATCH"));
+        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
+        assertNull(res.getHeaderString(ACCEPT_POST));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testOptionsNonexistent() {
+        final Response res = target(NON_EXISTENT_PATH).request().options();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testOptionsGone() {
+        final Response res = target(DELETED_PATH).request().options();
+
+        assertEquals(GONE, res.getStatusInfo());
+    }
+
+    @Test
+    public void testOptionsSlash() {
+        final Response res = target(RESOURCE_PATH + "/").request().options();
+
+        assertEquals(OK, res.getStatusInfo());
+
+        assertTrue(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
+        assertNull(res.getHeaderString(ACCEPT_POST));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testOptionsTimemap() {
+        when(mockResource.getMementos()).thenAnswer(x -> Stream.of(
+                new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),
+                new VersionRange(ofEpochSecond(timestamp - 1000), time),
+                new VersionRange(time, ofEpochSecond(timestamp + 1000))));
+
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "timemap").request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertNull(res.getHeaderString(ACCEPT_PATCH));
+        assertNull(res.getHeaderString(ACCEPT_POST));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testOptionsVersion() {
+        final Response res = target(RESOURCE_PATH).queryParam("version", timestamp).request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertNull(res.getHeaderString(ACCEPT_PATCH));
+        assertNull(res.getHeaderString(ACCEPT_POST));
+    }
+
+    /* ******************************* *
+     *            POST Tests
+     * ******************************* */
+    @Test
     public void testPost() {
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI("trellis:" + RESOURCE_PATH + "/randomValue")), eq(MAX)))
@@ -924,6 +959,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertEquals(OK, res.getStatusInfo());
     }
 
+    /* ******************************* *
+     *            PUT Tests
+     * ******************************* */
     @Test
     public void testPutExisting() {
         final Response res = target(RESOURCE_PATH).request()
@@ -984,12 +1022,29 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
+    /* ******************************* *
+     *            DELETE Tests
+     * ******************************* */
     @Test
     public void testDeleteExisting() {
         final Response res = target(RESOURCE_PATH).request().delete();
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testDeleteNonexistent() {
+        final Response res = target(NON_EXISTENT_PATH).request().delete();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testDeleteDeleted() {
+        final Response res = target(DELETED_PATH).request().delete();
+
+        assertEquals(GONE, res.getStatusInfo());
     }
 
     @Test
