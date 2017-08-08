@@ -252,6 +252,7 @@ public class LdpResource extends BaseLdpResource {
     /**
      * Perform a PATCH operation on an LDP Resource
      * @param path the path
+     * @param version a version parameter
      * @param ext an extension parameter
      * @param prefer the Prefer header
      * @param body the body
@@ -261,6 +262,7 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     @Consumes("application/sparql-update")
     public Response updateResource(@PathParam("path") final String path,
+            @QueryParam("version") final String version,
             @QueryParam("ext") final String ext,
             @HeaderParam("Prefer") final Prefer prefer, final String body) {
 
@@ -273,6 +275,10 @@ public class LdpResource extends BaseLdpResource {
             verifyCanControl(session, path);
         } else {
             verifyCanWrite(session, path);
+        }
+
+        if (nonNull(version)) {
+            return status(METHOD_NOT_ALLOWED).build();
         }
 
         final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, ioService, constraintService,
@@ -295,12 +301,14 @@ public class LdpResource extends BaseLdpResource {
     /**
      * Perform a DELETE operation on an LDP Resource
      * @param path the path
+     * @param version a version parameter
      * @param ext an extension parameter
      * @return the response
      */
     @DELETE
     @Timed
     public Response deleteResource(@PathParam("path") final String path,
+            @QueryParam("version") final String version,
             @QueryParam("ext") final String ext) {
 
         if (path.endsWith("/")) {
@@ -310,7 +318,7 @@ public class LdpResource extends BaseLdpResource {
         final Session session = getSession();
         verifyCanWrite(session, path);
 
-        if (nonNull(ext)) {
+        if (nonNull(ext) || nonNull(version)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
@@ -326,6 +334,7 @@ public class LdpResource extends BaseLdpResource {
     /**
      * Perform a POST operation on a LDP Resource
      * @param path the path
+     * @param version a version parameter
      * @param ext an extension parameter
      * @param link the LDP interaction model
      * @param contentType the content-type
@@ -336,6 +345,7 @@ public class LdpResource extends BaseLdpResource {
     @POST
     @Timed
     public Response createResource(@PathParam("path") final String path,
+            @QueryParam("version") final String version,
             @QueryParam("ext") final String ext,
             @HeaderParam("Link") final Link link,
             @HeaderParam("Content-Type") final String contentType,
@@ -353,7 +363,7 @@ public class LdpResource extends BaseLdpResource {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
-        if (nonNull(ext)) {
+        if (nonNull(ext) || nonNull(version)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
@@ -381,6 +391,7 @@ public class LdpResource extends BaseLdpResource {
     /**
      * Perform a PUT operation on a LDP Resource
      * @param path the path
+     * @param version the version parameter
      * @param ext an extension parameter
      * @param link the LDP interaction model
      * @param contentType the content-type
@@ -390,6 +401,7 @@ public class LdpResource extends BaseLdpResource {
     @PUT
     @Timed
     public Response setResource(@PathParam("path") final String path,
+            @QueryParam("version") final Version version,
             @QueryParam("ext") final String ext,
             @HeaderParam("Link") final Link link,
             @HeaderParam("Content-Type") final String contentType,
@@ -406,7 +418,7 @@ public class LdpResource extends BaseLdpResource {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
-        if (nonNull(ext)) {
+        if (nonNull(ext) || nonNull(version)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
