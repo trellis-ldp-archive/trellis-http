@@ -15,7 +15,6 @@ package org.trellisldp.http.impl;
 
 import static java.lang.String.join;
 import static java.util.Date.from;
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
@@ -27,11 +26,9 @@ import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.HttpHeaders.VARY;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.ok;
 import static javax.ws.rs.core.Response.status;
@@ -44,7 +41,6 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_RANGES;
 import static org.trellisldp.http.domain.HttpConstants.DIGEST;
 import static org.trellisldp.http.domain.HttpConstants.MEMENTO_DATETIME;
-import static org.trellisldp.http.domain.HttpConstants.NOT_ACCEPTABLE_ERROR;
 import static org.trellisldp.http.domain.HttpConstants.PATCH;
 import static org.trellisldp.http.domain.HttpConstants.PREFER;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
@@ -53,6 +49,8 @@ import static org.trellisldp.http.domain.HttpConstants.WANT_DIGEST;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 import static org.trellisldp.http.impl.RdfUtils.filterWithPrefer;
+import static org.trellisldp.http.impl.RdfUtils.getProfile;
+import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeQuads;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.getInstance;
@@ -151,12 +149,15 @@ public class LdpGetHandler extends BaseLdpHandler {
             return deleted;
         }
 
+        final Optional<RDFSyntax> syntax = getSyntax(acceptableTypes, res.getBinary()
+                .map(b -> b.getMimeType().orElse(APPLICATION_OCTET_STREAM)));
+
         // TODO add acl header, if in effect
-        final ResponseBuilder builder = basicGetResponseBuilder(res, ofNullable(syntax));
+        final ResponseBuilder builder = basicGetResponseBuilder(res, syntax);
 
         // Add NonRDFSource-related "describe*" link headers
         res.getBinary().ifPresent(ds -> {
-            if (nonNull(syntax)) {
+            if (syntax.isPresent()) {
                 builder.link(identifier + "#description", "canonical").link(identifier, "describes");
             } else {
                 builder.link(identifier, "canonical").link(identifier + "#description", "describedby")
@@ -171,18 +172,17 @@ public class LdpGetHandler extends BaseLdpHandler {
         }
 
         // NonRDFSources responses (strong ETags, etc)
-        if (res.getBinary().isPresent() && isNull(syntax)) {
+        if (res.getBinary().isPresent() && !syntax.isPresent()) {
             return getLdpNr(identifier, res, builder);
+        }
 
         // RDFSource responses (weak ETags, etc)
-        } else if (nonNull(syntax)) {
-            return getLdpRs(identifier, res, builder);
-        }
-        // Other responses (typically, a request for application/link-format on an LDPR)
-        return status(NOT_ACCEPTABLE).type(APPLICATION_JSON).entity(NOT_ACCEPTABLE_ERROR);
+        final IRI profile = getProfile(acceptableTypes, syntax.get());
+        return getLdpRs(identifier, res, builder, syntax.get(), profile);
     }
 
-    private ResponseBuilder getLdpRs(final String identifier, final Resource res, final ResponseBuilder builder) {
+    private ResponseBuilder getLdpRs(final String identifier, final Resource res, final ResponseBuilder builder,
+            final RDFSyntax syntax, final IRI profile) {
         final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier), true);
         final ResponseBuilder cacheBuilder = checkCache(request, res.getModified(), etag);
         if (nonNull(cacheBuilder)) {
@@ -266,8 +266,9 @@ public class LdpGetHandler extends BaseLdpHandler {
         cc.setMaxAge(cacheAge);
 
         // Standard HTTP Headers
-        builder.lastModified(from(res.getModified())).variants(VARIANTS).header(VARY, PREFER);
+        builder.lastModified(from(res.getModified())).variants(VARIANTS);
         if (syntax.isPresent()) {
+            builder.header(VARY, PREFER);
             builder.type(syntax.get().mediaType);
         }
 

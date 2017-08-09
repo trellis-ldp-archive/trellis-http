@@ -26,6 +26,7 @@ import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.HttpHeaders.LINK;
 import static javax.ws.rs.core.HttpHeaders.VARY;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
@@ -62,6 +63,7 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.time.Instant;
@@ -144,9 +146,15 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     private final static String USER_DELETED_PATH = REPO1 + "/userdeleted";
 
+    private final static String BINARY_MIME_TYPE = "text/plain";
+
+    private final static Long BINARY_SIZE = 100L;
+
     private final static IRI identifier = rdf.createIRI("trellis:" + RESOURCE_PATH);
 
     private final static IRI binaryIdentifier = rdf.createIRI("trellis:" + BINARY_PATH);
+
+    private final static IRI binaryInternalIdentifier = rdf.createIRI("file:some/file");
 
     private final static IRI nonexistentIdentifier = rdf.createIRI("trellis:" + NON_EXISTENT_PATH);
 
@@ -180,7 +188,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Mock
     private Resource mockResource, mockVersionedResource, mockBinaryResource, mockDeletedResource,
-            mockUserDeletedResource;
+            mockUserDeletedResource, mockBinaryVersionedResource;
 
     @Mock
     private Binary mockBinary;
@@ -193,6 +201,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockResourceService.get(eq(childIdentifier))).thenReturn(Optional.empty());
         when(mockResourceService.get(eq(childIdentifier), any(Instant.class))).thenReturn(Optional.empty());
         when(mockResourceService.get(eq(binaryIdentifier))).thenReturn(Optional.of(mockBinaryResource));
+        when(mockResourceService.get(eq(binaryIdentifier), any(Instant.class)))
+            .thenReturn(Optional.of(mockBinaryVersionedResource));
         when(mockResourceService.get(eq(nonexistentIdentifier))).thenReturn(Optional.empty());
         when(mockResourceService.get(eq(nonexistentIdentifier), any(Instant.class))).thenReturn(Optional.empty());
         when(mockResourceService.get(eq(deletedIdentifier))).thenReturn(Optional.of(mockDeletedResource));
@@ -203,7 +213,6 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockResourceService.get(eq(userDeletedIdentifier))).thenReturn(Optional.of(mockUserDeletedResource));
         when(mockResourceService.get(eq(userDeletedIdentifier), any(Instant.class)))
             .thenReturn(Optional.of(mockUserDeletedResource));
-
 
         when(mockAgentService.asAgent(anyString())).thenReturn(agent);
         when(mockAccessControlService.anyMatch(any(Session.class), any(IRI.class), any())).thenReturn(true);
@@ -224,15 +233,36 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockVersionedResource.getAnnotationService()).thenReturn(Optional.empty());
         when(mockVersionedResource.getTypes()).thenAnswer(x -> Stream.empty());
 
+        when(mockBinaryVersionedResource.getMementos()).thenAnswer(x -> Stream.of(
+                new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),
+                new VersionRange(ofEpochSecond(timestamp - 1000), time),
+                new VersionRange(time, ofEpochSecond(timestamp + 1000))));
+        when(mockBinaryVersionedResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+        when(mockBinaryVersionedResource.getModified()).thenReturn(time);
+        when(mockBinaryVersionedResource.getBinary()).thenReturn(Optional.of(mockBinary));
+        when(mockBinaryVersionedResource.isMemento()).thenReturn(true);
+        when(mockBinaryVersionedResource.getIdentifier()).thenReturn(binaryIdentifier);
+        when(mockBinaryVersionedResource.getInbox()).thenReturn(Optional.empty());
+        when(mockBinaryVersionedResource.getAnnotationService()).thenReturn(Optional.empty());
+        when(mockBinaryVersionedResource.getTypes()).thenAnswer(x -> Stream.empty());
+
         when(mockBinaryResource.getMementos()).thenAnswer(x -> Stream.empty());
         when(mockBinaryResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
         when(mockBinaryResource.getModified()).thenReturn(time);
         when(mockBinaryResource.getBinary()).thenReturn(Optional.of(mockBinary));
         when(mockBinaryResource.isMemento()).thenReturn(false);
-        when(mockBinaryResource.getIdentifier()).thenReturn(identifier);
+        when(mockBinaryResource.getIdentifier()).thenReturn(binaryIdentifier);
         when(mockBinaryResource.getInbox()).thenReturn(Optional.empty());
         when(mockBinaryResource.getAnnotationService()).thenReturn(Optional.empty());
         when(mockBinaryResource.getTypes()).thenAnswer(x -> Stream.empty());
+
+        when(mockBinary.getModified()).thenReturn(time);
+        when(mockBinary.getIdentifier()).thenReturn(binaryInternalIdentifier);
+        when(mockBinary.getMimeType()).thenReturn(Optional.of(BINARY_MIME_TYPE));
+        when(mockBinary.getSize()).thenReturn(Optional.of(BINARY_SIZE));
+
+        when(mockBinaryService.getContent(eq(REPO1), eq(binaryInternalIdentifier)))
+            .thenAnswer(x -> Optional.of(new ByteArrayInputStream("Some input stream".getBytes(UTF_8))));
 
         when(mockResource.getMementos()).thenAnswer(x -> Stream.empty());
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
@@ -388,6 +418,120 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
                     l.getRel().contains("timegate") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(res.getLinks().stream().anyMatch(l ->
                     l.getRel().contains("original") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+    }
+
+    @Test
+    public void testGetBinaryDescription() {
+        final Response res = target(BINARY_PATH).request().accept("text/turtle").get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertTrue(res.getAllowedMethods().contains("POST"));
+
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+
+        assertTrue(res.getMediaType().isCompatible(TEXT_TURTLE_TYPE));
+        assertNull(res.getHeaderString(ACCEPT_RANGES));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        final List<String> varies = res.getStringHeaders().get(VARY);
+        assertFalse(varies.contains(RANGE));
+        assertFalse(varies.contains(WANT_DIGEST));
+        assertTrue(varies.contains(ACCEPT_DATETIME));
+        assertTrue(varies.contains(PREFER));
+    }
+
+    @Test
+    public void testGetBinary() {
+        final Response res = target(BINARY_PATH).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        res.getLinks().forEach(l -> System.out.println("BinaryLink: " + l));
+
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+
+        assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
+        assertNotNull(res.getHeaderString(ACCEPT_RANGES));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        final List<String> varies = res.getStringHeaders().get(VARY);
+        assertTrue(varies.contains(RANGE));
+        assertTrue(varies.contains(WANT_DIGEST));
+        assertTrue(varies.contains(ACCEPT_DATETIME));
+        assertFalse(varies.contains(PREFER));
+    }
+
+    @Test
+    public void testGetBinaryVersion() {
+        final Response res = target(BINARY_PATH).queryParam("version", timestamp).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        // Jersey's client doesn't parse complex link headers correctly
+        final List<Link> links = res.getStringHeaders().get(LINK).stream().map(Link::valueOf).collect(toList());
+        links.forEach(l -> System.out.println("VersionLink: " + l));
+
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
+                        .equals(l.getParams().get("datetime")) &&
+                    l.getUri().toString().equals(BASE_URL + BINARY_PATH + "?version=1496260729000")));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 1000))
+                        .equals(l.getParams().get("datetime")) &&
+                    l.getUri().toString().equals(BASE_URL + BINARY_PATH + "?version=1496261729000")));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(time).equals(l.getParams().get("datetime")) &&
+                    l.getUri().toString().equals(BASE_URL + BINARY_PATH + "?version=1496262729000")));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timemap") &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
+                        .equals(l.getParams().get("from")) &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp + 1000))
+                        .equals(l.getParams().get("until")) &&
+                    APPLICATION_LINK_FORMAT.equals(l.getType()) &&
+                    l.getUri().toString().equals(BASE_URL + BINARY_PATH + "?ext=timemap")));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timegate") &&
+                    l.getUri().toString().equals(BASE_URL + BINARY_PATH)));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("original") &&
+                    l.getUri().toString().equals(BASE_URL + BINARY_PATH)));
+        assertTrue(links.stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(links.stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertFalse(links.stream().anyMatch(hasType(LDP.Container)));
+
+        assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
+        assertEquals("bytes", res.getHeaderString(ACCEPT_RANGES));
+        assertNotNull(res.getHeaderString(MEMENTO_DATETIME));
+        assertEquals(time, parse(res.getHeaderString(MEMENTO_DATETIME), RFC_1123_DATE_TIME).toInstant());
+
+        final List<String> varies = res.getStringHeaders().get(VARY);
+        assertTrue(varies.contains(RANGE));
+        assertTrue(varies.contains(WANT_DIGEST));
+        assertFalse(varies.contains(ACCEPT_DATETIME));
+        assertFalse(varies.contains(PREFER));
     }
 
     @Test

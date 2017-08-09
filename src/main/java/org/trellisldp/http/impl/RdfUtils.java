@@ -13,10 +13,8 @@
  */
 package org.trellisldp.http.impl;
 
-import static java.util.Arrays.stream;
 import static java.util.Optional.ofNullable;
-import static java.util.stream.Stream.empty;
-import static java.util.stream.Stream.of;
+import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.trellisldp.http.domain.HttpConstants.DEFAULT_REPRESENTATION;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
@@ -24,13 +22,12 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
+import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Variant;
 
@@ -68,24 +65,6 @@ public final class RdfUtils {
         });
         return quad -> quad.getGraphName().filter(x -> x instanceof IRI).map(x -> (IRI) x)
             .map(IRI::getIRIString).filter(include::contains).isPresent();
-    }
-
-    /**
-     * Fetch the appropriate RDF syntax, if one exists
-     * @param types the mediatypes from HTTP Accept
-     * @return the rdf syntax, if available
-     */
-    public static RDFSyntax getRdfSyntax(final List<MediaType> types) {
-        return types.stream().flatMap(getSyntax).findFirst().orElse(null);
-    }
-
-    /**
-     * Fetch the appropriate Accept profile, if one exists
-     * @param types the mediatypes from HTTP Accept
-     * @return the profile, if available
-     */
-    public static IRI getProfile(final List<MediaType> types) {
-        return types.stream().flatMap(profileMapper).findFirst().orElse(null);
     }
 
     /**
@@ -166,22 +145,51 @@ public final class RdfUtils {
                 toInternalIri(svc.skolemize(quad.getObject()), baseUrl));
     }
 
-    private static final Function<MediaType, Stream<IRI>> profileMapper = type -> {
-        if (VARIANTS.stream().map(Variant::getMediaType).anyMatch(type::isCompatible)) {
-            final Map<String, String> params = type.getParameters();
-            if (params.containsKey("profile")) {
-                return stream(params.get("profile").split(" ")).map(String::trim).map(rdf::createIRI);
+    /**
+     * Given a list of acceptable media types, get an RDF syntax.
+     * @param acceptableTypes the types from HTTP headers
+     * @param mimeType an additional "default" mimeType to match
+     * @return an RDFSyntax
+     */
+    public static Optional<RDFSyntax> getSyntax(final List<MediaType> acceptableTypes,
+            final Optional<String> mimeType) {
+        if (acceptableTypes.isEmpty()) {
+            if (mimeType.isPresent()) {
+                return Optional.empty();
+            }
+            return Optional.of(TURTLE);
+        }
+
+        final Optional<MediaType> mt = mimeType.map(MediaType::valueOf);
+        for (final MediaType type : acceptableTypes) {
+            if (mt.filter(type::isCompatible).isPresent()) {
+                return Optional.empty();
+            }
+            final Optional<RDFSyntax> syntax = VARIANTS.stream().map(Variant::getMediaType).filter(type::isCompatible)
+                .findFirst().map(MediaType::toString).flatMap(RDFSyntax::byMediaType);
+            if (syntax.isPresent()) {
+                return syntax;
             }
         }
-        return empty();
-    };
+        throw new NotAcceptableException();
+    }
 
-    private static final Function<MediaType, Stream<RDFSyntax>> getSyntax = type -> {
-        final Optional<RDFSyntax> syntax = VARIANTS.stream().map(Variant::getMediaType).filter(type::isCompatible)
-            .findFirst().map(MediaType::toString).flatMap(RDFSyntax::byMediaType);
-        // TODO replace with Optional::stream with JDK 9
-        return syntax.isPresent() ? of(syntax.get()) : empty();
-    };
+    /**
+     * Given a list of acceptable media types and an RDF syntax, get the relevant profile data, if
+     * relevant
+     * @param acceptableTypes the types from HTTP headers
+     * @param syntax an RDF syntax
+     * @return a profile IRI if relevant
+     */
+    public static IRI getProfile(final List<MediaType> acceptableTypes, final RDFSyntax syntax) {
+        for (final MediaType type : acceptableTypes) {
+            if (RDFSyntax.byMediaType(type.toString()).filter(syntax::equals).isPresent() &&
+                    type.getParameters().containsKey("profile")) {
+                return rdf.createIRI(type.getParameters().get("profile").split(" ")[0].trim());
+            }
+        }
+        return null;
+    }
 
     private RdfUtils() {
         // prevent instantiation

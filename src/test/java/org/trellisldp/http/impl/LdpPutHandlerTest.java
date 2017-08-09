@@ -15,6 +15,7 @@ package org.trellisldp.http.impl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Instant.ofEpochSecond;
+import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Link.fromUri;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
+import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.io.ByteArrayInputStream;
@@ -118,7 +120,7 @@ public class LdpPutHandlerTest {
                 mockBinaryService, mockRequest);
         putHandler.setPath("resource");
         putHandler.setBaseUrl(baseUrl);
-        putHandler.setSyntax(TURTLE);
+        putHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         putHandler.setLink(fromUri(LDP.Container.getIRIString()).rel("type").build());
 
         putHandler.setResource();
@@ -130,7 +132,7 @@ public class LdpPutHandlerTest {
                 mockBinaryService, mockRequest);
         putHandler.setPath("resource");
         putHandler.setBaseUrl(baseUrl);
-        putHandler.setSyntax(TURTLE);
+        putHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         putHandler.setLink(fromUri(LDP.Container.getIRIString()).rel("type").build());
 
         putHandler.setResource(mockResource);
@@ -142,7 +144,7 @@ public class LdpPutHandlerTest {
                 mockBinaryService, mockRequest);
         putHandler.setPath("partition/resource");
         putHandler.setBaseUrl(baseUrl);
-        putHandler.setSyntax(TURTLE);
+        putHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         putHandler.setContentType(TEXT_TURTLE);
         putHandler.setEntity(
                 new ByteArrayInputStream("<> <http://purl.org/dc/terms/title> \"A title\" .".getBytes(UTF_8)));
@@ -166,7 +168,7 @@ public class LdpPutHandlerTest {
                 mockBinaryService, mockRequest);
         putHandler.setPath("partition/resource");
         putHandler.setBaseUrl(baseUrl);
-        putHandler.setSyntax(TURTLE);
+        putHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         putHandler.setContentType(TEXT_TURTLE);
         putHandler.setEntity(
                 new ByteArrayInputStream("<> <http://purl.org/dc/terms/title> \"A title\" .".getBytes(UTF_8)));
@@ -245,7 +247,7 @@ public class LdpPutHandlerTest {
         putHandler.setLink(fromUri(LDP.NonRDFSource.getIRIString()).rel("type").build());
 
         putHandler.setContentType("text/turtle");
-        putHandler.setSyntax(TURTLE);
+        putHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
 
         final Response res = putHandler.setResource().build();
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());

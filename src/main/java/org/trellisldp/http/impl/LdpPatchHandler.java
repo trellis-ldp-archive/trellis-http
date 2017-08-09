@@ -15,6 +15,7 @@ package org.trellisldp.http.impl;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -24,10 +25,11 @@ import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
-import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.impl.RdfUtils.getProfile;
+import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeTriples;
@@ -45,6 +47,7 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
@@ -165,8 +168,10 @@ public class LdpPatchHandler extends BaseLdpHandler {
                 .forEach(type -> builder.link(type, "type"));
 
             if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("representation"::equals).isPresent()) {
+                final RDFSyntax syntax = getSyntax(acceptableTypes, empty()).get();
+                final IRI profile = getProfile(acceptableTypes, syntax);
                 builder.header(PREFERENCE_APPLIED, "return=representation")
-                       .type(ofNullable(syntax).orElse(TURTLE).mediaType)
+                       .type(syntax.mediaType)
                        .entity(ResourceStreamer.tripleStreamer(ioService,
                             graph.stream().map(unskolemizeTriples(resourceService, baseUrl)),
                             syntax, ofNullable(profile).orElseGet(() ->

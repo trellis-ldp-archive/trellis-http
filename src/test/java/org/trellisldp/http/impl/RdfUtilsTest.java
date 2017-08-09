@@ -14,8 +14,12 @@
 package org.trellisldp.http.impl;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonMap;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -24,9 +28,11 @@ import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.vocabulary.JSONLD.compacted;
 
 import java.util.List;
 
+import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.rdf.api.BlankNode;
@@ -39,7 +45,6 @@ import org.apache.commons.rdf.api.Triple;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.DC;
-import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.Trellis;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,7 +69,32 @@ public class RdfUtilsTest {
                 new MediaType("text", "xml"),
                 new MediaType("text", "turtle"));
 
-        assertEquals(TURTLE, RdfUtils.getRdfSyntax(types));
+        assertEquals(of(TURTLE), RdfUtils.getSyntax(types, empty()));
+    }
+
+    @Test
+    public void testGetSyntaxEmpty() {
+        assertEquals(empty(), RdfUtils.getSyntax(emptyList(), of("some/type")));
+        assertEquals(of(TURTLE), RdfUtils.getSyntax(emptyList(), empty()));
+    }
+
+    @Test
+    public void testGetSyntaxFallback() {
+        final List<MediaType> types = asList(
+                new MediaType("application", "json"),
+                new MediaType("text", "xml"),
+                new MediaType("text", "turtle"));
+
+        assertEquals(empty(), RdfUtils.getSyntax(types, of("application/json")));
+    }
+
+    @Test(expected = NotAcceptableException.class)
+    public void testGetSyntaxError() {
+        final List<MediaType> types = asList(
+                new MediaType("application", "json"),
+                new MediaType("text", "xml"));
+
+        RdfUtils.getSyntax(types, empty());
     }
 
     @Test
@@ -159,8 +189,8 @@ public class RdfUtilsTest {
         final List<MediaType> types = asList(
                 new MediaType("application", "json"),
                 new MediaType("text", "xml"),
-                new MediaType("application", "ld+json", singletonMap("profile", JSONLD.compacted.getIRIString())));
-        assertEquals(JSONLD.compacted, RdfUtils.getProfile(types));
+                new MediaType("application", "ld+json", singletonMap("profile", compacted.getIRIString())));
+        assertEquals(compacted, RdfUtils.getProfile(types, JSONLD));
     }
 
     @Test
@@ -169,7 +199,7 @@ public class RdfUtilsTest {
                 new MediaType("application", "json"),
                 new MediaType("text", "xml"),
                 new MediaType("application", "ld+json", singletonMap("profile", "first second")));
-        assertEquals(rdf.createIRI("first"), RdfUtils.getProfile(types));
+        assertEquals(rdf.createIRI("first"), RdfUtils.getProfile(types, JSONLD));
     }
 
     @Test
@@ -178,6 +208,6 @@ public class RdfUtilsTest {
                 new MediaType("application", "json"),
                 new MediaType("text", "xml"),
                 new MediaType("application", "ld+json"));
-        assertNull(RdfUtils.getProfile(types));
+        assertNull(RdfUtils.getProfile(types, JSONLD));
     }
 }

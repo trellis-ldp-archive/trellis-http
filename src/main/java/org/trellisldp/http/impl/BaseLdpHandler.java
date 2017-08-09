@@ -14,7 +14,9 @@
 package org.trellisldp.http.impl;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.Date.from;
+import static javax.ws.rs.core.MediaType.WILDCARD_TYPE;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
@@ -29,6 +31,7 @@ import java.util.List;
 
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
@@ -58,8 +61,7 @@ public class BaseLdpHandler {
 
     protected String path = "";
     protected String baseUrl = "";
-    protected IRI profile = null;
-    protected RDFSyntax syntax = null;
+    protected List<MediaType> acceptableTypes = singletonList(WILDCARD_TYPE);
     protected Session session = null;
     protected Prefer prefer = null;
     protected Link link = null;
@@ -129,11 +131,11 @@ public class BaseLdpHandler {
     }
 
     /**
-     * Set the syntax
-     * @param syntax the syntax
+     * Set the acceptable types
+     * @param acceptableTypes the acceptable types
      */
-    public void setSyntax(final RDFSyntax syntax) {
-        this.syntax = syntax;
+    public void setAcceptableTypes(final List<MediaType> acceptableTypes) {
+        this.acceptableTypes = acceptableTypes;
     }
 
     /**
@@ -166,14 +168,6 @@ public class BaseLdpHandler {
      */
     public void setEntity(final InputStream entity) {
         this.entity = entity;
-    }
-
-    /**
-     * Set the profile
-     * @param profile the profile
-     */
-    public void setProfile(final IRI profile) {
-        this.profile = profile;
     }
 
     /**

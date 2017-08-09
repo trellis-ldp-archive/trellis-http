@@ -30,8 +30,6 @@ import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
-import static org.trellisldp.http.impl.RdfUtils.getProfile;
-import static org.trellisldp.http.impl.RdfUtils.getRdfSyntax;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 
 import com.codahale.metrics.annotation.Timed;
@@ -54,10 +52,10 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Link;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.AcceptDatetime;
@@ -150,7 +148,7 @@ public class LdpResource extends BaseLdpResource {
             return redirectWithoutSlash(path);
         }
 
-        final RDFSyntax syntax = getRdfSyntax(headers.getAcceptableMediaTypes());
+        final List<MediaType> acceptableTypes = headers.getAcceptableMediaTypes();
         final String baseUrl = getBaseUrl(path);
 
         final Session session = getSession();
@@ -164,8 +162,7 @@ public class LdpResource extends BaseLdpResource {
                 request);
         getHandler.setPath(path);
         getHandler.setBaseUrl(baseUrl);
-        getHandler.setSyntax(syntax);
-        getHandler.setProfile(getProfile(headers.getAcceptableMediaTypes()));
+        getHandler.setAcceptableTypes(acceptableTypes);
         if (ACL.equals(ext)) {
             // TODO make this more compact?
             getHandler.setPrefer(new Prefer("return=representation; include=\"" +
@@ -190,7 +187,7 @@ public class LdpResource extends BaseLdpResource {
         } else if (TIMEMAP.equals(ext)) {
             LOGGER.info("Getting timemap resource");
             return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
-                .map(res -> res.getTimeMapBuilder(baseUrl + path, syntax, ioService))
+                .map(res -> res.getTimeMapBuilder(baseUrl + path, acceptableTypes, ioService))
                 .orElse(status(NOT_FOUND)).build();
 
         // Fetch a timegate
@@ -288,8 +285,7 @@ public class LdpResource extends BaseLdpResource {
                 request);
         patchHandler.setPath(path);
         patchHandler.setBaseUrl(getBaseUrl(path));
-        patchHandler.setSyntax(getRdfSyntax(headers.getAcceptableMediaTypes()));
-        patchHandler.setProfile(getProfile(headers.getAcceptableMediaTypes()));
+        patchHandler.setAcceptableTypes(headers.getAcceptableMediaTypes());
         patchHandler.setPrefer(prefer);
         patchHandler.setSession(session);
         patchHandler.setSparqlUpdate(body);

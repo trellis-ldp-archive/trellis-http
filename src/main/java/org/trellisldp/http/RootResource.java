@@ -14,6 +14,7 @@
 package org.trellisldp.http;
 
 import static java.lang.String.join;
+import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.HttpMethod.HEAD;
 import static javax.ws.rs.HttpMethod.OPTIONS;
@@ -27,7 +28,7 @@ import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
-import static org.trellisldp.http.impl.RdfUtils.getRdfSyntax;
+import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 
 import com.codahale.metrics.annotation.Timed;
 
@@ -105,14 +106,14 @@ public class RootResource extends BaseLdpResource {
                             rdf.createIRI(properties.getProperty(name)) :
                             rdf.createLiteral(properties.getProperty(name))));
 
-        final RDFSyntax syntax = getRdfSyntax(headers.getAcceptableMediaTypes());
+        final RDFSyntax syntax = getSyntax(headers.getAcceptableMediaTypes(), empty()).get();
         return ok().header(ALLOW, join(",", HttpMethod.GET, HEAD, OPTIONS))
                     .link(LDP.Resource.getIRIString(), "type")
                     .link(LDP.RDFSource.getIRIString(), "type")
                     .variants(VARIANTS)
                     .type(syntax.mediaType)
                     .entity(ResourceStreamer.tripleStreamer(ioService, graph.stream().map(x -> (Triple) x),
-                        syntax, ofNullable(getProfile(headers.getAcceptableMediaTypes())).orElseGet(() ->
+                        syntax, ofNullable(getProfile(headers.getAcceptableMediaTypes(), syntax)).orElseGet(() ->
                             RDFA_HTML.equals(syntax) ? identifier : JSONLD.expanded)))
                     .build();
     }

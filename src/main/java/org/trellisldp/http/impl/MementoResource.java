@@ -18,7 +18,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.time.ZonedDateTime.parse;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
-import static java.util.Objects.nonNull;
+import static java.util.Optional.of;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
@@ -32,15 +32,18 @@ import static javax.ws.rs.core.Response.Status.FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
+import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.ws.rs.core.Link;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.IRI;
@@ -90,11 +93,11 @@ public final class MementoResource {
     /**
      * Create a response builder for a TimeMap response
      * @param identifier the public identifier for the resource
-     * @param syntax the RDF syntax to use, if defined
+     * @param acceptableTypes the acceptable types from HTTP headers
      * @param serializer the serializer to use
      * @return a response builder object
      */
-    public Response.ResponseBuilder getTimeMapBuilder(final String identifier, final RDFSyntax syntax,
+    public Response.ResponseBuilder getTimeMapBuilder(final String identifier, final List<MediaType> acceptableTypes,
             final IOService serializer) {
         final Response.ResponseBuilder builder = Response.ok().link(identifier, ORIGINAL + " " + TIMEGATE);
         final List<Link> links = getMementoLinks(identifier, resource.getMementos()).collect(toList());
@@ -102,9 +105,11 @@ public final class MementoResource {
                .header(ALLOW, join(",", GET, HEAD, OPTIONS));
         builder.link(LDP.Resource.getIRIString(), "type");
         builder.link(LDP.RDFSource.getIRIString(), "type");
-        if (nonNull(syntax)) {
-            builder.type(syntax.mediaType);
-            builder.entity(ResourceStreamer.quadStreamer(serializer, links.stream().flatMap(linkToQuads), syntax));
+        final Optional<RDFSyntax> syntax = getSyntax(acceptableTypes, of(APPLICATION_LINK_FORMAT));
+        if (syntax.isPresent()) {
+            builder.type(syntax.get().mediaType);
+            builder.entity(ResourceStreamer.quadStreamer(serializer, links.stream().flatMap(linkToQuads),
+                        syntax.get()));
         } else {
             builder.type(APPLICATION_LINK_FORMAT);
             builder.entity(links.stream().map(Link::toString).collect(joining(",\n")) + "\n");

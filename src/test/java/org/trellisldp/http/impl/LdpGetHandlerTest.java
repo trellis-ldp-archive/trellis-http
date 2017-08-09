@@ -18,6 +18,7 @@ import static java.time.Instant.ofEpochSecond;
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
+import static java.util.Collections.singletonList;
 import static java.util.Date.from;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
@@ -27,18 +28,16 @@ import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.HttpHeaders.VARY;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
-import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;
 import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
 import static javax.ws.rs.core.Response.notModified;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
-import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
-import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -74,9 +73,11 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
@@ -149,7 +150,7 @@ public class LdpGetHandlerTest {
                 mockBinaryService, mockRequest);
         getHandler.setPath("/");
         getHandler.setBaseUrl(baseUrl);
-        getHandler.setSyntax(TURTLE);
+        getHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
 
         final Response res = getHandler.getRepresentation(mockResource).build();
         assertEquals(OK, res.getStatusInfo());
@@ -190,7 +191,7 @@ public class LdpGetHandlerTest {
                 mockBinaryService, mockRequest);
         getHandler.setPath("/");
         getHandler.setBaseUrl(baseUrl);
-        getHandler.setSyntax(TURTLE);
+        getHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         getHandler.setWantDigest(null);
         getHandler.setRange(null);
         getHandler.setPrefer(new Prefer("return=representation; include=\"http://www.w3.org/ns/ldp#PreferContainment"));
@@ -217,7 +218,7 @@ public class LdpGetHandlerTest {
                 mockBinaryService, mockRequest);
         getHandler.setPath("/");
         getHandler.setBaseUrl(baseUrl);
-        getHandler.setSyntax(TURTLE);
+        getHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
 
         final Response res = getHandler.getRepresentation(mockResource).build();
         assertEquals(OK, res.getStatusInfo());
@@ -262,7 +263,7 @@ public class LdpGetHandlerTest {
                 mockBinaryService, mockRequest);
         getHandler.setPath("/");
         getHandler.setBaseUrl(baseUrl);
-        getHandler.setSyntax(TURTLE);
+        getHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
 
         final Response res = getHandler.getRepresentation(mockResource).build();
         assertEquals(NOT_MODIFIED, res.getStatusInfo());
@@ -277,7 +278,7 @@ public class LdpGetHandlerTest {
                 mockBinaryService, mockRequest);
         getHandler.setPath("/");
         getHandler.setBaseUrl(baseUrl);
-        getHandler.setSyntax(TURTLE);
+        getHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
 
         final Response res = getHandler.getRepresentation(mockResource).build();
         assertEquals(OK, res.getStatusInfo());
@@ -296,7 +297,7 @@ public class LdpGetHandlerTest {
                 mockBinaryService, mockRequest);
         getHandler.setPath("/");
         getHandler.setBaseUrl(baseUrl);
-        getHandler.setSyntax(TURTLE);
+        getHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
 
         final Response res = getHandler.getRepresentation(mockResource).build();
         assertEquals(OK, res.getStatusInfo());
@@ -306,15 +307,15 @@ public class LdpGetHandlerTest {
                         OA.annotationService.getIRIString())));
     }
 
-    @Test
+    @Test(expected = NotAcceptableException.class)
     public void testNotAcceptableLdprs() {
         final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
                 mockBinaryService, mockRequest);
         getHandler.setPath("/");
         getHandler.setBaseUrl(baseUrl);
+        getHandler.setAcceptableTypes(singletonList(APPLICATION_JSON_TYPE));
 
-        final Response res = getHandler.getRepresentation(mockResource).build();
-        assertEquals(NOT_ACCEPTABLE, res.getStatusInfo());
+        getHandler.getRepresentation(mockResource);
     }
 
     @Test
@@ -323,7 +324,7 @@ public class LdpGetHandlerTest {
                 mockBinaryService, mockRequest);
         getHandler.setPath("/");
         getHandler.setBaseUrl(baseUrl);
-        getHandler.setSyntax(JSONLD);
+        getHandler.setAcceptableTypes(singletonList(APPLICATION_LD_JSON_TYPE));
         getHandler.setPrefer(new Prefer("return=minimal"));
 
         final Response res = getHandler.getRepresentation(mockResource).build();
@@ -368,8 +369,8 @@ public class LdpGetHandlerTest {
                 mockBinaryService, mockRequest);
         getHandler.setPath("/");
         getHandler.setBaseUrl(baseUrl);
-        getHandler.setSyntax(JSONLD);
-        getHandler.setProfile(compacted);
+        getHandler.setAcceptableTypes(singletonList(
+                    MediaType.valueOf(APPLICATION_LD_JSON + "; profile=\"" + compacted.getIRIString() + "\"")));
 
         final Response res = getHandler.getRepresentation(mockResource).build();
         assertEquals(OK, res.getStatusInfo());
@@ -420,7 +421,7 @@ public class LdpGetHandlerTest {
                 mockBinaryService, mockRequest);
         getHandler.setPath("/");
         getHandler.setBaseUrl(baseUrl);
-        getHandler.setSyntax(RDFA_HTML);
+        getHandler.setAcceptableTypes(singletonList(MediaType.valueOf(RDFA_HTML.mediaType)));
 
         final Response res = getHandler.getRepresentation(mockResource).build();
         assertEquals(OK, res.getStatusInfo());
@@ -443,7 +444,7 @@ public class LdpGetHandlerTest {
                 mockBinaryService, mockRequest);
         getHandler.setPath("/");
         getHandler.setBaseUrl(baseUrl);
-        getHandler.setSyntax(TURTLE);
+        getHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
 
         final Response res = getHandler.getRepresentation(mockResource).build();
         assertTrue(res.getMediaType().isCompatible(TEXT_TURTLE_TYPE));
@@ -507,7 +508,7 @@ public class LdpGetHandlerTest {
                 mockBinaryService, mockRequest);
         getHandler.setPath("");
         getHandler.setBaseUrl(baseUrl + "/");
-        getHandler.setSyntax(TURTLE);
+        getHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         getHandler.setGraphName(Trellis.PreferAccessControl);
 
         final Response res = getHandler.getRepresentation(mockResource).build();
@@ -532,7 +533,7 @@ public class LdpGetHandlerTest {
                 mockBinaryService, mockRequest);
         getHandler.setPath("");
         getHandler.setBaseUrl(baseUrl + "/");
-        getHandler.setSyntax(TURTLE);
+        getHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
 
         final Response res = getHandler.getRepresentation(mockResource).build();
         assertEquals(GONE, res.getStatusInfo());

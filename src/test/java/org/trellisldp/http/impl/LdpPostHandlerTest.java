@@ -16,6 +16,7 @@ package org.trellisldp.http.impl;
 import static java.net.URI.create;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Instant.ofEpochSecond;
+import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Link.fromUri;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.RDF.type;
 
@@ -123,7 +125,7 @@ public class LdpPostHandlerTest {
                 mockBinaryService);
         postHandler.setPath("newresource");
         postHandler.setBaseUrl(baseUrl);
-        postHandler.setSyntax(TURTLE);
+        postHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         postHandler.setLink(fromUri(LDP.Container.getIRIString()).rel("type").build());
 
         postHandler.createResource().build();
@@ -135,7 +137,7 @@ public class LdpPostHandlerTest {
                 mockBinaryService);
         postHandler.setPath("newresource");
         postHandler.setBaseUrl(baseUrl);
-        postHandler.setSyntax(TURTLE);
+        postHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         postHandler.setSession(new HttpSession());
         postHandler.setLink(fromUri(LDP.Container.getIRIString()).rel("type").build());
 
@@ -228,7 +230,7 @@ public class LdpPostHandlerTest {
         postHandler.setBaseUrl(baseUrl);
         postHandler.setSession(new HttpSession());
         postHandler.setContentType("text/turtle");
-        postHandler.setSyntax(TURTLE);
+        postHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -254,7 +256,7 @@ public class LdpPostHandlerTest {
         postHandler.setBaseUrl(baseUrl);
         postHandler.setSession(new HttpSession());
         postHandler.setContentType("text/turtle");
-        postHandler.setSyntax(TURTLE);
+        postHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         postHandler.setEntity(entity);
 
         final Response res = postHandler.createResource().build();
@@ -339,7 +341,7 @@ public class LdpPostHandlerTest {
         postHandler.setBaseUrl(baseUrl);
         postHandler.setSession(new HttpSession());
         postHandler.setContentType("text/turtle");
-        postHandler.setSyntax(TURTLE);
+        postHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         postHandler.setEntity(entity);
 
         final Response res = postHandler.createResource().build();
@@ -358,7 +360,7 @@ public class LdpPostHandlerTest {
         postHandler.setBaseUrl(baseUrl);
         postHandler.setSession(new HttpSession());
         postHandler.setContentType("text/turtle");
-        postHandler.setSyntax(TURTLE);
+        postHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
 
         final Response res = postHandler.createResource().build();
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());

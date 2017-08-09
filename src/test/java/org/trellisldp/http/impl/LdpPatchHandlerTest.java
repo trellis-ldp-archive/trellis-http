@@ -14,6 +14,7 @@
 package org.trellisldp.http.impl;
 
 import static java.time.Instant.ofEpochSecond;
+import static java.util.Collections.singletonList;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
@@ -23,7 +24,6 @@ import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
-import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -52,6 +52,7 @@ import java.util.stream.Stream;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
@@ -133,7 +134,7 @@ public class LdpPatchHandlerTest {
                 mockConstraintService, mockRequest);
         patchHandler.setPath("resource");
         patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setSyntax(TURTLE);
+        patchHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         patchHandler.setSparqlUpdate(insert);
 
         patchHandler.updateResource(mockResource).build();
@@ -145,7 +146,7 @@ public class LdpPatchHandlerTest {
                 mockConstraintService, mockRequest);
         patchHandler.setPath("resource");
         patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setSyntax(TURTLE);
+        patchHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         patchHandler.setSession(new HttpSession());
 
         patchHandler.updateResource(mockResource).build();
@@ -157,7 +158,7 @@ public class LdpPatchHandlerTest {
                 mockConstraintService, mockRequest);
         patchHandler.setPath("resource");
         patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setSyntax(TURTLE);
+        patchHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         patchHandler.setSession(new HttpSession());
         patchHandler.setSparqlUpdate(insert);
 
@@ -177,7 +178,7 @@ public class LdpPatchHandlerTest {
         patchHandler.setBaseUrl(baseUrl);
         patchHandler.setSession(new HttpSession());
         patchHandler.setContentType(APPLICATION_SPARQL_UPDATE);
-        patchHandler.setSyntax(TURTLE);
+        patchHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         patchHandler.setSparqlUpdate(insert);
 
         final Response res = patchHandler.updateResource(mockResource).build();
@@ -207,7 +208,7 @@ public class LdpPatchHandlerTest {
         patchHandler.setBaseUrl(baseUrl);
         patchHandler.setSession(new HttpSession());
         patchHandler.setContentType(APPLICATION_SPARQL_UPDATE);
-        patchHandler.setSyntax(TURTLE);
+        patchHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
         patchHandler.setSparqlUpdate(insert);
         patchHandler.setPrefer(new Prefer("return=representation"));
 
@@ -232,7 +233,7 @@ public class LdpPatchHandlerTest {
         patchHandler.setBaseUrl(baseUrl);
         patchHandler.setSession(new HttpSession());
         patchHandler.setContentType(APPLICATION_SPARQL_UPDATE);
-        patchHandler.setSyntax(RDFA_HTML);
+        patchHandler.setAcceptableTypes(singletonList(MediaType.valueOf(RDFA_HTML.mediaType)));
         patchHandler.setSparqlUpdate(insert);
         patchHandler.setPrefer(new Prefer("return=representation"));
 
