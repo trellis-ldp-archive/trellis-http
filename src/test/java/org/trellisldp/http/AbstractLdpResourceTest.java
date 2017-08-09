@@ -804,6 +804,59 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testGetVersionContainerJson() throws IOException {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        final Response res = target(RESOURCE_PATH).queryParam("version", timestamp).request()
+            .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(APPLICATION_LD_JSON_TYPE.isCompatible(res.getMediaType()));
+        assertTrue(res.getMediaType().isCompatible(APPLICATION_LD_JSON_TYPE));
+        assertNull(res.getHeaderString(ACCEPT_POST));
+        assertNull(res.getHeaderString(ACCEPT_PATCH));
+        assertNull(res.getHeaderString(ACCEPT_RANGES));
+        assertEquals(from(time), res.getLastModified());
+
+        // Jersey's client doesn't parse complex link headers correctly, so res.getLinks() is not used here
+        final List<Link> links = res.getStringHeaders().get(LINK).stream().map(Link::valueOf).collect(toList());
+
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
+                        .equals(l.getParams().get("datetime")) &&
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496260729000")));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 1000))
+                        .equals(l.getParams().get("datetime")) &&
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496261729000")));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(time).equals(l.getParams().get("datetime")) &&
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496262729000")));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timemap") &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
+                        .equals(l.getParams().get("from")) &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp + 1000))
+                        .equals(l.getParams().get("until")) &&
+                    APPLICATION_LINK_FORMAT.equals(l.getType()) &&
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?ext=timemap")));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timegate") &&
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("original") &&
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+        assertTrue(links.stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(links.stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(links.stream().anyMatch(hasType(LDP.Container)));
+
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+        assertEquals(time, parse(res.getHeaderString(MEMENTO_DATETIME), RFC_1123_DATE_TIME).toInstant());
+    }
+
+    @Test
     public void testGetAclJsonCompact() throws IOException {
         final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request()
             .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
