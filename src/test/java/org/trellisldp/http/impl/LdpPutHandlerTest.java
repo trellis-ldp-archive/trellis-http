@@ -17,6 +17,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
@@ -211,6 +212,30 @@ public class LdpPutHandlerTest {
 
     @Test
     public void testPutLdpResource4() {
+        final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService, mockRequest);
+        putHandler.setPath("partition/resource");
+        putHandler.setBaseUrl(baseUrl);
+        putHandler.setContentType(TEXT_PLAIN);
+        putHandler.setEntity(new ByteArrayInputStream("Some data".getBytes(UTF_8)));
+        putHandler.setSession(new HttpSession());
+        putHandler.setLink(fromUri(LDP.NonRDFSource.getIRIString()).rel("type").build());
+
+        final Response res = putHandler.setResource(mockResource).build();
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+
+        verify(mockBinaryService).setContent(eq("partition"), any(IRI.class), any(InputStream.class));
+        verify(mockIoService, never()).read(any(InputStream.class), anyString(), any(RDFSyntax.class));
+        verify(mockConstraintService, never()).constrainedBy(any(IRI.class), anyString(), any(Graph.class));
+    }
+
+    @Test
+    public void testPutLdpResource5() {
+        when(mockResource.getBinary()).thenReturn(of(testBinary));
         final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService, mockRequest);
         putHandler.setPath("partition/resource");
