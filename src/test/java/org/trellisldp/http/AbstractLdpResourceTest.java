@@ -450,7 +450,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
-    public void testGetBinary() {
+    public void testGetBinary() throws IOException {
         final Response res = target(BINARY_PATH).request().get();
 
         assertEquals(OK, res.getStatusInfo());
@@ -461,8 +461,6 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getAllowedMethods().contains("HEAD"));
         assertTrue(res.getAllowedMethods().contains("OPTIONS"));
         assertFalse(res.getAllowedMethods().contains("POST"));
-
-        res.getLinks().forEach(l -> System.out.println("BinaryLink: " + l));
 
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
@@ -477,10 +475,44 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(varies.contains(WANT_DIGEST));
         assertTrue(varies.contains(ACCEPT_DATETIME));
         assertFalse(varies.contains(PREFER));
+
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        assertEquals("Some input stream", entity);
     }
 
     @Test
-    public void testGetBinaryVersion() {
+    public void testGetBinaryRange() throws IOException {
+        final Response res = target(BINARY_PATH).request().header("Range", "bytes=3-10").get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+
+        assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
+        assertNotNull(res.getHeaderString(ACCEPT_RANGES));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        final List<String> varies = res.getStringHeaders().get(VARY);
+        assertTrue(varies.contains(RANGE));
+        assertTrue(varies.contains(WANT_DIGEST));
+        assertTrue(varies.contains(ACCEPT_DATETIME));
+        assertFalse(varies.contains(PREFER));
+
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        assertEquals("e input", entity);
+    }
+
+    @Test
+    public void testGetBinaryVersion() throws IOException {
         final Response res = target(BINARY_PATH).queryParam("version", timestamp).request().get();
 
         assertEquals(OK, res.getStatusInfo());
@@ -494,7 +526,6 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         // Jersey's client doesn't parse complex link headers correctly
         final List<Link> links = res.getStringHeaders().get(LINK).stream().map(Link::valueOf).collect(toList());
-        links.forEach(l -> System.out.println("VersionLink: " + l));
 
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
                     RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
@@ -532,6 +563,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(varies.contains(WANT_DIGEST));
         assertFalse(varies.contains(ACCEPT_DATETIME));
         assertFalse(varies.contains(PREFER));
+
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        assertEquals("Some input stream", entity);
     }
 
     @Test

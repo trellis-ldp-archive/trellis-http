@@ -31,6 +31,7 @@ import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
@@ -93,6 +94,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.trellisldp.api.Binary;
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.Prefer;
+import org.trellisldp.http.domain.Range;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
@@ -128,6 +130,9 @@ public class LdpGetHandlerTest {
 
     @Mock
     private Request mockRequest;
+
+    @Mock
+    private InputStream mockInputStream;
 
     @Before
     public void setUp() {
@@ -522,6 +527,77 @@ public class LdpGetHandlerTest {
         assertFalse(allow.contains(DELETE));
         assertTrue(allow.contains(PATCH));
         assertFalse(allow.contains(POST));
+    }
+
+    @Test
+    public void testGetRange() throws IOException {
+        when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+
+        final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
+                mockBinaryService, mockRequest);
+        getHandler.setPath("/");
+        getHandler.setBaseUrl(baseUrl);
+        getHandler.setRange(new Range("bytes=2-6"));
+
+        final Response res = getHandler.getRepresentation(mockResource).build();
+        assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
+        assertEquals(-1, res.getLength());
+        assertEquals(from(binaryTime), res.getLastModified());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertTrue(res.getLinks().stream()
+                .anyMatch(link -> link.getRel().equals("describedby") &&
+                    link.getUri().toString().endsWith("#description")));
+        assertTrue(res.getLinks().stream()
+                .anyMatch(link -> link.getRel().equals("canonical") &&
+                    !link.getUri().toString().endsWith("#description")));
+        final InputStream entity = (InputStream) res.getEntity();
+        assertEquals("me d", IOUtils.toString(entity, UTF_8));
+    }
+
+    @Test
+    public void testGetRange2() throws IOException {
+        when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+
+        final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
+                mockBinaryService, mockRequest);
+        getHandler.setPath("/");
+        getHandler.setBaseUrl(baseUrl);
+        getHandler.setRange(new Range("bytes=200-206"));
+
+        final Response res = getHandler.getRepresentation(mockResource).build();
+        assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
+        assertEquals(-1, res.getLength());
+        assertEquals(from(binaryTime), res.getLastModified());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertTrue(res.getLinks().stream()
+                .anyMatch(link -> link.getRel().equals("describedby") &&
+                    link.getUri().toString().endsWith("#description")));
+        assertTrue(res.getLinks().stream()
+                .anyMatch(link -> link.getRel().equals("canonical") &&
+                    !link.getUri().toString().endsWith("#description")));
+        final InputStream entity = (InputStream) res.getEntity();
+        assertEquals("", IOUtils.toString(entity, UTF_8));
+    }
+
+    @Test
+    public void testGetRangeError() throws IOException {
+        when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+        when(mockBinaryService.getContent(any(), any())).thenReturn(Optional.of(mockInputStream));
+        when(mockInputStream.skip(any(Long.class))).thenThrow(new IOException());
+
+        final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
+                mockBinaryService, mockRequest);
+        getHandler.setPath("/");
+        getHandler.setBaseUrl(baseUrl);
+        getHandler.setRange(new Range("bytes=2-6"));
+
+        final Response res = getHandler.getRepresentation(mockResource).build();
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
     }
 
     @Test
