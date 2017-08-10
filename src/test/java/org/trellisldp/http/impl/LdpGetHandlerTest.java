@@ -31,6 +31,7 @@ import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
+import static javax.ws.rs.core.MediaType.WILDCARD_TYPE;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -269,6 +270,23 @@ public class LdpGetHandlerTest {
         getHandler.setPath("/");
         getHandler.setBaseUrl(baseUrl);
         getHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
+
+        final Response res = getHandler.getRepresentation(mockResource).build();
+        assertEquals(NOT_MODIFIED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testCacheLdpNr() {
+        when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+        when(mockRequest.evaluatePreconditions(eq(from(binaryTime)), any(EntityTag.class)))
+                .thenReturn(notModified());
+
+        final LdpGetHandler getHandler = new LdpGetHandler(mockResourceService, mockIoService,
+                mockBinaryService, mockRequest);
+        getHandler.setPath("/");
+        getHandler.setBaseUrl(baseUrl);
+        getHandler.setAcceptableTypes(singletonList(WILDCARD_TYPE));
 
         final Response res = getHandler.getRepresentation(mockResource).build();
         assertEquals(NOT_MODIFIED, res.getStatusInfo());

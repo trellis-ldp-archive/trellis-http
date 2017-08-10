@@ -16,13 +16,17 @@ package org.trellisldp.http.impl;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Collections.singletonList;
+import static java.util.Date.from;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
+import static javax.ws.rs.core.Response.notModified;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -45,6 +49,7 @@ import java.time.Instant;
 import java.util.function.Predicate;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
@@ -70,6 +75,7 @@ import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -140,7 +146,7 @@ public class LdpPutHandlerTest {
     }
 
     @Test
-    public void testPutLdpResource() {
+    public void testPutLdpResourceDefaultType() {
         final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService, mockRequest);
         putHandler.setPath("partition/resource");
@@ -164,7 +170,7 @@ public class LdpPutHandlerTest {
     }
 
     @Test
-    public void testPutLdpResource2() {
+    public void testPutLdpResourceContainer() {
         final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService, mockRequest);
         putHandler.setPath("partition/resource");
@@ -188,7 +194,7 @@ public class LdpPutHandlerTest {
     }
 
     @Test
-    public void testPutLdpResource3() {
+    public void testPutLdpBinaryResourceWithLdprLink() {
         final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService, mockRequest);
         putHandler.setPath("partition/resource");
@@ -211,7 +217,8 @@ public class LdpPutHandlerTest {
     }
 
     @Test
-    public void testPutLdpResource4() {
+    public void testPutLdpBinaryResource() {
+        when(mockResource.getBinary()).thenReturn(of(testBinary));
         final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService, mockRequest);
         putHandler.setPath("partition/resource");
@@ -234,27 +241,94 @@ public class LdpPutHandlerTest {
     }
 
     @Test
-    public void testPutLdpResource5() {
+    public void testPutLdpNRDescription() {
         when(mockResource.getBinary()).thenReturn(of(testBinary));
         final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService, mockRequest);
         putHandler.setPath("partition/resource");
         putHandler.setBaseUrl(baseUrl);
-        putHandler.setContentType(TEXT_PLAIN);
-        putHandler.setEntity(new ByteArrayInputStream("Some data".getBytes(UTF_8)));
+        putHandler.setContentType("text/turtle");
+        putHandler.setEntity(new ByteArrayInputStream("<> <text:foo> \"literal\" .".getBytes(UTF_8)));
         putHandler.setSession(new HttpSession());
-        putHandler.setLink(fromUri(LDP.NonRDFSource.getIRIString()).rel("type").build());
 
         final Response res = putHandler.setResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
-        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
 
-        verify(mockBinaryService).setContent(eq("partition"), any(IRI.class), any(InputStream.class));
+        verify(mockBinaryService, never()).setContent(eq("partition"), any(IRI.class), any(InputStream.class));
+        verify(mockIoService).read(any(InputStream.class), anyString(), any(RDFSyntax.class));
+        verify(mockConstraintService).constrainedBy(any(IRI.class), anyString(), any(Graph.class));
+    }
+
+    @Test
+    public void testPutLdpResourceEmpty() {
+        final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService, mockRequest);
+        putHandler.setPath("partition/resource");
+        putHandler.setBaseUrl(baseUrl);
+        putHandler.setSession(new HttpSession());
+
+        final Response res = putHandler.setResource(mockResource).build();
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+
+        verify(mockBinaryService, never()).setContent(eq("partition"), any(IRI.class), any(InputStream.class));
         verify(mockIoService, never()).read(any(InputStream.class), anyString(), any(RDFSyntax.class));
         verify(mockConstraintService, never()).constrainedBy(any(IRI.class), anyString(), any(Graph.class));
+    }
+
+    @Test
+    public void testConstraint() {
+        when(mockConstraintService.constrainedBy(eq(LDP.Container), eq(baseUrl), any(Graph.class)))
+                .thenReturn(of(Trellis.InvalidCardinality));
+        final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService, mockRequest);
+        putHandler.setPath("partition/resource");
+        putHandler.setBaseUrl(baseUrl);
+        putHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
+        putHandler.setContentType(TEXT_TURTLE);
+        putHandler.setEntity(
+                new ByteArrayInputStream("<> <http://purl.org/dc/terms/title> \"A title\" .".getBytes(UTF_8)));
+        putHandler.setSession(new HttpSession());
+        putHandler.setLink(fromUri(LDP.Container.getIRIString()).rel("type").build());
+
+        final Response res = putHandler.setResource(mockResource).build();
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(l ->
+                    l.getUri().toString().equals(Trellis.InvalidCardinality.getIRIString()) &&
+                    l.getRel().equals(LDP.constrainedBy.getIRIString())));
+
+        verify(mockBinaryService, never()).setContent(anyString(), any(IRI.class), any(InputStream.class));
+        verify(mockIoService).read(any(InputStream.class), eq(baseUrl + "partition/resource"), eq(TURTLE));
+    }
+
+    @Test
+    public void testCache() {
+        when(mockRequest.evaluatePreconditions(eq(from(binaryTime)), any(EntityTag.class)))
+                .thenReturn(notModified());
+        when(mockResource.getBinary()).thenReturn(of(testBinary));
+
+        final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
+                mockBinaryService, mockRequest);
+        putHandler.setPath("partition/resource");
+        putHandler.setBaseUrl(baseUrl);
+        putHandler.setSession(new HttpSession());
+        putHandler.setContentType(TEXT_PLAIN);
+        putHandler.setEntity(new ByteArrayInputStream("Some data".getBytes(UTF_8)));
+        putHandler.setLink(fromUri(LDP.NonRDFSource.getIRIString()).rel("type").build());
+
+        final Response res = putHandler.setResource(mockResource).build();
+        assertEquals(NOT_MODIFIED, res.getStatusInfo());
     }
 
     @Test

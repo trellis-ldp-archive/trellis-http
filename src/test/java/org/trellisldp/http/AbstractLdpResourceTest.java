@@ -49,6 +49,7 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_RANGES;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
+import static org.trellisldp.http.domain.HttpConstants.DIGEST;
 import static org.trellisldp.http.domain.HttpConstants.MEMENTO_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.PREFER;
 import static org.trellisldp.http.domain.HttpConstants.RANGE;
@@ -505,7 +506,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
         assertNotNull(res.getHeaderString(ACCEPT_RANGES));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
-        assertEquals("md5-digest", res.getHeaderString("Digest"));
+        assertEquals("md5-digest", res.getHeaderString(DIGEST));
 
         final List<String> varies = res.getStringHeaders().get(VARY);
         assertTrue(varies.contains(RANGE));
@@ -537,7 +538,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
         assertNotNull(res.getHeaderString(ACCEPT_RANGES));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
-        assertEquals("sha1-digest", res.getHeaderString("Digest"));
+        assertEquals("sha1-digest", res.getHeaderString(DIGEST));
 
         final List<String> varies = res.getStringHeaders().get(VARY);
         assertTrue(varies.contains(RANGE));
@@ -551,7 +552,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testGetBinaryRange() throws IOException {
-        final Response res = target(BINARY_PATH).request().header("Range", "bytes=3-10").get();
+        final Response res = target(BINARY_PATH).request().header(RANGE, "bytes=3-10").get();
 
         assertEquals(OK, res.getStatusInfo());
         assertFalse(res.getAllowedMethods().contains("PATCH"));
