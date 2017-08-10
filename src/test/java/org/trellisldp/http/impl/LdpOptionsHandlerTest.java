@@ -143,7 +143,6 @@ public class LdpOptionsHandlerTest {
 
         final Response res = optionsHandler.ldpOptions(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
-        assertEquals("*/*", res.getHeaderString(ACCEPT_POST));
         assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
 
         final String allow = res.getHeaderString(ALLOW);
@@ -153,7 +152,7 @@ public class LdpOptionsHandlerTest {
         assertTrue(allow.contains(PUT));
         assertTrue(allow.contains(DELETE));
         assertTrue(allow.contains(PATCH));
-        assertTrue(allow.contains(POST));
+        assertFalse(allow.contains(POST));
     }
 
     @Test

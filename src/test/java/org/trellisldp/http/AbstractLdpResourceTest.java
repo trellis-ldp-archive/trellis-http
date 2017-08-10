@@ -961,10 +961,10 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getAllowedMethods().contains("GET"));
         assertTrue(res.getAllowedMethods().contains("HEAD"));
         assertTrue(res.getAllowedMethods().contains("OPTIONS"));
-        assertTrue(res.getAllowedMethods().contains("POST"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
 
         assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
-        assertEquals("*/*", res.getHeaderString(ACCEPT_POST));
+        assertNull(res.getHeaderString(ACCEPT_POST));
 
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
 

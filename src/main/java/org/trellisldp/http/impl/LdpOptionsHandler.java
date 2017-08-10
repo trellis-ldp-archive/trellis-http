@@ -86,20 +86,16 @@ public class LdpOptionsHandler extends BaseLdpHandler {
             if (Trellis.PreferAccessControl.equals(graphName)) {
                 // ACL resources allow a limited set of methods (no PUT, DELETE or POST)
                 builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH));
-            } else if (res.getInteractionModel().equals(LDP.RDFSource)) {
+            } else if (res.getInteractionModel().equals(LDP.RDFSource) ||
+                    res.getInteractionModel().equals(LDP.NonRDFSource)) {
                 // If it's not a container, POST isn't allowed
                 builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH, PUT, DELETE));
             } else {
                 // Containers and binaries support POST
                 builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH, PUT, DELETE, POST));
-                if (res.getInteractionModel().equals(LDP.NonRDFSource)) {
-                    // LDP-NRs support POST for multi-part uploads
-                    builder.header(ACCEPT_POST, "*/*");
-                } else {
-                    builder.header(ACCEPT_POST, VARIANTS.stream().map(Variant::getMediaType)
-                            .map(mt -> mt.getType() + "/" + mt.getSubtype())
-                            .filter(mt -> !TEXT_HTML.equals(mt)).collect(joining(",")));
-                }
+                builder.header(ACCEPT_POST, VARIANTS.stream().map(Variant::getMediaType)
+                        .map(mt -> mt.getType() + "/" + mt.getSubtype())
+                        .filter(mt -> !TEXT_HTML.equals(mt)).collect(joining(",")));
             }
         }
 
