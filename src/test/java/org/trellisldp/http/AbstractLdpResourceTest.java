@@ -52,6 +52,7 @@ import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
 import static org.trellisldp.http.domain.HttpConstants.MEMENTO_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.PREFER;
 import static org.trellisldp.http.domain.HttpConstants.RANGE;
+import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.WANT_DIGEST;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON_TYPE;
@@ -68,6 +69,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -150,19 +152,19 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     private final static Long BINARY_SIZE = 100L;
 
-    private final static IRI identifier = rdf.createIRI("trellis:" + RESOURCE_PATH);
+    private final static IRI identifier = rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH);
 
-    private final static IRI binaryIdentifier = rdf.createIRI("trellis:" + BINARY_PATH);
+    private final static IRI binaryIdentifier = rdf.createIRI(TRELLIS_PREFIX + BINARY_PATH);
 
     private final static IRI binaryInternalIdentifier = rdf.createIRI("file:some/file");
 
-    private final static IRI nonexistentIdentifier = rdf.createIRI("trellis:" + NON_EXISTENT_PATH);
+    private final static IRI nonexistentIdentifier = rdf.createIRI(TRELLIS_PREFIX + NON_EXISTENT_PATH);
 
-    private final static IRI childIdentifier = rdf.createIRI("trellis:" + CHILD_PATH);
+    private final static IRI childIdentifier = rdf.createIRI(TRELLIS_PREFIX + CHILD_PATH);
 
-    private final static IRI deletedIdentifier = rdf.createIRI("trellis:" + DELETED_PATH);
+    private final static IRI deletedIdentifier = rdf.createIRI(TRELLIS_PREFIX + DELETED_PATH);
 
-    private final static IRI userDeletedIdentifier = rdf.createIRI("trellis:" + USER_DELETED_PATH);
+    private final static IRI userDeletedIdentifier = rdf.createIRI(TRELLIS_PREFIX + USER_DELETED_PATH);
 
     protected final static Map<String, String> partitions = new HashMap<String, String>() { {
         put(REPO1, BASE_URL);
@@ -261,6 +263,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockBinary.getMimeType()).thenReturn(Optional.of(BINARY_MIME_TYPE));
         when(mockBinary.getSize()).thenReturn(Optional.of(BINARY_SIZE));
 
+        when(mockBinaryService.supportedAlgorithms()).thenReturn(new HashSet<>(asList("MD5", "SHA1")));
+        when(mockBinaryService.hexDigest(eq("MD5"), any(InputStream.class))).thenReturn(Optional.of("md5-digest"));
+        when(mockBinaryService.hexDigest(eq("SHA1"), any(InputStream.class))).thenReturn(Optional.of("sha1-digest"));
         when(mockBinaryService.getContent(eq(REPO1), eq(binaryInternalIdentifier)))
             .thenAnswer(x -> Optional.of(new ByteArrayInputStream("Some input stream".getBytes(UTF_8))));
 
@@ -469,6 +474,70 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
         assertNotNull(res.getHeaderString(ACCEPT_RANGES));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        final List<String> varies = res.getStringHeaders().get(VARY);
+        assertTrue(varies.contains(RANGE));
+        assertTrue(varies.contains(WANT_DIGEST));
+        assertTrue(varies.contains(ACCEPT_DATETIME));
+        assertFalse(varies.contains(PREFER));
+
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        assertEquals("Some input stream", entity);
+    }
+
+    @Test
+    public void testGetBinaryDigestMd5() throws IOException {
+        final Response res = target(BINARY_PATH).request().header(WANT_DIGEST, "MD5").get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+
+        assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
+        assertNotNull(res.getHeaderString(ACCEPT_RANGES));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+        assertEquals("md5-digest", res.getHeaderString("Digest"));
+
+        final List<String> varies = res.getStringHeaders().get(VARY);
+        assertTrue(varies.contains(RANGE));
+        assertTrue(varies.contains(WANT_DIGEST));
+        assertTrue(varies.contains(ACCEPT_DATETIME));
+        assertFalse(varies.contains(PREFER));
+
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        assertEquals("Some input stream", entity);
+    }
+
+    @Test
+    public void testGetBinaryDigestSha1() throws IOException {
+        final Response res = target(BINARY_PATH).request().header(WANT_DIGEST, "SHA1").get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+
+        assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
+        assertNotNull(res.getHeaderString(ACCEPT_RANGES));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+        assertEquals("sha1-digest", res.getHeaderString("Digest"));
 
         final List<String> varies = res.getStringHeaders().get(VARY);
         assertTrue(varies.contains(RANGE));
@@ -950,6 +1019,53 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testOptionsLDPRSMultipart() {
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "uploads").request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        assertTrue(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
+
+        // LDP type links are not part of OPTIONS responses
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+    }
+
+    @Test
+    public void testOptionsLDPRSUpload() {
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "12345")
+            .queryParam("partNumber", "5").request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        assertTrue(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
+
+        // LDP type links are not part of OPTIONS responses
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+    }
+
+    @Test
     public void testOptionsLDPNR() {
         final Response res = target(BINARY_PATH).request().options();
 
@@ -965,6 +1081,31 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
         assertNull(res.getHeaderString(ACCEPT_POST));
+
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        // LDP type links are not part of OPTIONS responses
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+    }
+
+    @Test
+    public void testOptionsLDPNRMultipart() {
+        final Response res = target(BINARY_PATH).queryParam("ext", "uploads").request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertFalse(res.getAllowedMethods().contains("GET"));
+        assertFalse(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertTrue(res.getAllowedMethods().contains("POST"));
+
+        assertNull(res.getHeaderString(ACCEPT_PATCH));
+        assertEquals("*/*", res.getHeaderString(ACCEPT_POST));
 
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
 
@@ -996,6 +1137,94 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(acceptPost.contains("text/turtle"));
         assertTrue(acceptPost.contains(APPLICATION_LD_JSON));
         assertTrue(acceptPost.contains(APPLICATION_N_TRIPLES));
+
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        // LDP type links are not part of OPTIONS responses
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+    }
+
+    @Test
+    public void testOptionsLDPCMultipart() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "uploads").request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertFalse(res.getAllowedMethods().contains("GET"));
+        assertFalse(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertTrue(res.getAllowedMethods().contains("POST"));
+
+        assertNull(res.getHeaderString(ACCEPT_PATCH));
+        assertEquals("*/*", res.getHeaderString(ACCEPT_POST));
+
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        // LDP type links are not part of OPTIONS responses
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+    }
+
+    @Test
+    public void testOptionsLDPNRUploadMiddle() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "123456")
+            .queryParam("partNumber", "5").request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertFalse(res.getAllowedMethods().contains("GET"));
+        assertFalse(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertNull(res.getHeaderString(ACCEPT_PATCH));
+        assertNull(res.getHeaderString(ACCEPT_POST));
+
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        // LDP type links are not part of OPTIONS responses
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+    }
+
+    @Test
+    public void testOptionsLDPNRUploadInvalid() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "123456")
+            .queryParam("partNumber", "invalid").request().options();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testOptionsLDPNRUploadEnd() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "123456").request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertFalse(res.getAllowedMethods().contains("GET"));
+        assertFalse(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertTrue(res.getAllowedMethods().contains("POST"));
+
+        assertNull(res.getHeaderString(ACCEPT_PATCH));
+        assertEquals("*/*", res.getHeaderString(ACCEPT_POST));
 
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
 
@@ -1105,7 +1334,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testPost() {
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
-        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + RESOURCE_PATH + "/randomValue")), eq(MAX)))
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/randomValue")), eq(MAX)))
             .thenReturn(Optional.empty());
 
         final Response res = target(RESOURCE_PATH).request()
@@ -1120,7 +1349,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostToLdpRs() {
-        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + RESOURCE_PATH + "/randomValue")), eq(MAX)))
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/randomValue")), eq(MAX)))
             .thenReturn(Optional.empty());
 
         final Response res = target(RESOURCE_PATH).request()
@@ -1207,7 +1436,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPutNew() {
-        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + RESOURCE_PATH + "/test")), eq(MAX)))
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/test")), eq(MAX)))
             .thenReturn(Optional.empty());
 
         final Response res = target(RESOURCE_PATH + "/test").request()
@@ -1288,7 +1517,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testDeleteNonExistant() {
-        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + RESOURCE_PATH + "/test")), eq(MAX)))
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/test")), eq(MAX)))
             .thenReturn(Optional.empty());
 
         final Response res = target(RESOURCE_PATH + "/test").request().delete();
@@ -1340,7 +1569,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPatchNew() {
-        when(mockResourceService.get(eq(rdf.createIRI("trellis:" + RESOURCE_PATH + "/test")), eq(MAX)))
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/test")), eq(MAX)))
             .thenReturn(Optional.empty());
 
         final Response res = target(RESOURCE_PATH + "/test").request()

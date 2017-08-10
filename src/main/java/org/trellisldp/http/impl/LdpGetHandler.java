@@ -239,7 +239,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         ofNullable(digest).map(WantDigest::getAlgorithms).ifPresent(algs ->
                 algs.stream().filter(binaryService.supportedAlgorithms()::contains).findFirst()
                 .ifPresent(alg -> binaryService.getContent(partition, dsid)
-                    .map(is -> binaryService.hexDigest(alg, is))
+                    .flatMap(is -> binaryService.hexDigest(alg, is))
                     .ifPresent(d -> builder.header(DIGEST, d))));
 
         // Range Requests

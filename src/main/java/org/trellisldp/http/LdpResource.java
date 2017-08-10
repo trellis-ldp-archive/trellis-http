@@ -27,6 +27,7 @@ import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
@@ -205,6 +206,8 @@ public class LdpResource extends BaseLdpResource {
 
     /**
      * Perform an OPTIONS operation on an LDP Resource
+     * @param uploadId the upload identifier
+     * @param partNumber the part number
      * @param path the path
      * @param version the version parameter
      * @param ext an extension parameter
@@ -213,6 +216,8 @@ public class LdpResource extends BaseLdpResource {
     @OPTIONS
     @Timed
     public Response options(@PathParam("path") final String path,
+            @QueryParam("uploadId") final String uploadId,
+            @QueryParam("partNumber") final Integer partNumber,
             @QueryParam("version") final Version version,
             @QueryParam("ext") final String ext) {
 
@@ -233,6 +238,10 @@ public class LdpResource extends BaseLdpResource {
 
         if (ACL.equals(ext)) {
             optionsHandler.setGraphName(Trellis.PreferAccessControl);
+        } else if (nonNull(uploadId) && nonNull(partNumber)) {
+            optionsHandler.setMultipartUploadPart(true);
+        } else if (UPLOADS.equals(ext) || nonNull(uploadId)) {
+            optionsHandler.setMultipartUpload(true);
         }
 
         if (nonNull(version)) {

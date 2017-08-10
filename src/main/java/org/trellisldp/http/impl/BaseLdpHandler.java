@@ -68,6 +68,8 @@ public class BaseLdpHandler {
     protected InputStream entity = null;
     protected String contentType = null;
     protected IRI graphName = Trellis.PreferUserManaged;
+    protected Boolean multipartUpload = false;
+    protected Boolean multipartUploadPart = false;
 
     /**
      * A base class for response handling
@@ -117,6 +119,21 @@ public class BaseLdpHandler {
         return null;
     }
 
+    /**
+     * Set whether this is a multipart upload operation (start or end)
+     * @param multipartUpload true if this is part of a series of multipart upload operations; false otherwise
+     */
+    public void setMultipartUpload(final Boolean multipartUpload) {
+        this.multipartUpload = multipartUpload;
+    }
+
+    /**
+     * Set whether this is a multipart upload operation (midpoint)
+     * @param multipartUploadPart true if this is part of a series of multipart upload operations; false otherwise
+     */
+    public void setMultipartUploadPart(final Boolean multipartUploadPart) {
+        this.multipartUploadPart = multipartUploadPart;
+    }
 
     /**
      * Set the path

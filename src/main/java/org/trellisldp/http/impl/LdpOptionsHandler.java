@@ -81,6 +81,11 @@ public class LdpOptionsHandler extends BaseLdpHandler {
         if (res.isMemento()) {
             // Mementos are read-only
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
+        } else if (multipartUploadPart && !res.getInteractionModel().equals(LDP.RDFSource)) {
+            builder.header(ALLOW, join(",", OPTIONS, PUT));
+        } else if (multipartUpload && !res.getInteractionModel().equals(LDP.RDFSource)) {
+            builder.header(ALLOW, join(",", OPTIONS, POST));
+            builder.header(ACCEPT_POST, "*/*");
         } else {
             builder.header(ACCEPT_PATCH, APPLICATION_SPARQL_UPDATE);
             if (Trellis.PreferAccessControl.equals(graphName)) {
