@@ -24,6 +24,7 @@ import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
@@ -44,6 +45,7 @@ import org.trellisldp.http.impl.HttpSession;
 import org.trellisldp.http.impl.UploadState;
 import org.trellisldp.spi.AccessControlService;
 import org.trellisldp.spi.AgentService;
+import org.trellisldp.spi.RuntimeRepositoryException;
 import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.ACL;
 import org.trellisldp.vocabulary.Trellis;
@@ -177,5 +179,14 @@ class BaseLdpResource {
 
     private static String stripSlash(final String path) {
         return path.endsWith("/") ? stripSlash(path.substring(0, path.length() - 1)) : path;
+    }
+
+    protected static String convertToJson(final Map<String, Object> data) {
+        try {
+            return MAPPER.writeValueAsString(data);
+        } catch (final JsonProcessingException ex) {
+            LOGGER.error("Error writing JSON: {}", ex.getMessage());
+            throw new RuntimeRepositoryException(ex);
+        }
     }
 }

@@ -72,6 +72,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -382,6 +383,43 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertEquals(OK, res.getStatusInfo());
         assertTrue(TEXT_TURTLE_TYPE.isCompatible(res.getMediaType()));
         assertTrue(res.getMediaType().isCompatible(TEXT_TURTLE_TYPE));
+    }
+
+    @Test
+    public void testGetUploadPartsUnsupported() {
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "foo").request().get();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testGetUploadPartsSupported() throws IOException {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.listParts(eq("foo"))).thenAnswer(x -> Stream.of(
+                    new SimpleEntry<>(1, "digest1"),
+                    new SimpleEntry<>(2, "digest2"),
+                    new SimpleEntry<>(3, "digest3")));
+
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "foo").request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        final Map<String, Object> obj = MAPPER.readValue(entity, new TypeReference<Map<String, Object>>(){});
+
+        assertTrue(obj.containsKey("@context"));
+        assertTrue(obj.containsKey("items"));
+        assertTrue(obj.containsKey("type"));
+        assertTrue(obj.containsKey("name"));
+        assertEquals("Collection", (String) obj.get("type"));
+
+        @SuppressWarnings("unchecked")
+        final List<Map<String, Object>> items = (List<Map<String, Object>>) obj.get("items");
+        assertTrue(items.stream().anyMatch(item -> ((Integer) item.get("partNumber")).equals(1) &&
+                    "digest1".equals((String) item.get("digest"))));
+        assertTrue(items.stream().anyMatch(item -> ((Integer) item.get("partNumber")).equals(2) &&
+                    "digest2".equals((String) item.get("digest"))));
+        assertTrue(items.stream().anyMatch(item -> ((Integer) item.get("partNumber")).equals(3) &&
+                    "digest3".equals((String) item.get("digest"))));
     }
 
     @Test
