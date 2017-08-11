@@ -200,7 +200,8 @@ public class LdpResource extends BaseLdpResource {
         if (nonNull(uploadId)) {
             return binaryService.getResolverForPartition(getPartition(path))
                 .filter(BinaryService.Resolver::supportsMultipartUpload)
-                .map(resolver -> buildPartsResponseEntity(resolver.listParts(uploadId)))
+                .map(resolver -> buildPartsResponseEntity(baseUrl + path + "?" + UPLOAD_ID + "=" + uploadId,
+                            resolver.listParts(uploadId)))
                 .map(data -> status(OK).type(APPLICATION_LD_JSON_TYPE).entity(data))
                 .orElseGet(() -> status(NOT_FOUND)).build();
 
@@ -559,13 +560,14 @@ public class LdpResource extends BaseLdpResource {
         return context;
     }
 
-    private String buildPartsResponseEntity(final Stream<Map.Entry<Integer, String>> parts) {
+    private String buildPartsResponseEntity(final String identifier, final Stream<Map.Entry<Integer, String>> parts) {
         final List<Object> contexts = new ArrayList<>();
         contexts.add("https://www.w3.org/ns/activitystreams");
         contexts.add(getBaseContext());
 
         final Map<String, Object> data = new HashMap<>();
         data.put("@context", contexts);
+        data.put("id", identifier);
         data.put("type", "Collection");
         data.put("name", "Multipart Upload");
         data.put("items", parts.map(part -> {

@@ -407,10 +407,12 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         final Map<String, Object> obj = MAPPER.readValue(entity, new TypeReference<Map<String, Object>>(){});
 
         assertTrue(obj.containsKey("@context"));
+        assertTrue(obj.containsKey("id"));
         assertTrue(obj.containsKey("items"));
         assertTrue(obj.containsKey("type"));
         assertTrue(obj.containsKey("name"));
         assertEquals("Collection", (String) obj.get("type"));
+        assertEquals(BASE_URL + RESOURCE_PATH + "?uploadId=foo", (String) obj.get("id"));
 
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> items = (List<Map<String, Object>>) obj.get("items");
