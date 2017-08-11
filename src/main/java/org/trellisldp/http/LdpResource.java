@@ -13,13 +13,18 @@
  */
 package org.trellisldp.http;
 
+import static java.net.URI.create;
 import static java.time.Instant.MAX;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
+import static javax.ws.rs.core.Response.Status.ACCEPTED;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
+import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
 import static javax.ws.rs.core.Response.status;
@@ -29,6 +34,7 @@ import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON;
+import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON_TYPE;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
@@ -37,6 +43,7 @@ import com.codahale.metrics.annotation.Timed;
 
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -290,7 +297,7 @@ public class LdpResource extends BaseLdpResource {
             verifyCanWrite(session, path);
         }
 
-        if (nonNull(version)) {
+        if (nonNull(version) || UPLOADS.equals(ext)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
@@ -313,6 +320,7 @@ public class LdpResource extends BaseLdpResource {
     /**
      * Perform a DELETE operation on an LDP Resource
      * @param path the path
+     * @param uploadId the upload id
      * @param version a version parameter
      * @param ext an extension parameter
      * @return the response
@@ -320,6 +328,7 @@ public class LdpResource extends BaseLdpResource {
     @DELETE
     @Timed
     public Response deleteResource(@PathParam("path") final String path,
+            @QueryParam("uploadId") final String uploadId,
             @QueryParam("version") final String version,
             @QueryParam("ext") final String ext) {
 
@@ -332,6 +341,15 @@ public class LdpResource extends BaseLdpResource {
 
         if (nonNull(ext) || nonNull(version)) {
             return status(METHOD_NOT_ALLOWED).build();
+        }
+
+        if (nonNull(uploadId)) {
+            return binaryService.getResolverForPartition(getPartition(path))
+                .filter(BinaryService.Resolver::supportsMultipartUpload)
+                .map(resolver -> {
+                    resolver.abortUpload(uploadId);
+                    return status(NO_CONTENT);
+                }).orElseGet(() -> status(NOT_FOUND)).build();
         }
 
         final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, request);
@@ -359,6 +377,7 @@ public class LdpResource extends BaseLdpResource {
     public Response createResource(@PathParam("path") final String path,
             @QueryParam("version") final String version,
             @QueryParam("ext") final String ext,
+            @QueryParam("uploadId") final String uploadId,
             @HeaderParam("Link") final Link link,
             @HeaderParam("Content-Type") final String contentType,
             @HeaderParam("Slug") final String slug,
@@ -375,16 +394,42 @@ public class LdpResource extends BaseLdpResource {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
+        final String baseUrl = getBaseUrl(path);
+
+        // TODO -- implement and move logic to the LdpPostHandler
+        if (nonNull(uploadId)) {
+            // parse the input stream into a partDigests map
+            final Map<Integer, String> partDigests = emptyMap();
+            return binaryService.getResolverForPartition(getPartition(path))
+                .filter(BinaryService.Resolver::supportsMultipartUpload)
+                .map(resolver -> resolver.completeUpload(uploadId, partDigests))
+                // TODO - need to store the binary info in the repository!
+                .map(binary -> status(ACCEPTED).link(LDP.NonRDFSource.getIRIString(), "type"))
+                .orElseGet(() -> status(NOT_FOUND)).build();
+        }
+
         if (nonNull(ext) || nonNull(version)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
         final String fullPath = path + "/" + ofNullable(slug).orElseGet(resourceService.getIdentifierSupplier());
 
+        // TODO -- implement and move logic to the LdpPostHandler
+        if (UPLOADS.equals(ext)) {
+            return binaryService.getResolverForPartition(getPartition(path))
+                .filter(BinaryService.Resolver::supportsMultipartUpload)
+                .map(resolver -> resolver.initiateUpload(getPartition(path), rdf.createIRI(TRELLIS_PREFIX + fullPath),
+                            contentType))
+                .map(id -> status(CREATED).location(create(baseUrl + path + "?uploadId=" + id))
+                        .link(Trellis.BinaryUploadService.getIRIString(), "type")
+                        .link(baseUrl + path + "?uploadId=" + id + "&partNumber=1", "first"))
+                .orElseGet(() -> status(NOT_FOUND)).build();
+        }
+
         final LdpPostHandler postHandler = new LdpPostHandler(resourceService, ioService, constraintService,
                 binaryService);
         postHandler.setPath(fullPath);
-        postHandler.setBaseUrl(getBaseUrl(path));
+        postHandler.setBaseUrl(baseUrl);
         postHandler.setSession(session);
         postHandler.setContentType(contentType);
         postHandler.setLink(link);
@@ -422,6 +467,8 @@ public class LdpResource extends BaseLdpResource {
     public Response setResource(@PathParam("path") final String path,
             @QueryParam("version") final Version version,
             @QueryParam("ext") final String ext,
+            @QueryParam("uploadId") final String uploadId,
+            @QueryParam("partNumber") final Integer partNumber,
             @HeaderParam("Link") final Link link,
             @HeaderParam("Content-Type") final String contentType,
             final InputStream body) {
@@ -441,10 +488,25 @@ public class LdpResource extends BaseLdpResource {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
+        final String baseUrl = getBaseUrl(path);
+
+        if (nonNull(uploadId) && nonNull(partNumber)) {
+            return binaryService.getResolverForPartition(getPartition(path))
+                .filter(BinaryService.Resolver::supportsMultipartUpload)
+                .map(resolver -> resolver.uploadPart(uploadId, partNumber, body))
+                .map(hash -> status(ACCEPTED).type(APPLICATION_LD_JSON_TYPE)
+                        .link(Trellis.BinaryUploadService.getIRIString(), "type")
+                        .link(baseUrl + path + "?uploadId=" + uploadId + "&partNumber=1", "first")
+                        .link(baseUrl + path + "?uploadId=" + uploadId + "&partNumber=" + (partNumber + 1), "next")
+                        .link(baseUrl + path + "?uploadId=" + uploadId, "last")
+                        .entity(buildUploadResponseEntity(hash, "md5", partNumber)))
+                .orElseGet(() -> status(NOT_FOUND)).build();
+        }
+
         final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, constraintService,
                 binaryService, request);
         putHandler.setPath(path);
-        putHandler.setBaseUrl(getBaseUrl(path));
+        putHandler.setBaseUrl(baseUrl);
         putHandler.setSession(getSession());
         putHandler.setContentType(contentType);
         putHandler.setLink(link);
@@ -452,5 +514,20 @@ public class LdpResource extends BaseLdpResource {
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
                 .map(putHandler::setResource).orElseGet(putHandler::setResource).build();
+    }
+
+    private Map<String, Object> buildUploadResponseEntity(final String hash, final String algorithm,
+            final Integer partNumber) {
+        final Map<String, String> context = new HashMap<>();
+        context.put("partNumber", "http://purl.org/dc/terms/identifier");
+        context.put("digest", "http://www.loc.gov/premis/rdf/v1#hasMessageDigest");
+        context.put("algorithm", "http://www.loc.gov/premis/rdf/v1#hasMessageDigestAlgorithm");
+
+        final Map<String, Object> data = new HashMap<>();
+        data.put("digest", hash);
+        data.put("partNumber", partNumber);
+        data.put("algorithm", algorithm);
+        data.put("@context", context);
+        return data;
     }
 }

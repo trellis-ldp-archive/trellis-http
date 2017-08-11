@@ -43,7 +43,9 @@ import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
@@ -1608,6 +1610,31 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testDeleteUploads() {
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "uploads").request().delete();
+
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testDeleteUploadSessionUnsupported() {
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "foo").request().delete();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+        verify(mockBinaryResolver, never()).abortUpload("foo");
+    }
+
+    @Test
+    public void testDeleteUploadSessionSupported() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "foo").request().delete();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        verify(mockBinaryResolver).abortUpload("foo");
+    }
+
+    @Test
     public void testDeleteSlash() {
         final Response res = target(RESOURCE_PATH + "/").request().delete();
 
@@ -1618,9 +1645,21 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
+    /* ********************* *
+     *      PATCH tests
+     * ********************* */
     @Test
     public void testPatchVersion() {
         final Response res = target(RESOURCE_PATH).queryParam("version", timestamp).request()
+            .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
+                        APPLICATION_SPARQL_UPDATE));
+
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPatchUpload() {
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "uploads").request()
             .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
                         APPLICATION_SPARQL_UPDATE));
 
