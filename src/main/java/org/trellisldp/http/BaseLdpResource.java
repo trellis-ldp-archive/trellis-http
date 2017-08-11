@@ -15,11 +15,13 @@ package org.trellisldp.http;
 
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.util.List;
@@ -37,6 +39,7 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.commons.rdf.api.RDF;
 import org.slf4j.Logger;
 import org.trellisldp.http.impl.HttpSession;
+import org.trellisldp.http.impl.UploadState;
 import org.trellisldp.spi.AccessControlService;
 import org.trellisldp.spi.AgentService;
 import org.trellisldp.spi.Session;
@@ -92,6 +95,18 @@ class BaseLdpResource {
             return new HttpSession(Trellis.RepositoryAdministrator);
         }
         return new HttpSession(agentService.asAgent(security.getUserPrincipal().getName()));
+    }
+
+    protected UploadState getUploadState(final String ext, final String uploadId, final Integer partNumber) {
+        if (UPLOADS.equals(ext)) {
+            return UploadState.START;
+        } else if (nonNull(uploadId)) {
+            if (nonNull(partNumber)) {
+                return UploadState.MIDDLE;
+            }
+            return UploadState.END;
+        }
+        return UploadState.NONE;
     }
 
     private Boolean isAdmin(final Session session) {

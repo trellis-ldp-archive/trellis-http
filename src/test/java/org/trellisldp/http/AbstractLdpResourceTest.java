@@ -184,6 +184,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     protected BinaryService mockBinaryService;
 
     @Mock
+    protected BinaryService.Resolver mockBinaryResolver;
+
+    @Mock
     protected AccessControlService mockAccessControlService;
 
     @Mock
@@ -269,6 +272,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockBinaryService.hexDigest(eq("SHA1"), any(InputStream.class))).thenReturn(Optional.of("sha1-digest"));
         when(mockBinaryService.getContent(eq(REPO1), eq(binaryInternalIdentifier)))
             .thenAnswer(x -> Optional.of(new ByteArrayInputStream("Some input stream".getBytes(UTF_8))));
+        when(mockBinaryService.getResolver(eq(binaryInternalIdentifier))).thenReturn(Optional.of(mockBinaryResolver));
+        when(mockBinaryService.getResolverForPartition(eq(REPO1))).thenReturn(Optional.of(mockBinaryResolver));
 
         when(mockResource.getMementos()).thenAnswer(x -> Stream.empty());
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
@@ -409,6 +414,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
                     l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(links.stream().anyMatch(l -> l.getRels().contains("original") &&
                     l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+        assertFalse(links.stream().anyMatch(hasLink(rdf.createIRI(BASE_URL + RESOURCE_PATH + "?ext=upload"),
+                        Trellis.multipartUploadService.getIRIString())));
         assertTrue(links.stream().anyMatch(hasType(LDP.Resource)));
         assertTrue(links.stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(links.stream().anyMatch(hasType(LDP.Container)));
@@ -424,6 +431,37 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
                     l.getRel().contains("timegate") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
         assertTrue(res.getLinks().stream().anyMatch(l ->
                     l.getRel().contains("original") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+    }
+
+    @Test
+    public void testGetLDPRSWithMultipartUploadSupport() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        final Response res = target(RESOURCE_PATH).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertFalse(res.getLinks().stream().anyMatch(hasLink(rdf.createIRI(BASE_URL + RESOURCE_PATH + "?ext=upload"),
+                        Trellis.multipartUploadService.getIRIString())));
+    }
+
+    @Test
+    public void testGetLDPCWithMultipartUploadSupport() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        final Response res = target(RESOURCE_PATH).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasLink(rdf.createIRI(BASE_URL + RESOURCE_PATH + "?ext=upload"),
+                        Trellis.multipartUploadService.getIRIString())));
+    }
+
+    @Test
+    public void testGetLDPNRWithMultipartUploadSupport() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        final Response res = target(BINARY_PATH).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasLink(rdf.createIRI(BASE_URL + BINARY_PATH + "?ext=upload"),
+                        Trellis.multipartUploadService.getIRIString())));
     }
 
     @Test
@@ -471,6 +509,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertFalse(res.getLinks().stream().anyMatch(hasLink(rdf.createIRI(BASE_URL + BINARY_PATH + "?ext=upload"),
+                        Trellis.multipartUploadService.getIRIString())));
 
         assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
         assertNotNull(res.getHeaderString(ACCEPT_RANGES));
@@ -1020,30 +1060,44 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
-    public void testOptionsLDPRSMultipart() {
+    public void testOptionsLDPCMultipart1() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(false);
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "uploads").request().options();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testOptionsLDPCMultipart2() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
         final Response res = target(RESOURCE_PATH).queryParam("ext", "uploads").request().options();
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
 
-        assertTrue(res.getAllowedMethods().contains("PATCH"));
-        assertTrue(res.getAllowedMethods().contains("PUT"));
-        assertTrue(res.getAllowedMethods().contains("DELETE"));
-        assertTrue(res.getAllowedMethods().contains("GET"));
-        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertFalse(res.getAllowedMethods().contains("GET"));
+        assertFalse(res.getAllowedMethods().contains("HEAD"));
         assertTrue(res.getAllowedMethods().contains("OPTIONS"));
-        assertFalse(res.getAllowedMethods().contains("POST"));
+        assertTrue(res.getAllowedMethods().contains("POST"));
 
-        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
+        assertNull(res.getHeaderString(ACCEPT_PATCH));
+        assertEquals("*/*", res.getHeaderString(ACCEPT_POST));
 
         // LDP type links are not part of OPTIONS responses
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(Trellis.BinaryUploadService)));
     }
 
     @Test
     public void testOptionsLDPRSUpload() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
         final Response res = target(RESOURCE_PATH).queryParam("uploadId", "12345")
             .queryParam("partNumber", "5").request().options();
 
@@ -1093,6 +1147,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testOptionsLDPNRMultipart() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
         final Response res = target(BINARY_PATH).queryParam("ext", "uploads").request().options();
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -1150,6 +1205,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testOptionsLDPCMultipart() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
         final Response res = target(RESOURCE_PATH).queryParam("ext", "uploads").request().options();
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -1171,10 +1227,12 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(Trellis.BinaryUploadService)));
     }
 
     @Test
     public void testOptionsLDPNRUploadMiddle() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
         final Response res = target(RESOURCE_PATH).queryParam("uploadId", "123456")
             .queryParam("partNumber", "5").request().options();
@@ -1198,11 +1256,22 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(Trellis.BinaryUploadService)));
+    }
+
+    @Test
+    public void testOptionsLDPNRUploadNotSupported() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "123456")
+            .queryParam("partNumber", "1").request().options();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
     }
 
     @Test
     public void testOptionsLDPNRUploadInvalid() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
         final Response res = target(RESOURCE_PATH).queryParam("uploadId", "123456")
             .queryParam("partNumber", "invalid").request().options();
 
@@ -1211,6 +1280,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testOptionsLDPNRUploadEnd() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
         final Response res = target(RESOURCE_PATH).queryParam("uploadId", "123456").request().options();
 
@@ -1218,14 +1288,15 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         assertFalse(res.getAllowedMethods().contains("PATCH"));
         assertFalse(res.getAllowedMethods().contains("PUT"));
-        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
         assertFalse(res.getAllowedMethods().contains("GET"));
         assertFalse(res.getAllowedMethods().contains("HEAD"));
         assertTrue(res.getAllowedMethods().contains("OPTIONS"));
         assertTrue(res.getAllowedMethods().contains("POST"));
 
         assertNull(res.getHeaderString(ACCEPT_PATCH));
-        assertEquals("*/*", res.getHeaderString(ACCEPT_POST));
+        assertTrue(res.getHeaderString(ACCEPT_POST).contains("application/json"));
+        assertTrue(res.getHeaderString(ACCEPT_POST).contains("application/ld+json"));
 
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
 
@@ -1233,6 +1304,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(Trellis.BinaryUploadService)));
     }
 
     @Test

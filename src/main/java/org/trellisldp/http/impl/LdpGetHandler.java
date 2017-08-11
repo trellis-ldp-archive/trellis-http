@@ -201,6 +201,13 @@ public class LdpGetHandler extends BaseLdpHandler {
         ofNullable(prefer).ifPresent(p ->
                 builder.header(PREFERENCE_APPLIED, "return=" + p.getPreference().orElse("representation")));
 
+        // Add upload service headers, if relevant
+        if (!LDP.RDFSource.equals(res.getInteractionModel())) {
+            binaryService.getResolverForPartition(getPartition(path))
+                .map(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
+                    builder.link(identifier + "?ext=upload", Trellis.multipartUploadService.getIRIString()));
+        }
+
         if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
             return builder.status(NO_CONTENT);
         } else {
@@ -234,6 +241,10 @@ public class LdpGetHandler extends BaseLdpHandler {
         } else {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE));
         }
+
+        // Add upload service headers, if relevant
+        binaryService.getResolver(dsid).filter(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
+                builder.link(identifier + "?ext=upload", Trellis.multipartUploadService.getIRIString()));
 
         // Add instance digests, if Requested and supported
         ofNullable(digest).map(WantDigest::getAlgorithms).ifPresent(algs ->

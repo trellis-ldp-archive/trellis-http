@@ -235,13 +235,17 @@ public class LdpResource extends BaseLdpResource {
         final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(resourceService);
         optionsHandler.setPath(path);
         optionsHandler.setBaseUrl(getBaseUrl(path));
+        optionsHandler.setMultipartUploadState(getUploadState(ext, uploadId, partNumber));
 
         if (ACL.equals(ext)) {
             optionsHandler.setGraphName(Trellis.PreferAccessControl);
-        } else if (nonNull(uploadId) && nonNull(partNumber)) {
-            optionsHandler.setMultipartUploadPart(true);
-        } else if (UPLOADS.equals(ext) || nonNull(uploadId)) {
-            optionsHandler.setMultipartUpload(true);
+        }
+
+        if (nonNull(uploadId) || UPLOADS.equals(ext)) {
+            if (!binaryService.getResolverForPartition(getPartition(path))
+                    .filter(BinaryService.Resolver::supportsMultipartUpload).isPresent()) {
+                return status(NOT_FOUND).build();
+            }
         }
 
         if (nonNull(version)) {
