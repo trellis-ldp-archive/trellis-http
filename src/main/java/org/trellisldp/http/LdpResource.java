@@ -40,6 +40,7 @@ import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.InputStream;
 import java.util.Collection;
@@ -85,6 +86,7 @@ import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
+import org.trellisldp.spi.RuntimeRepositoryException;
 import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.Trellis;
@@ -408,10 +410,6 @@ public class LdpResource extends BaseLdpResource {
                 .orElseGet(() -> status(NOT_FOUND)).build();
         }
 
-        if (nonNull(ext) || nonNull(version)) {
-            return status(METHOD_NOT_ALLOWED).build();
-        }
-
         final String fullPath = path + "/" + ofNullable(slug).orElseGet(resourceService.getIdentifierSupplier());
 
         // TODO -- implement and move logic to the LdpPostHandler
@@ -424,6 +422,10 @@ public class LdpResource extends BaseLdpResource {
                         .link(Trellis.BinaryUploadService.getIRIString(), "type")
                         .link(baseUrl + path + "?uploadId=" + id + "&partNumber=1", "first"))
                 .orElseGet(() -> status(NOT_FOUND)).build();
+        }
+
+        if (nonNull(ext) || nonNull(version)) {
+            return status(METHOD_NOT_ALLOWED).build();
         }
 
         final LdpPostHandler postHandler = new LdpPostHandler(resourceService, ioService, constraintService,
@@ -490,9 +492,10 @@ public class LdpResource extends BaseLdpResource {
 
         final String baseUrl = getBaseUrl(path);
 
-        if (nonNull(uploadId) && nonNull(partNumber)) {
+        if (nonNull(uploadId) || nonNull(partNumber)) {
             return binaryService.getResolverForPartition(getPartition(path))
                 .filter(BinaryService.Resolver::supportsMultipartUpload)
+                .filter(x -> nonNull(uploadId)).filter(x -> nonNull(partNumber))
                 .map(resolver -> resolver.uploadPart(uploadId, partNumber, body))
                 .map(hash -> status(ACCEPTED).type(APPLICATION_LD_JSON_TYPE)
                         .link(Trellis.BinaryUploadService.getIRIString(), "type")
@@ -516,7 +519,7 @@ public class LdpResource extends BaseLdpResource {
                 .map(putHandler::setResource).orElseGet(putHandler::setResource).build();
     }
 
-    private Map<String, Object> buildUploadResponseEntity(final String hash, final String algorithm,
+    private String buildUploadResponseEntity(final String hash, final String algorithm,
             final Integer partNumber) {
         final Map<String, String> context = new HashMap<>();
         context.put("partNumber", "http://purl.org/dc/terms/identifier");
@@ -528,6 +531,11 @@ public class LdpResource extends BaseLdpResource {
         data.put("partNumber", partNumber);
         data.put("algorithm", algorithm);
         data.put("@context", context);
-        return data;
+        try {
+            return MAPPER.writeValueAsString(data);
+        } catch (final JsonProcessingException ex) {
+            LOGGER.error("Error writing JSON: {}", ex.getMessage());
+            throw new RuntimeRepositoryException(ex);
+        }
     }
 }

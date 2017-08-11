@@ -27,6 +27,7 @@ import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.HttpHeaders.LINK;
 import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
+import static javax.ws.rs.core.Response.Status.ACCEPTED;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
@@ -1409,14 +1410,14 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testPost() {
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
-        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/randomValue")), eq(MAX)))
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
             .thenReturn(Optional.empty());
 
         final Response res = target(RESOURCE_PATH).request()
             .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(CREATED, res.getStatusInfo());
-        assertEquals(BASE_URL + RESOURCE_PATH + "/randomValue", res.getLocation().toString());
+        assertEquals(BASE_URL + RESOURCE_PATH + "/" + RANDOM_VALUE, res.getLocation().toString());
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
@@ -1424,7 +1425,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostToLdpRs() {
-        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/randomValue")), eq(MAX)))
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
             .thenReturn(Optional.empty());
 
         final Response res = target(RESOURCE_PATH).request()
@@ -1487,6 +1488,54 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPostUploadMultipartStartUnsupported() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "uploads").request()
+            .post(entity("", "text/plain"));
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPostUploadMultipartStartSupported() {
+        final IRI newidentifier = rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.initiateUpload(eq(REPO1), eq(newidentifier), eq("application/ld+json")))
+            .thenReturn("upload-identifier");
+
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "uploads").request()
+            .post(entity("", "application/ld+json"));
+
+        assertEquals(CREATED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(link -> link.getRel().equals("first") &&
+                    link.getUri().toString().equals(BASE_URL + RESOURCE_PATH +
+                        "?uploadId=upload-identifier&partNumber=1")));
+        assertEquals(BASE_URL + RESOURCE_PATH + "?uploadId=upload-identifier", res.getLocation().toString());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(Trellis.BinaryUploadService)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    @Test
+    public void testPostUploadMultipartUnsupported() {
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "foo").request()
+            .post(entity("", "text/plain"));
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPostUploadMultipartSupported() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.completeUpload(eq("foo"), any())).thenReturn(mockBinary);
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "foo").request()
+            .post(entity("", "application/ld+json"));
+
+        assertEquals(ACCEPTED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    @Test
     public void testPostSlash() {
         final Response res = target(RESOURCE_PATH + "/").request().header("Slug", "test")
             .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
@@ -1538,6 +1587,65 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
             .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutUploads() {
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "uploads").request()
+            .put(entity("", "text/plain"));
+
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutMultipartUploadUnsupported() {
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "foo")
+            .queryParam("partNumber", "20").request().put(entity("bar", "text/plain"));
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutMultipartUploadSupportedButIncomplete1() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.uploadPart(eq("foo"), eq(20), any())).thenReturn("digest-code");
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "foo")
+            .request().put(entity("bar", "text/plain"));
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutMultipartUploadSupportedButIncomplete2() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.uploadPart(eq("foo"), eq(20), any())).thenReturn("digest-code");
+        final Response res = target(RESOURCE_PATH).queryParam("partNumber", "20").request()
+            .put(entity("bar", "text/plain"));
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutMultipartUploadSupported() throws IOException {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.uploadPart(eq("foo"), eq(20), any())).thenReturn("digest-code");
+        final Response res = target(RESOURCE_PATH).queryParam("uploadId", "foo")
+            .queryParam("partNumber", "20").request().put(entity("bar", "text/plain"));
+
+        assertEquals(ACCEPTED, res.getStatusInfo());
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        final Map<String, Object> obj = MAPPER.readValue(entity, new TypeReference<Map<String, Object>>(){});
+
+        assertTrue(obj.containsKey("@context"));
+        assertTrue(obj.containsKey("digest"));
+        assertTrue(obj.containsKey("partNumber"));
+        assertTrue(obj.containsKey("algorithm"));
+        assertEquals("digest-code", (String) obj.get("digest"));
+        assertEquals("md5", (String) obj.get("algorithm"));
+        assertEquals((Integer) 20, (Integer) obj.get("partNumber"));
     }
 
     @Test

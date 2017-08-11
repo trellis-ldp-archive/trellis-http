@@ -24,6 +24,8 @@ import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.List;
 import java.util.Map;
 
@@ -52,6 +54,8 @@ import org.trellisldp.vocabulary.Trellis;
 class BaseLdpResource {
 
     protected static final Logger LOGGER = getLogger(BaseLdpResource.class);
+
+    protected static final ObjectMapper MAPPER = new ObjectMapper();
 
     protected static final RDF rdf = getInstance();
 
