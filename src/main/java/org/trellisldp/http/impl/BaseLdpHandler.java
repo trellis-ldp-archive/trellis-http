@@ -69,6 +69,7 @@ public class BaseLdpHandler {
     protected String contentType = null;
     protected IRI graphName = Trellis.PreferUserManaged;
     protected UploadState multipartUploadState = UploadState.NONE;
+    protected String uploadId = null;
 
     /**
      * A base class for response handling
@@ -144,6 +145,14 @@ public class BaseLdpHandler {
      */
     public void setAcceptableTypes(final List<MediaType> acceptableTypes) {
         this.acceptableTypes = acceptableTypes;
+    }
+
+    /**
+     * Set the upload identifier
+     * @param uploadId the upload identifier
+     */
+    public void setUploadId(final String uploadId) {
+        this.uploadId = uploadId;
     }
 
     /**
