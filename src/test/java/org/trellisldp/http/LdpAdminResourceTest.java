@@ -37,6 +37,7 @@ public class LdpAdminResourceTest extends AbstractLdpResourceTest {
                     mockAgentService, mockAccessControlService, partitions, emptyList(),
                     singletonList("invalid/type")));
         config.register(new TestAuthenticationFilter("testUser", "admin"));
+        config.register(TrailingSlashFilter.class);
         return config;
     }
 }

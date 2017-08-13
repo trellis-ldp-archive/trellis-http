@@ -18,7 +18,6 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
-import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
@@ -35,7 +34,6 @@ import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
@@ -171,14 +169,6 @@ class BaseLdpResource {
 
     protected String getBaseUrl(final String path) {
         return partitions.getOrDefault(getPartition(path), uriInfo.getBaseUri().toString());
-    }
-
-    protected Response redirectWithoutSlash(final String path) {
-        return Response.seeOther(fromUri(stripSlash(path)).build()).build();
-    }
-
-    private static String stripSlash(final String path) {
-        return path.endsWith("/") ? stripSlash(path.substring(0, path.length() - 1)) : path;
     }
 
     protected static String convertToJson(final Map<String, Object> data) {

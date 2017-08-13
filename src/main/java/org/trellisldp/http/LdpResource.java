@@ -163,10 +163,6 @@ public class LdpResource extends BaseLdpResource {
             @HeaderParam("Want-Digest") final WantDigest digest,
             @HeaderParam("Range") final Range range) {
 
-        if (path.endsWith("/")) {
-            return redirectWithoutSlash(path);
-        }
-
         final List<MediaType> acceptableTypes = headers.getAcceptableMediaTypes();
         final String baseUrl = getBaseUrl(path);
 
@@ -248,10 +244,6 @@ public class LdpResource extends BaseLdpResource {
             @QueryParam("uploadId") final String uploadId,
             @QueryParam("partNumber") final Integer partNumber) {
 
-        if (path.endsWith("/")) {
-            return redirectWithoutSlash(path);
-        }
-
         final Session session = getSession();
         if (ACL.equals(ext)) {
             verifyCanControl(session, path);
@@ -307,10 +299,6 @@ public class LdpResource extends BaseLdpResource {
             @QueryParam("ext") final String ext,
             @HeaderParam("Prefer") final Prefer prefer, final String body) {
 
-        if (path.endsWith("/")) {
-            return redirectWithoutSlash(path);
-        }
-
         final Session session = getSession();
         if (ACL.equals(ext)) {
             verifyCanControl(session, path);
@@ -352,10 +340,6 @@ public class LdpResource extends BaseLdpResource {
             @QueryParam("ext") final String ext,
             @QueryParam("uploadId") final String uploadId,
             @QueryParam("version") final String version) {
-
-        if (path.endsWith("/")) {
-            return redirectWithoutSlash(path);
-        }
 
         final Session session = getSession();
         verifyCanWrite(session, path);
@@ -404,10 +388,6 @@ public class LdpResource extends BaseLdpResource {
             @HeaderParam("Content-Type") final String contentType,
             @HeaderParam("Slug") final String slug,
             final InputStream body) {
-
-        if (path.endsWith("/")) {
-            return redirectWithoutSlash(path);
-        }
 
         final Session session = getSession();
         verifyCanAppend(session, path);
@@ -494,10 +474,6 @@ public class LdpResource extends BaseLdpResource {
             @HeaderParam("Link") final Link link,
             @HeaderParam("Content-Type") final String contentType,
             final InputStream body) {
-
-        if (path.endsWith("/")) {
-            return redirectWithoutSlash(path);
-        }
 
         final Session session = getSession();
         verifyCanWrite(session, path);

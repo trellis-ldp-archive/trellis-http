@@ -35,6 +35,7 @@ public class LdpResourceTest extends AbstractLdpResourceTest {
         final ResourceConfig config = new ResourceConfig();
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService,
                     mockBinaryService, null, null, partitions, emptyList(), singletonList("invalid/type")));
+        config.register(TrailingSlashFilter.class);
         return config;
     }
 }

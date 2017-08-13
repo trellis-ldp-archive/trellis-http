@@ -37,6 +37,7 @@ public class LdpUserResourceTest extends AbstractLdpResourceTest {
                     mockBinaryService, mockAgentService, mockAccessControlService, partitions,
                     singletonList(BASIC_AUTH), singletonList("invalid/type")));
         config.register(new TestAuthenticationFilter("testUser", "group"));
+        config.register(TrailingSlashFilter.class);
         return config;
     }
 }
