@@ -68,8 +68,6 @@ public class BaseLdpHandler {
     protected InputStream entity = null;
     protected String contentType = null;
     protected IRI graphName = Trellis.PreferUserManaged;
-    protected UploadState multipartUploadState = UploadState.NONE;
-    protected String uploadId = null;
 
     /**
      * A base class for response handling
@@ -120,14 +118,6 @@ public class BaseLdpHandler {
     }
 
     /**
-     * Set the state of a multipart upload operation that the URL supports (start, middle, end or none)
-     * @param multipartUploadState the upload operation state the URL is capable of handling
-     */
-    public void setMultipartUploadState(final UploadState multipartUploadState) {
-        this.multipartUploadState = multipartUploadState;
-    }
-
-    /**
      * Set the path
      * @param path the path
      */
@@ -145,14 +135,6 @@ public class BaseLdpHandler {
      */
     public void setAcceptableTypes(final List<MediaType> acceptableTypes) {
         this.acceptableTypes = acceptableTypes;
-    }
-
-    /**
-     * Set the upload identifier
-     * @param uploadId the upload identifier
-     */
-    public void setUploadId(final String uploadId) {
-        this.uploadId = uploadId;
     }
 
     /**

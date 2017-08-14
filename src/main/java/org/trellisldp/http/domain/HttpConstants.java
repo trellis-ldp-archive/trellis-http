@@ -44,8 +44,6 @@ public final class HttpConstants {
 
     public static final String MEMENTO_DATETIME = "Memento-Datetime";
 
-    public static final String PART_NUMBER = "partNumber";
-
     public static final String PATCH = "PATCH";
 
     public static final String PREFER = "Prefer";
@@ -59,8 +57,6 @@ public final class HttpConstants {
     public static final String TRELLIS_PREFIX = "trellis:";
 
     public static final String UPLOADS = "uploads";
-
-    public static final String UPLOAD_ID = "uploadId";
 
     public static final String WANT_DIGEST = "Want-Digest";
 

@@ -81,20 +81,6 @@ public class LdpOptionsHandler extends BaseLdpHandler {
         if (res.isMemento()) {
             // Mementos are read-only
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
-        } else if (!UploadState.NONE.equals(multipartUploadState) && !res.getInteractionModel().equals(LDP.RDFSource)) {
-            // Upload Handlers should never be accessible at non-container LDP-RS locations
-            // Upload handler start phase supports any type of POST
-            if (multipartUploadState.equals(UploadState.START)) {
-                builder.header(ALLOW, join(",", OPTIONS, POST));
-                builder.header(ACCEPT_POST, "*/*");
-            // Upload handler middle phase supports PUT
-            } else if (multipartUploadState.equals(UploadState.MIDDLE)) {
-                builder.header(ALLOW, join(",", OPTIONS, PUT));
-            // Upload handler end phase supports JSON-based POST along with DELETE
-            } else {
-                builder.header(ALLOW, join(",", OPTIONS, POST, DELETE));
-                builder.header(ACCEPT_POST, "application/ld+json, application/json");
-            }
         } else {
             builder.header(ACCEPT_PATCH, APPLICATION_SPARQL_UPDATE);
             if (Trellis.PreferAccessControl.equals(graphName)) {

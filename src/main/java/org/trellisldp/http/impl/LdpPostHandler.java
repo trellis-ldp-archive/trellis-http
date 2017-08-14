@@ -14,7 +14,6 @@
 package org.trellisldp.http.impl;
 
 import static java.net.URI.create;
-import static java.util.Collections.emptyMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
@@ -32,7 +31,6 @@ import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.Optional;
 
 import javax.ws.rs.WebApplicationException;
@@ -52,7 +50,6 @@ import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
-import org.trellisldp.vocabulary.XSD;
 
 /**
  * The POST response handler
@@ -107,29 +104,14 @@ public class LdpPostHandler extends BaseLdpHandler {
             .forEach(dataset::add);
 
         // Add LDP type (ldp:Resource results in the defaultType)
-        final IRI ldpType = nonNull(uploadId) ? LDP.NonRDFSource : ofNullable(link)
+        final IRI ldpType = ofNullable(link)
             .filter(l -> "type".equals(l.getRel())).map(Link::getUri).map(URI::toString).map(rdf::createIRI)
             .filter(l -> !LDP.Resource.equals(l)).orElse(defaultType);
 
         dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalIdentifier, RDF.type, ldpType));
 
-        // Add data from multipart upload
-        if (nonNull(uploadId)) {
-            // TODO -- this should _actually_ parse the body into a map
-            final Map<Integer, String> partDigests = emptyMap();
-            binaryService.getResolverForPartition(getPartition(path)).map(resolver ->
-                    resolver.completeUpload(uploadId, partDigests)).ifPresent(binary -> {
-                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalIdentifier, DC.hasPart,
-                            binary.getIdentifier()));
-                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binary.getIdentifier(), DC.format,
-                            rdf.createLiteral(binary.getMimeType().orElse(APPLICATION_OCTET_STREAM))));
-                binary.getSize().ifPresent(size ->
-                        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binary.getIdentifier(), DC.extent,
-                                rdf.createLiteral(size.toString(), XSD.long_))));
-            });
-
         // Add user-supplied data
-        } else if (nonNull(entity) && rdfSyntax.isPresent()) {
+        if (nonNull(entity) && rdfSyntax.isPresent()) {
             ioService.read(entity, identifier, rdfSyntax.get())
                 .map(skolemizeTriples(resourceService, baseUrl)).forEach(triple -> {
                     dataset.add(rdf.createQuad(Trellis.PreferUserManaged, triple.getSubject(),
