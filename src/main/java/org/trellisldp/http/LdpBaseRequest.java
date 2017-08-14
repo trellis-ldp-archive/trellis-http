@@ -15,6 +15,11 @@ package org.trellisldp.http;
 
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Request;
+import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.core.UriInfo;
 
 import org.trellisldp.http.domain.Version;
 
@@ -45,4 +50,29 @@ public class LdpBaseRequest {
      */
     @QueryParam("ext")
     public String ext;
+
+    /**
+     * The URI info
+     */
+    @Context
+    public UriInfo uriInfo;
+
+    /**
+     * The raw HTTP headers
+     */
+    @Context
+    public HttpHeaders headers;
+
+    /**
+     * The underlying Jax Rs request
+     */
+    @Context
+    public Request request;
+
+    /**
+     * The Security context of the request
+     */
+    @Context
+    public SecurityContext security;
+
 }

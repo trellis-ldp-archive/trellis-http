@@ -28,11 +28,6 @@ import java.util.Map;
 
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.rdf.api.RDF;
 import org.slf4j.Logger;
@@ -62,18 +57,6 @@ class BaseLdpResource {
 
     protected final List<String> challenges;
 
-    @Context
-    protected UriInfo uriInfo;
-
-    @Context
-    protected HttpHeaders headers;
-
-    @Context
-    protected Request request;
-
-    @Context
-    protected SecurityContext security;
-
     protected BaseLdpResource(final Map<String, String> partitions) {
         this(partitions, singletonList(BASIC_AUTH), null, null);
     }
@@ -86,14 +69,14 @@ class BaseLdpResource {
         this.challenges = challenges.isEmpty() ? singletonList(BASIC_AUTH) : challenges;
     }
 
-    protected Session getSession() {
-        if (isNull(security.getUserPrincipal()) || isNull(agentService)) {
+    protected Session getSession(final LdpBaseRequest req) {
+        if (isNull(req.security.getUserPrincipal()) || isNull(agentService)) {
             return new HttpSession();
             // TODO make "admin" role configurable?
-        } else if (security.isUserInRole("admin")) {
+        } else if (req.security.isUserInRole("admin")) {
             return new HttpSession(Trellis.RepositoryAdministrator);
         }
-        return new HttpSession(agentService.asAgent(security.getUserPrincipal().getName()));
+        return new HttpSession(agentService.asAgent(req.security.getUserPrincipal().getName()));
     }
 
     private Boolean isAdmin(final Session session) {
@@ -150,7 +133,7 @@ class BaseLdpResource {
         return path.split("/", 2)[0];
     }
 
-    protected String getBaseUrl(final String path) {
-        return partitions.getOrDefault(getPartition(path), uriInfo.getBaseUri().toString());
+    protected String getBaseUrl(final LdpBaseRequest req) {
+        return partitions.getOrDefault(getPartition(req.path), req.uriInfo.getBaseUri().toString());
     }
 }

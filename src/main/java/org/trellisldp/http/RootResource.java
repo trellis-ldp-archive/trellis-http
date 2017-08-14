@@ -40,7 +40,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
@@ -60,7 +63,6 @@ import org.trellisldp.vocabulary.RDFS;
  * @author acoburn
  */
 @Path("")
-@Produces({TEXT_TURTLE, APPLICATION_LD_JSON, APPLICATION_N_TRIPLES, TEXT_HTML})
 public class RootResource extends BaseLdpResource {
 
     private static final Logger LOGGER = getLogger(RootResource.class);
@@ -88,7 +90,8 @@ public class RootResource extends BaseLdpResource {
      */
     @GET
     @Timed
-    public Response getPartitions() {
+    @Produces({TEXT_TURTLE, APPLICATION_LD_JSON, APPLICATION_N_TRIPLES, TEXT_HTML})
+    public Response getPartitions(@Context final UriInfo uriInfo, @Context final HttpHeaders headers) {
 
         final IRI identifier = rdf.createIRI(
                 properties.getProperty("baseUrl", uriInfo.getBaseUri().toString()));

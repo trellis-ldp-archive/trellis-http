@@ -126,10 +126,10 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response getResource(@BeanParam final LdpGetRequest req) {
 
-        final List<MediaType> acceptableTypes = headers.getAcceptableMediaTypes();
-        final String baseUrl = getBaseUrl(req.path);
+        final List<MediaType> acceptableTypes = req.headers.getAcceptableMediaTypes();
+        final String baseUrl = getBaseUrl(req);
 
-        final Session session = getSession();
+        final Session session = getSession(req);
         if (ACL.equals(req.ext)) {
             verifyCanControl(session, req.path);
         } else {
@@ -137,7 +137,7 @@ public class LdpResource extends BaseLdpResource {
         }
 
         final LdpGetHandler getHandler = new LdpGetHandler(resourceService, ioService, binaryService,
-                request);
+                req.request);
         getHandler.setPath(req.path);
         getHandler.setBaseUrl(baseUrl);
         getHandler.setAcceptableTypes(acceptableTypes);
@@ -192,7 +192,7 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response options(@BeanParam final LdpBaseRequest req) {
 
-        final Session session = getSession();
+        final Session session = getSession(req);
         if (ACL.equals(req.ext)) {
             verifyCanControl(session, req.path);
         } else {
@@ -201,7 +201,7 @@ public class LdpResource extends BaseLdpResource {
 
         final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(resourceService);
         optionsHandler.setPath(req.path);
-        optionsHandler.setBaseUrl(getBaseUrl(req.path));
+        optionsHandler.setBaseUrl(getBaseUrl(req));
 
         if (ACL.equals(req.ext)) {
             optionsHandler.setGraphName(Trellis.PreferAccessControl);
@@ -232,7 +232,7 @@ public class LdpResource extends BaseLdpResource {
     @Consumes("application/sparql-update")
     public Response updateResource(@BeanParam final LdpPatchRequest req, final String body) {
 
-        final Session session = getSession();
+        final Session session = getSession(req);
         if (ACL.equals(req.ext)) {
             verifyCanControl(session, req.path);
         } else {
@@ -244,10 +244,10 @@ public class LdpResource extends BaseLdpResource {
         }
 
         final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, ioService, constraintService,
-                request);
+                req.request);
         patchHandler.setPath(req.path);
-        patchHandler.setBaseUrl(getBaseUrl(req.path));
-        patchHandler.setAcceptableTypes(headers.getAcceptableMediaTypes());
+        patchHandler.setBaseUrl(getBaseUrl(req));
+        patchHandler.setAcceptableTypes(req.headers.getAcceptableMediaTypes());
         patchHandler.setPrefer(req.prefer);
         patchHandler.setSession(session);
         patchHandler.setSparqlUpdate(body);
@@ -268,16 +268,16 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response deleteResource(@BeanParam final LdpBaseRequest req) {
 
-        final Session session = getSession();
+        final Session session = getSession(req);
         verifyCanWrite(session, req.path);
 
         if (nonNull(req.ext) || nonNull(req.version)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
-        final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, request);
+        final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, req.request);
         deleteHandler.setPath(req.path);
-        deleteHandler.setBaseUrl(getBaseUrl(req.path));
+        deleteHandler.setBaseUrl(getBaseUrl(req));
         deleteHandler.setSession(session);
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + req.path), MAX)
@@ -294,14 +294,14 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response createResource(@BeanParam final LdpPostRequest req, final InputStream body) {
 
-        final Session session = getSession();
+        final Session session = getSession(req);
         verifyCanAppend(session, req.path);
 
         if (unsupportedTypes.contains(req.contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
-        final String baseUrl = getBaseUrl(req.path);
+        final String baseUrl = getBaseUrl(req);
 
         final String fullPath = req.path + "/" + ofNullable(req.slug)
             .orElseGet(resourceService.getIdentifierSupplier());
@@ -345,7 +345,7 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response setResource(@BeanParam final LdpPutRequest req, final InputStream body) {
 
-        final Session session = getSession();
+        final Session session = getSession(req);
         verifyCanWrite(session, req.path);
 
         if (unsupportedTypes.contains(req.contentType)) {
@@ -356,13 +356,13 @@ public class LdpResource extends BaseLdpResource {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
-        final String baseUrl = getBaseUrl(req.path);
+        final String baseUrl = getBaseUrl(req);
 
         final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, constraintService,
-                binaryService, request);
+                binaryService, req.request);
         putHandler.setPath(req.path);
         putHandler.setBaseUrl(baseUrl);
-        putHandler.setSession(getSession());
+        putHandler.setSession(session);
         putHandler.setContentType(req.contentType);
         putHandler.setLink(req.link);
         putHandler.setEntity(body);
