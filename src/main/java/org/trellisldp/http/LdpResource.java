@@ -41,30 +41,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.IRI;
 
 import org.trellisldp.api.Resource;
-import org.trellisldp.http.domain.AcceptDatetime;
 import org.trellisldp.http.domain.PATCH;
 import org.trellisldp.http.domain.Prefer;
-import org.trellisldp.http.domain.Range;
-import org.trellisldp.http.domain.Version;
-import org.trellisldp.http.domain.WantDigest;
 import org.trellisldp.http.impl.LdpDeleteHandler;
 import org.trellisldp.http.impl.LdpGetHandler;
 import org.trellisldp.http.impl.LdpOptionsHandler;
@@ -99,10 +92,6 @@ public class LdpResource extends BaseLdpResource {
 
     protected final Collection<String> unsupportedTypes;
 
-    private static final String DIGEST = "digest";
-
-    private static final String ALGORITHM = "algorithm";
-
     /**
      * Create a LdpResource
      * @param resourceService the resource service
@@ -130,41 +119,29 @@ public class LdpResource extends BaseLdpResource {
 
     /**
      * Perform a GET operation on an LDP Resource
-     * @param path the path
-     * @param version the version parameter
-     * @param ext an extension parameter
-     * @param datetime the Accept-Datetime header
-     * @param prefer the Prefer header
-     * @param digest the Want-Digest header
-     * @param range the Range header
+     * @param req the request parameters
      * @return the response
      */
     @GET
     @Timed
-    public Response getResource(@PathParam("path") final String path,
-            @QueryParam("version") final Version version,
-            @QueryParam("ext") final String ext,
-            @HeaderParam("Accept-Datetime") final AcceptDatetime datetime,
-            @HeaderParam("Prefer") final Prefer prefer,
-            @HeaderParam("Want-Digest") final WantDigest digest,
-            @HeaderParam("Range") final Range range) {
+    public Response getResource(@BeanParam final LdpGetRequest req) {
 
         final List<MediaType> acceptableTypes = headers.getAcceptableMediaTypes();
-        final String baseUrl = getBaseUrl(path);
+        final String baseUrl = getBaseUrl(req.path);
 
         final Session session = getSession();
-        if (ACL.equals(ext)) {
-            verifyCanControl(session, path);
+        if (ACL.equals(req.ext)) {
+            verifyCanControl(session, req.path);
         } else {
-            verifyCanRead(session, path);
+            verifyCanRead(session, req.path);
         }
 
         final LdpGetHandler getHandler = new LdpGetHandler(resourceService, ioService, binaryService,
                 request);
-        getHandler.setPath(path);
+        getHandler.setPath(req.path);
         getHandler.setBaseUrl(baseUrl);
         getHandler.setAcceptableTypes(acceptableTypes);
-        if (ACL.equals(ext)) {
+        if (ACL.equals(req.ext)) {
             // TODO make this more compact?
             getHandler.setPrefer(new Prefer("return=representation; include=\"" +
                         Trellis.PreferAccessControl.getIRIString() + "\"; omit=\"" +
@@ -173,185 +150,163 @@ public class LdpResource extends BaseLdpResource {
                         LDP.PreferMembership.getIRIString() + "\""));
             getHandler.setGraphName(Trellis.PreferAccessControl);
         } else {
-            getHandler.setPrefer(prefer);
+            getHandler.setPrefer(req.prefer);
         }
-        getHandler.setWantDigest(digest);
-        getHandler.setRange(range);
+        getHandler.setWantDigest(req.digest);
+        getHandler.setRange(req.range);
 
         // Fetch a versioned resource
-        if (nonNull(version)) {
-            LOGGER.info("Getting versioned resource: {}", version.toString());
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), version.getInstant())
+        if (nonNull(req.version)) {
+            LOGGER.info("Getting versioned resource: {}", req.version.toString());
+            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + req.path), req.version.getInstant())
                 .map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
 
         // Fetch a timemap
-        } else if (TIMEMAP.equals(ext)) {
+        } else if (TIMEMAP.equals(req.ext)) {
             LOGGER.info("Getting timemap resource");
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
-                .map(res -> res.getTimeMapBuilder(baseUrl + path, acceptableTypes, ioService))
+            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + req.path)).map(MementoResource::new)
+                .map(res -> res.getTimeMapBuilder(baseUrl + req.path, acceptableTypes, ioService))
                 .orElse(status(NOT_FOUND)).build();
 
         // Fetch a timegate
-        } else if (nonNull(datetime)) {
-            LOGGER.info("Getting timegate resource: {}", datetime.getInstant());
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), datetime.getInstant())
-                .map(MementoResource::new).map(res -> res.getTimeGateBuilder(baseUrl + path, datetime.getInstant()))
+        } else if (nonNull(req.datetime)) {
+            LOGGER.info("Getting timegate resource: {}", req.datetime.getInstant());
+            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + req.path),
+                    req.datetime.getInstant())
+                .map(MementoResource::new).map(res -> res.getTimeGateBuilder(baseUrl + req.path,
+                            req.datetime.getInstant()))
                 .orElse(status(NOT_FOUND)).build();
         }
 
         // Fetch the current state of the resource
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
+        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + req.path))
                 .map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
     }
 
     /**
      * Perform an OPTIONS operation on an LDP Resource
-     * @param path the path
-     * @param version the version parameter
-     * @param ext an extension parameter
+     * @param req the request
      * @return the response
      */
     @OPTIONS
     @Timed
-    public Response options(@PathParam("path") final String path,
-            @QueryParam("version") final Version version,
-            @QueryParam("ext") final String ext) {
+    public Response options(@BeanParam final LdpBaseRequest req) {
 
         final Session session = getSession();
-        if (ACL.equals(ext)) {
-            verifyCanControl(session, path);
+        if (ACL.equals(req.ext)) {
+            verifyCanControl(session, req.path);
         } else {
-            verifyCanRead(session, path);
+            verifyCanRead(session, req.path);
         }
 
         final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(resourceService);
-        optionsHandler.setPath(path);
-        optionsHandler.setBaseUrl(getBaseUrl(path));
+        optionsHandler.setPath(req.path);
+        optionsHandler.setBaseUrl(getBaseUrl(req.path));
 
-        if (ACL.equals(ext)) {
+        if (ACL.equals(req.ext)) {
             optionsHandler.setGraphName(Trellis.PreferAccessControl);
         }
 
-        if (nonNull(version)) {
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), version.getInstant())
+        if (nonNull(req.version)) {
+            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + req.path), req.version.getInstant())
                 .map(optionsHandler::ldpOptions).orElse(status(NOT_FOUND)).build();
 
-        } else if (TIMEMAP.equals(ext)) {
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
+        } else if (TIMEMAP.equals(req.ext)) {
+            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + req.path), MAX)
                 .map(optionsHandler::ldpOptions).orElse(status(NOT_FOUND)).build();
         }
 
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
+        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + req.path))
             .map(optionsHandler::ldpOptions).orElse(status(NOT_FOUND)).build();
     }
 
 
     /**
      * Perform a PATCH operation on an LDP Resource
-     * @param path the path
-     * @param version a version parameter
-     * @param ext an extension parameter
-     * @param prefer the Prefer header
+     * @param req the request
      * @param body the body
      * @return the response
      */
     @PATCH
     @Timed
     @Consumes("application/sparql-update")
-    public Response updateResource(@PathParam("path") final String path,
-            @QueryParam("version") final String version,
-            @QueryParam("ext") final String ext,
-            @HeaderParam("Prefer") final Prefer prefer, final String body) {
+    public Response updateResource(@BeanParam final LdpPatchRequest req, final String body) {
 
         final Session session = getSession();
-        if (ACL.equals(ext)) {
-            verifyCanControl(session, path);
+        if (ACL.equals(req.ext)) {
+            verifyCanControl(session, req.path);
         } else {
-            verifyCanWrite(session, path);
+            verifyCanWrite(session, req.path);
         }
 
-        if (nonNull(version) || UPLOADS.equals(ext)) {
+        if (nonNull(req.version) || UPLOADS.equals(req.ext)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
         final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, ioService, constraintService,
                 request);
-        patchHandler.setPath(path);
-        patchHandler.setBaseUrl(getBaseUrl(path));
+        patchHandler.setPath(req.path);
+        patchHandler.setBaseUrl(getBaseUrl(req.path));
         patchHandler.setAcceptableTypes(headers.getAcceptableMediaTypes());
-        patchHandler.setPrefer(prefer);
+        patchHandler.setPrefer(req.prefer);
         patchHandler.setSession(session);
         patchHandler.setSparqlUpdate(body);
-        if (ACL.equals(ext)) {
+        if (ACL.equals(req.ext)) {
             patchHandler.setGraphName(Trellis.PreferAccessControl);
         }
 
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
+        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + req.path), MAX)
                 .map(patchHandler::updateResource).orElse(status(NOT_FOUND)).build();
     }
 
     /**
      * Perform a DELETE operation on an LDP Resource
-     * @param path the path
-     * @param ext an extension parameter
-     * @param version a version parameter
+     * @param req the request
      * @return the response
      */
     @DELETE
     @Timed
-    public Response deleteResource(@PathParam("path") final String path,
-            @QueryParam("ext") final String ext,
-            @QueryParam("version") final String version) {
+    public Response deleteResource(@BeanParam final LdpBaseRequest req) {
 
         final Session session = getSession();
-        verifyCanWrite(session, path);
+        verifyCanWrite(session, req.path);
 
-        if (nonNull(ext) || nonNull(version)) {
+        if (nonNull(req.ext) || nonNull(req.version)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
         final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, request);
-        deleteHandler.setPath(path);
-        deleteHandler.setBaseUrl(getBaseUrl(path));
+        deleteHandler.setPath(req.path);
+        deleteHandler.setBaseUrl(getBaseUrl(req.path));
         deleteHandler.setSession(session);
 
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
+        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + req.path), MAX)
             .map(deleteHandler::deleteResource).orElse(status(NOT_FOUND)).build();
     }
 
     /**
      * Perform a POST operation on a LDP Resource
-     * @param path the path
-     * @param version a version parameter
-     * @param ext an extension parameter
-     * @param link the LDP interaction model
-     * @param contentType the content-type
-     * @param slug the slug header
+     * @param req the request
      * @param body the body
      * @return the response
      */
     @POST
     @Timed
-    public Response createResource(@PathParam("path") final String path,
-            @QueryParam("version") final String version,
-            @QueryParam("ext") final String ext,
-            @HeaderParam("Link") final Link link,
-            @HeaderParam("Content-Type") final String contentType,
-            @HeaderParam("Slug") final String slug,
-            final InputStream body) {
+    public Response createResource(@BeanParam final LdpPostRequest req, final InputStream body) {
 
         final Session session = getSession();
-        verifyCanAppend(session, path);
+        verifyCanAppend(session, req.path);
 
-        if (unsupportedTypes.contains(contentType)) {
+        if (unsupportedTypes.contains(req.contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
-        final String baseUrl = getBaseUrl(path);
+        final String baseUrl = getBaseUrl(req.path);
 
-        final String fullPath = path + "/" + ofNullable(slug).orElseGet(resourceService.getIdentifierSupplier());
+        final String fullPath = req.path + "/" + ofNullable(req.slug)
+            .orElseGet(resourceService.getIdentifierSupplier());
 
-        if (nonNull(ext) || nonNull(version)) {
+        if (nonNull(req.ext) || nonNull(req.version)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
@@ -360,12 +315,12 @@ public class LdpResource extends BaseLdpResource {
         postHandler.setPath(fullPath);
         postHandler.setBaseUrl(baseUrl);
         postHandler.setSession(session);
-        postHandler.setContentType(contentType);
-        postHandler.setLink(link);
+        postHandler.setContentType(req.contentType);
+        postHandler.setLink(req.link);
         postHandler.setEntity(body);
 
         // First check if this is a container
-        final Optional<Resource> parent = resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX);
+        final Optional<Resource> parent = resourceService.get(rdf.createIRI(TRELLIS_PREFIX + req.path), MAX);
         if (parent.isPresent()) {
             final Optional<IRI> ixModel = parent.map(Resource::getInteractionModel);
             if (ixModel.filter(type -> ldpResourceTypes(type).anyMatch(LDP.Container::equals)).isPresent()) {
@@ -382,46 +337,37 @@ public class LdpResource extends BaseLdpResource {
 
     /**
      * Perform a PUT operation on a LDP Resource
-     * @param path the path
-     * @param version the version parameter
-     * @param ext an extension parameter
-     * @param link the LDP interaction model
-     * @param contentType the content-type
+     * @param req the request
      * @param body the body
      * @return the response
      */
     @PUT
     @Timed
-    public Response setResource(@PathParam("path") final String path,
-            @QueryParam("version") final Version version,
-            @QueryParam("ext") final String ext,
-            @HeaderParam("Link") final Link link,
-            @HeaderParam("Content-Type") final String contentType,
-            final InputStream body) {
+    public Response setResource(@BeanParam final LdpPutRequest req, final InputStream body) {
 
         final Session session = getSession();
-        verifyCanWrite(session, path);
+        verifyCanWrite(session, req.path);
 
-        if (unsupportedTypes.contains(contentType)) {
+        if (unsupportedTypes.contains(req.contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
-        if (nonNull(ext) || nonNull(version)) {
+        if (nonNull(req.ext) || nonNull(req.version)) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
-        final String baseUrl = getBaseUrl(path);
+        final String baseUrl = getBaseUrl(req.path);
 
         final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, constraintService,
                 binaryService, request);
-        putHandler.setPath(path);
+        putHandler.setPath(req.path);
         putHandler.setBaseUrl(baseUrl);
         putHandler.setSession(getSession());
-        putHandler.setContentType(contentType);
-        putHandler.setLink(link);
+        putHandler.setContentType(req.contentType);
+        putHandler.setLink(req.link);
         putHandler.setEntity(body);
 
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
+        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + req.path), MAX)
                 .map(putHandler::setResource).orElseGet(putHandler::setResource).build();
     }
 }
