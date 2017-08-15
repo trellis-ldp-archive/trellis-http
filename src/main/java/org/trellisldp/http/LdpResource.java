@@ -65,7 +65,6 @@ import org.trellisldp.http.impl.LdpPatchHandler;
 import org.trellisldp.http.impl.LdpPostHandler;
 import org.trellisldp.http.impl.LdpPutHandler;
 import org.trellisldp.http.impl.MementoResource;
-import org.trellisldp.spi.AccessControlService;
 import org.trellisldp.spi.AgentService;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
@@ -99,17 +98,14 @@ public class LdpResource extends BaseLdpResource {
      * @param constraintService the RDF constraint enforcing service
      * @param binaryService the datastream service
      * @param agentService the agent service
-     * @param accessService the access control service
      * @param partitions a map of partitions for use with custom hostnames
-     * @param authChallenges a list of auth protocols supported
      * @param unsupportedMediaTypes any unsupported media types
      */
     public LdpResource(final ResourceService resourceService, final IOService ioService,
             final ConstraintService constraintService, final BinaryService binaryService,
-            final AgentService agentService, final AccessControlService accessService,
-            final Map<String, String> partitions, final List<String> authChallenges,
+            final AgentService agentService, final Map<String, String> partitions,
             final Collection<String> unsupportedMediaTypes) {
-        super(partitions, authChallenges, agentService, accessService);
+        super(partitions, agentService);
         this.resourceService = resourceService;
         this.ioService = ioService;
         this.binaryService = binaryService;
@@ -128,13 +124,6 @@ public class LdpResource extends BaseLdpResource {
 
         final List<MediaType> acceptableTypes = req.headers.getAcceptableMediaTypes();
         final String baseUrl = getBaseUrl(req);
-
-        final Session session = getSession(req);
-        if (ACL.equals(req.ext)) {
-            verifyCanControl(session, req.path);
-        } else {
-            verifyCanRead(session, req.path);
-        }
 
         final LdpGetHandler getHandler = new LdpGetHandler(resourceService, ioService, binaryService,
                 req.request);
@@ -192,17 +181,9 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response options(@BeanParam final LdpBaseRequest req) {
 
-        final Session session = getSession(req);
-        if (ACL.equals(req.ext)) {
-            verifyCanControl(session, req.path);
-        } else {
-            verifyCanRead(session, req.path);
-        }
-
         final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(resourceService);
         optionsHandler.setPath(req.path);
         optionsHandler.setBaseUrl(getBaseUrl(req));
-
         if (ACL.equals(req.ext)) {
             optionsHandler.setGraphName(Trellis.PreferAccessControl);
         }
@@ -233,11 +214,6 @@ public class LdpResource extends BaseLdpResource {
     public Response updateResource(@BeanParam final LdpPatchRequest req, final String body) {
 
         final Session session = getSession(req);
-        if (ACL.equals(req.ext)) {
-            verifyCanControl(session, req.path);
-        } else {
-            verifyCanWrite(session, req.path);
-        }
 
         if (nonNull(req.version) || UPLOADS.equals(req.ext)) {
             return status(METHOD_NOT_ALLOWED).build();
@@ -269,7 +245,6 @@ public class LdpResource extends BaseLdpResource {
     public Response deleteResource(@BeanParam final LdpBaseRequest req) {
 
         final Session session = getSession(req);
-        verifyCanWrite(session, req.path);
 
         if (nonNull(req.ext) || nonNull(req.version)) {
             return status(METHOD_NOT_ALLOWED).build();
@@ -295,7 +270,6 @@ public class LdpResource extends BaseLdpResource {
     public Response createResource(@BeanParam final LdpPostRequest req, final InputStream body) {
 
         final Session session = getSession(req);
-        verifyCanAppend(session, req.path);
 
         if (unsupportedTypes.contains(req.contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
@@ -346,7 +320,6 @@ public class LdpResource extends BaseLdpResource {
     public Response setResource(@BeanParam final LdpPutRequest req, final InputStream body) {
 
         final Session session = getSession(req);
-        verifyCanWrite(session, req.path);
 
         if (unsupportedTypes.contains(req.contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();

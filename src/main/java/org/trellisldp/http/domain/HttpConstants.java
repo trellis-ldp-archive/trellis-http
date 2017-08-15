@@ -52,6 +52,8 @@ public final class HttpConstants {
 
     public static final String RANGE = "Range";
 
+    public static final String SESSION_PROPERTY = "session";
+
     public static final String TIMEMAP = "timemap";
 
     public static final String TRELLIS_PREFIX = "trellis:";

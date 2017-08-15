@@ -86,6 +86,8 @@ public class RootResource extends BaseLdpResource {
 
     /**
      * Get a representation of the root resource
+     * @param uriInfo information about the URI
+     * @param headers the request headers
      * @return the root resource
      */
     @GET

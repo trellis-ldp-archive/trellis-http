@@ -17,6 +17,7 @@ import static java.lang.String.join;
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toSet;
 import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.HttpHeaders.WWW_AUTHENTICATE;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
@@ -117,8 +118,10 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         final ResourceConfig config = new ResourceConfig();
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService, mockBinaryService,
-                    null, mockAccessControlService, partitions, asList(BASIC_AUTH, DIGEST_AUTH), emptyList()));
+                    null, partitions, emptyList()));
         config.register(new TestAuthenticationFilter("testUser", "group"));
+        config.register(new WebAcFilter(partitions.entrySet().stream().map(Map.Entry::getKey).collect(toSet()),
+                    asList(BASIC_AUTH, DIGEST_AUTH), mockAccessControlService));
         return config;
     }
 
