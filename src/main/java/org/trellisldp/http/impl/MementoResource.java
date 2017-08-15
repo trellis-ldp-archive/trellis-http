@@ -19,6 +19,7 @@ import static java.time.ZonedDateTime.ofInstant;
 import static java.time.ZonedDateTime.parse;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
@@ -32,6 +33,7 @@ import static javax.ws.rs.core.Response.Status.FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
+import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 
 import java.time.Instant;
@@ -54,6 +56,7 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.VersionRange;
 import org.trellisldp.spi.IOService;
+import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.PROV;
 import org.trellisldp.vocabulary.Trellis;
@@ -107,9 +110,10 @@ public final class MementoResource {
         builder.link(LDP.RDFSource.getIRIString(), "type");
         final Optional<RDFSyntax> syntax = getSyntax(acceptableTypes, of(APPLICATION_LINK_FORMAT));
         if (syntax.isPresent()) {
+            final IRI profile = getProfile(acceptableTypes, syntax.get());
             builder.type(syntax.get().mediaType);
             builder.entity(ResourceStreamer.quadStreamer(serializer, links.stream().flatMap(linkToQuads),
-                        syntax.get()));
+                        syntax.get(), ofNullable(profile).orElse(JSONLD.expanded)));
         } else {
             builder.type(APPLICATION_LINK_FORMAT);
             builder.entity(links.stream().map(Link::toString).collect(joining(",\n")) + "\n");

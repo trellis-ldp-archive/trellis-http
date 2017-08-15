@@ -781,7 +781,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
-    public void testGetTimeMapJson() throws IOException {
+    public void testGetTimeMapJsonCompact() throws IOException {
         when(mockResource.getMementos()).thenAnswer(x -> Stream.of(
                 new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),
                 new VersionRange(ofEpochSecond(timestamp - 1000), time),
@@ -789,6 +789,85 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         final Response res = target(RESOURCE_PATH).queryParam("ext", "timemap").request()
             .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(APPLICATION_LD_JSON_TYPE.isCompatible(res.getMediaType()));
+        assertTrue(res.getMediaType().isCompatible(APPLICATION_LD_JSON_TYPE));
+        assertNull(res.getHeaderString(ACCEPT_POST));
+        assertNull(res.getHeaderString(ACCEPT_PATCH));
+        assertNull(res.getHeaderString(ACCEPT_RANGES));
+        assertNull(res.getLastModified());
+
+        // Jersey's client doesn't parse complex link headers correctly, so res.getLinks() is not used here
+        final List<Link> links = res.getStringHeaders().get(LINK).stream().map(Link::valueOf).collect(toList());
+
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
+                        .equals(l.getParams().get("datetime")) &&
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496260729000")));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 1000))
+                        .equals(l.getParams().get("datetime")) &&
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496261729000")));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("memento") &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(time).equals(l.getParams().get("datetime")) &&
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?version=1496262729000")));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timemap") &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp - 2000))
+                        .equals(l.getParams().get("from")) &&
+                    RFC_1123_DATE_TIME.withZone(UTC).format(ofEpochSecond(timestamp + 1000))
+                        .equals(l.getParams().get("until")) &&
+                    APPLICATION_LINK_FORMAT.equals(l.getType()) &&
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH + "?ext=timemap")));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("timegate") &&
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+        assertTrue(links.stream().anyMatch(l -> l.getRels().contains("original") &&
+                    l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+        assertTrue(links.stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(links.stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(links.stream().anyMatch(hasType(LDP.Container)));
+
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        final Map<String, Object> obj = MAPPER.readValue(entity,
+                new TypeReference<Map<String, Object>>(){});
+
+        @SuppressWarnings("unchecked")
+        final List<Map<String, Object>> graph = (List<Map<String, Object>>) obj.get("@graph");
+
+        assertEquals(4L, graph.size());
+        assertTrue(graph.stream().anyMatch(x -> x.containsKey("@id") &&
+                    x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?ext=timemap") &&
+                    x.containsKey("startedAtTime") &&
+                    x.containsKey("endedAtTime")));
+        assertTrue(graph.stream().anyMatch(x -> x.containsKey("@id") &&
+                    x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?version=1496260729000") &&
+                    x.containsKey("atTime")));
+        assertTrue(graph.stream().anyMatch(x -> x.containsKey("@id") &&
+                    x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?version=1496261729000") &&
+                    x.containsKey("atTime")));
+        assertTrue(graph.stream().anyMatch(x -> x.containsKey("@id") &&
+                    x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?version=1496262729000") &&
+                    x.containsKey("atTime")));
+    }
+
+    @Test
+    public void testGetTimeMapJson() throws IOException {
+        when(mockResource.getMementos()).thenAnswer(x -> Stream.of(
+                new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),
+                new VersionRange(ofEpochSecond(timestamp - 1000), time),
+                new VersionRange(time, ofEpochSecond(timestamp + 1000))));
+
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "timemap").request()
+            .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#expanded\"").get();
 
         assertEquals(OK, res.getStatusInfo());
         assertTrue(APPLICATION_LD_JSON_TYPE.isCompatible(res.getMediaType()));

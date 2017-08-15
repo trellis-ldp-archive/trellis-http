@@ -13,6 +13,11 @@
  */
 package org.trellisldp.http;
 
+import static java.util.Objects.isNull;
+import static org.trellisldp.http.domain.HttpConstants.SESSION_PROPERTY;
+
+import java.util.Map;
+
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -23,6 +28,8 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
 import org.trellisldp.http.domain.Version;
+import org.trellisldp.http.impl.HttpSession;
+import org.trellisldp.spi.Session;
 
 /**
  * @author acoburn
@@ -82,4 +89,24 @@ public class LdpBaseRequest {
     @Context
     public SecurityContext security;
 
+    /**
+     * Get a user session
+     * @return a session
+     */
+    public Session getSession() {
+        final Session session = (Session) ctx.getProperty(SESSION_PROPERTY);
+        if (isNull(session)) {
+            return new HttpSession();
+        }
+        return session;
+    }
+
+    /**
+     * Get a base url value
+     * @param partitions the partition baseUrl configurations
+     * @return the baseUrl as a string
+     */
+    public String getBaseUrl(final Map<String, String> partitions) {
+        return partitions.getOrDefault(partition, uriInfo.getBaseUri().toString());
+    }
 }

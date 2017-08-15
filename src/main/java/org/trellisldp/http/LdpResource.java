@@ -16,26 +16,17 @@ package org.trellisldp.http;
 import static java.time.Instant.MAX;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
-import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
 import static javax.ws.rs.core.Response.status;
-import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
-import static org.apache.commons.rdf.api.RDFSyntax.NTRIPLES;
-import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
-import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
+import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
-import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
-import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON;
-import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES;
-import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
-import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 
 import com.codahale.metrics.annotation.Timed;
@@ -50,17 +41,15 @@ import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
-import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.RDFSyntax;
+import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.PATCH;
@@ -85,6 +74,8 @@ import org.trellisldp.vocabulary.Trellis;
  */
 @Path("{partition}{path: .*}")
 public class LdpResource extends BaseLdpResource {
+
+    private static final Logger LOGGER = getLogger(LdpResource.class);
 
     protected final ResourceService resourceService;
 
@@ -123,80 +114,10 @@ public class LdpResource extends BaseLdpResource {
      */
     @GET
     @Timed
-    @Produces({TEXT_TURTLE})
-    public Response getResourceTurtle(@BeanParam final LdpGetRequest req) {
-        return getResource(req, TURTLE, null);
-    }
-
-    /**
-     * Perform a GET operation on an LDP Resource
-     * @param req the request parameters
-     * @return the response
-     */
-    @GET
-    @Timed
-    @Produces({APPLICATION_N_TRIPLES})
-    public Response getResourceNTriples(@BeanParam final LdpGetRequest req) {
-        return getResource(req, NTRIPLES, null);
-    }
-
-    /**
-     * Perform a GET operation on an LDP Resource
-     * @param req the request parameters
-     * @return the response
-     */
-    @GET
-    @Timed
-    @Produces({TEXT_HTML})
-    public Response getResourceHTML(@BeanParam final LdpGetRequest req) {
-        return getResource(req, RDFA_HTML, rdf.createIRI(getBaseUrl(req) + req.partition + req.path));
-    }
-
-    /**
-     * Perform a GET operation on an LDP Resource
-     * @param req the request parameters
-     * @return the response
-     */
-    @GET
-    @Timed
-    @Produces({APPLICATION_LINK_FORMAT})
-    public Response getResourceLinkFormat(@BeanParam final LdpGetRequest req) {
-        if ("timemap".equals(req.uriInfo.getQueryParameters().getFirst("ext"))) {
-            return getResource(req, null, null);
-        }
-        throw new NotAcceptableException();
-    }
-
-    /**
-     * Perform a GET operation on an LDP Resource
-     * @param req the request parameters
-     * @return the response
-     */
-    @GET
-    @Timed
-    @Produces({APPLICATION_LD_JSON})
-    public Response getResourceJsonLd(@BeanParam final LdpGetRequest req) {
-        final IRI profile = getProfile(req.headers.getAcceptableMediaTypes(), JSONLD);
-        return getResource(req, JSONLD, profile);
-    }
-
-    /**
-     * Perform a GET operation on an LDP Resource
-     * @param req the request parameters
-     * @return the response
-     */
-    @GET
-    @Timed
-    @Produces("*/*")
     public Response getResourceAny(@BeanParam final LdpGetRequest req) {
-        return getResource(req, TURTLE, null);
-    }
-
-    private Response getResource(final LdpGetRequest req, final RDFSyntax syntax, final IRI profile) {
-
         final List<MediaType> acceptableTypes = req.headers.getAcceptableMediaTypes();
         final String path = req.partition + req.path;
-        final String baseUrl = getBaseUrl(req);
+        final String baseUrl = req.getBaseUrl(partitions);
 
         final LdpGetHandler getHandler = new LdpGetHandler(resourceService, ioService, binaryService,
                 req.request);
@@ -258,7 +179,7 @@ public class LdpResource extends BaseLdpResource {
 
         final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(resourceService);
         optionsHandler.setPath(path);
-        optionsHandler.setBaseUrl(getBaseUrl(req));
+        optionsHandler.setBaseUrl(req.getBaseUrl(partitions));
         if (ACL.equals(req.ext)) {
             optionsHandler.setGraphName(Trellis.PreferAccessControl);
         }
@@ -289,7 +210,7 @@ public class LdpResource extends BaseLdpResource {
     public Response updateResource(@BeanParam final LdpPatchRequest req, final String body) {
 
         final String path = req.partition + req.path;
-        final Session session = getSession(req);
+        final Session session = req.getSession();
 
         if (nonNull(req.version) || UPLOADS.equals(req.ext)) {
             return status(METHOD_NOT_ALLOWED).build();
@@ -298,7 +219,7 @@ public class LdpResource extends BaseLdpResource {
         final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, ioService, constraintService,
                 req.request);
         patchHandler.setPath(path);
-        patchHandler.setBaseUrl(getBaseUrl(req));
+        patchHandler.setBaseUrl(req.getBaseUrl(partitions));
         patchHandler.setAcceptableTypes(req.headers.getAcceptableMediaTypes());
         patchHandler.setPrefer(req.prefer);
         patchHandler.setSession(session);
@@ -320,7 +241,7 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response deleteResource(@BeanParam final LdpBaseRequest req) {
 
-        final Session session = getSession(req);
+        final Session session = req.getSession();
 
         if (nonNull(req.ext) || nonNull(req.version)) {
             return status(METHOD_NOT_ALLOWED).build();
@@ -330,7 +251,7 @@ public class LdpResource extends BaseLdpResource {
 
         final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, req.request);
         deleteHandler.setPath(path);
-        deleteHandler.setBaseUrl(getBaseUrl(req));
+        deleteHandler.setBaseUrl(req.getBaseUrl(partitions));
         deleteHandler.setSession(session);
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
@@ -347,14 +268,14 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response createResource(@BeanParam final LdpPostRequest req, final InputStream body) {
 
-        final Session session = getSession(req);
+        final Session session = req.getSession();
 
         if (unsupportedTypes.contains(req.contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
         final String path = req.partition + req.path;
-        final String baseUrl = getBaseUrl(req);
+        final String baseUrl = req.getBaseUrl(partitions);
 
         final String fullPath = path + "/" + ofNullable(req.slug)
             .orElseGet(resourceService.getIdentifierSupplier());
@@ -398,7 +319,7 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response setResource(@BeanParam final LdpPutRequest req, final InputStream body) {
 
-        final Session session = getSession(req);
+        final Session session = req.getSession();
 
         if (unsupportedTypes.contains(req.contentType)) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
@@ -408,7 +329,7 @@ public class LdpResource extends BaseLdpResource {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
-        final String baseUrl = getBaseUrl(req);
+        final String baseUrl = req.getBaseUrl(partitions);
         final String path = req.partition + req.path;
 
         final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, constraintService,
