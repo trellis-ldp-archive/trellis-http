@@ -23,6 +23,10 @@ import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
 import static javax.ws.rs.core.Response.status;
+import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
+import static org.apache.commons.rdf.api.RDFSyntax.NTRIPLES;
+import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
+import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
@@ -31,6 +35,7 @@ import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
+import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 
 import com.codahale.metrics.annotation.Timed;
@@ -45,6 +50,7 @@ import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -54,6 +60,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.PATCH;
@@ -116,8 +123,76 @@ public class LdpResource extends BaseLdpResource {
      */
     @GET
     @Timed
-    @Produces({TEXT_TURTLE, APPLICATION_LD_JSON, APPLICATION_N_TRIPLES, APPLICATION_LINK_FORMAT, TEXT_HTML})
-    public Response getResource(@BeanParam final LdpGetRequest req) {
+    @Produces({TEXT_TURTLE})
+    public Response getResourceTurtle(@BeanParam final LdpGetRequest req) {
+        return getResource(req, TURTLE, null);
+    }
+
+    /**
+     * Perform a GET operation on an LDP Resource
+     * @param req the request parameters
+     * @return the response
+     */
+    @GET
+    @Timed
+    @Produces({APPLICATION_N_TRIPLES})
+    public Response getResourceNTriples(@BeanParam final LdpGetRequest req) {
+        return getResource(req, NTRIPLES, null);
+    }
+
+    /**
+     * Perform a GET operation on an LDP Resource
+     * @param req the request parameters
+     * @return the response
+     */
+    @GET
+    @Timed
+    @Produces({TEXT_HTML})
+    public Response getResourceHTML(@BeanParam final LdpGetRequest req) {
+        return getResource(req, RDFA_HTML, rdf.createIRI(getBaseUrl(req) + req.partition + req.path));
+    }
+
+    /**
+     * Perform a GET operation on an LDP Resource
+     * @param req the request parameters
+     * @return the response
+     */
+    @GET
+    @Timed
+    @Produces({APPLICATION_LINK_FORMAT})
+    public Response getResourceLinkFormat(@BeanParam final LdpGetRequest req) {
+        if ("timemap".equals(req.uriInfo.getQueryParameters().getFirst("ext"))) {
+            return getResource(req, null, null);
+        }
+        throw new NotAcceptableException();
+    }
+
+    /**
+     * Perform a GET operation on an LDP Resource
+     * @param req the request parameters
+     * @return the response
+     */
+    @GET
+    @Timed
+    @Produces({APPLICATION_LD_JSON})
+    public Response getResourceJsonLd(@BeanParam final LdpGetRequest req) {
+        final IRI profile = getProfile(req.headers.getAcceptableMediaTypes(), JSONLD);
+        return getResource(req, JSONLD, profile);
+    }
+
+    /**
+     * Perform a GET operation on an LDP Resource
+     * @param req the request parameters
+     * @return the response
+     */
+    @GET
+    @Timed
+    @Produces("*/*")
+    public Response getResourceAny(@BeanParam final LdpGetRequest req) {
+        return getResource(req, TURTLE, null);
+    }
+
+    private Response getResource(final LdpGetRequest req, final RDFSyntax syntax, final IRI profile) {
 
         final List<MediaType> acceptableTypes = req.headers.getAcceptableMediaTypes();
         final String path = req.partition + req.path;
