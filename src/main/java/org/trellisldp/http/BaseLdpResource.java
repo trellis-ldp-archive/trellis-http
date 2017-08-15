@@ -57,6 +57,6 @@ class BaseLdpResource {
     }
 
     protected String getBaseUrl(final LdpBaseRequest req) {
-        return partitions.getOrDefault(getPartition(req.path), req.uriInfo.getBaseUri().toString());
+        return partitions.getOrDefault(req.partition, req.uriInfo.getBaseUri().toString());
     }
 }
