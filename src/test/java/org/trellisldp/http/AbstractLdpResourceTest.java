@@ -1677,11 +1677,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testMultipartPost() {
-        final BinaryService.MultipartUpload upload = new BinaryService.MultipartUpload();
-        upload.binary = mockBinary;
-        upload.session = new HttpSession();
-        upload.baseUrl = BASE_URL;
-        upload.path = BINARY_PATH;
+        final BinaryService.MultipartUpload upload = new BinaryService.MultipartUpload(BASE_URL, BINARY_PATH,
+                new HttpSession(), mockBinary);
 
         when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
         when(mockBinaryResolver.uploadSessionExists(eq(UPLOAD_SESSION_ID))).thenReturn(true);

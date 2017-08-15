@@ -114,22 +114,22 @@ public class MultipartUploader {
             .map(svc -> svc.completeUpload(id, partDigests))
             .map(upload -> {
                 final Dataset dataset = rdf.createDataset();
-                final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + upload.path);
+                final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + upload.getPath());
 
                 // Add Audit quads
-                auditCreation(identifier, upload.session).stream().map(skolemizeQuads(resourceService, upload.baseUrl))
-                    .forEach(dataset::add);
+                auditCreation(identifier, upload.getSession()).stream()
+                    .map(skolemizeQuads(resourceService, upload.getBaseUrl())).forEach(dataset::add);
                 dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.NonRDFSource));
                 dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.hasPart,
-                            upload.binary.getIdentifier()));
-                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, upload.binary.getIdentifier(), DC.format,
-                            rdf.createLiteral(upload.binary.getMimeType().orElse(APPLICATION_OCTET_STREAM))));
-                upload.binary.getSize().ifPresent(size -> dataset.add(rdf.createQuad(Trellis.PreferServerManaged,
-                                upload.binary.getIdentifier(), DC.extent, rdf.createLiteral(size.toString(),
+                            upload.getBinary().getIdentifier()));
+                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, upload.getBinary().getIdentifier(), DC.format,
+                            rdf.createLiteral(upload.getBinary().getMimeType().orElse(APPLICATION_OCTET_STREAM))));
+                upload.getBinary().getSize().ifPresent(size -> dataset.add(rdf.createQuad(Trellis.PreferServerManaged,
+                                upload.getBinary().getIdentifier(), DC.extent, rdf.createLiteral(size.toString(),
                                     XSD.long_))));
 
                 resourceService.put(identifier, dataset);
-                return created(create(upload.baseUrl + upload.path)).build();
+                return created(create(upload.getBaseUrl() + upload.getPath())).build();
             })
             .orElseThrow(NotFoundException::new);
     }
