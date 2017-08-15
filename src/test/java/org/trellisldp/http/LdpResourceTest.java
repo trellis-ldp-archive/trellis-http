@@ -35,6 +35,8 @@ public class LdpResourceTest extends AbstractLdpResourceTest {
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService,
                     mockBinaryService, partitions, singletonList("invalid/type")));
         config.register(TrailingSlashFilter.class);
+        config.register(new AgentAuthorizationFilter(mockAgentService, "admin"));
+        config.register(new MultipartUploader(mockResourceService, mockBinaryService));
         return config;
     }
 }

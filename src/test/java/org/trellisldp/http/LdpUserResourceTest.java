@@ -43,6 +43,7 @@ public class LdpUserResourceTest extends AbstractLdpResourceTest {
         config.register(new WebAcFilter(partitions.entrySet().stream().map(Map.Entry::getKey).collect(toSet()),
                     emptyList(), mockAccessControlService));
         config.register(new AgentAuthorizationFilter(mockAgentService, "admin"));
+        config.register(new MultipartUploader(mockResourceService, mockBinaryService));
         return config;
     }
 }

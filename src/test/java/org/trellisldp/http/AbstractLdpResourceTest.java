@@ -26,6 +26,7 @@ import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.HttpHeaders.LINK;
 import static javax.ws.rs.core.HttpHeaders.VARY;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.GONE;
@@ -70,6 +71,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -127,6 +129,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     private final static IRI agent = rdf.createIRI("user:agent");
 
     private final static String BNODE_PREFIX = "trellis:bnode/";
+
+    private final static String UPLOAD_SESSION_ID = "upload-session-id";
 
     private final static BlankNode bnode = rdf.createBlankNode();
 
@@ -1510,6 +1514,81 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testOtherParition() {
         final Response res = target("other/object").request().get();
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    /**
+     * Multipart upload tests
+     */
+    @Test
+    public void testMultipartGet() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.uploadSessionExists(eq(UPLOAD_SESSION_ID))).thenReturn(true);
+        when(mockBinaryResolver.listParts(eq(UPLOAD_SESSION_ID))).thenAnswer(x -> Stream.of(
+                new SimpleEntry<>(1, "digest1"),
+                new SimpleEntry<>(2, "digest2")));
+        final Response res = target("upload/" + REPO1 + "/" + UPLOAD_SESSION_ID).request().get();
+        assertEquals(OK, res.getStatusInfo());
+    }
+
+    @Test
+    public void testMultipartGetNotFound() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+
+        final Response res = target("upload/" + REPO1 + "/" + UPLOAD_SESSION_ID).request().get();
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testMultipartPut() throws IOException {
+        final InputStream inputStream = new ByteArrayInputStream("blah blah blah".getBytes(UTF_8));
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.uploadSessionExists(eq(UPLOAD_SESSION_ID))).thenReturn(true);
+        when(mockBinaryResolver.uploadPart(eq(UPLOAD_SESSION_ID), eq(15), any(InputStream.class)))
+            .thenReturn("digest1");
+
+        final Response res = target("upload/" + REPO1 + "/" + UPLOAD_SESSION_ID + "/15").request()
+            .put(entity("blah blah blah", TEXT_PLAIN_TYPE));
+        assertEquals(OK, res.getStatusInfo());
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        assertEquals("digest1", entity);
+    }
+
+    @Test
+    public void testMultipartPutNotFound() throws IOException {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+
+        final Response res = target("upload/" + REPO1 + "/" + UPLOAD_SESSION_ID + "/15").request()
+            .put(entity("blah blah blah", TEXT_PLAIN_TYPE));
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
+    public void testMultipartPost() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.uploadSessionExists(eq(UPLOAD_SESSION_ID))).thenReturn(true);
+        when(mockBinaryResolver.completeUpload(eq(UPLOAD_SESSION_ID), any()))
+            .thenReturn(new SimpleEntry<>(binaryIdentifier, mockBinary));
+
+        final Response res = target("upload/" + REPO1 + "/" + UPLOAD_SESSION_ID).request()
+            .post(entity("{\"key\": \"value\"}", APPLICATION_JSON_TYPE));
+        assertEquals(CREATED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testMultipartDelete() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.uploadSessionExists(eq(UPLOAD_SESSION_ID))).thenReturn(true);
+
+        final Response res = target("upload/" + REPO1 + "/" + UPLOAD_SESSION_ID).request().delete();
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+    }
+
+    @Test
+    public void testMultipartDeleteNotFound() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+
+        final Response res = target("upload/" + REPO1 + "/" + UPLOAD_SESSION_ID).request().delete();
         assertEquals(NOT_FOUND, res.getStatusInfo());
     }
 

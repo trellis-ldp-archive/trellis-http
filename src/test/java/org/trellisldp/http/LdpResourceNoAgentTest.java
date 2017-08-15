@@ -13,40 +13,28 @@
  */
 package org.trellisldp.http;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toSet;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.MockitoAnnotations.initMocks;
-import static org.mockito.Mockito.when;
-
-import java.util.Map;
 
 import javax.ws.rs.core.Application;
 
-import org.apache.commons.rdf.api.IRI;
 import org.glassfish.jersey.server.ResourceConfig;
 
 /**
  * @author acoburn
  */
-public class LdpAdminUserResourceTest extends AbstractLdpResourceTest {
+public class LdpResourceNoAgentTest extends AbstractLdpResourceTest {
 
     @Override
     public Application configure() {
 
         // Junit runner doesn't seem to work very well with JerseyTest
         initMocks(this);
-        when(mockAgentService.isAdmin(any(IRI.class))).thenReturn(true);
 
         final ResourceConfig config = new ResourceConfig();
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService,
                     mockBinaryService, partitions, singletonList("invalid/type")));
-        config.register(new TestAuthenticationFilter("testUser", "groupname"));
         config.register(TrailingSlashFilter.class);
-        config.register(new WebAcFilter(partitions.entrySet().stream().map(Map.Entry::getKey).collect(toSet()),
-                    emptyList(), mockAccessControlService));
-        config.register(new AgentAuthorizationFilter(mockAgentService, "admin"));
         config.register(new MultipartUploader(mockResourceService, mockBinaryService));
         return config;
     }
