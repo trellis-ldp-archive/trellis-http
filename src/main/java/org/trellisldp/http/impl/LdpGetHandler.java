@@ -46,6 +46,7 @@ import static org.trellisldp.http.domain.HttpConstants.PREFER;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.RANGE;
 import static org.trellisldp.http.domain.HttpConstants.WANT_DIGEST;
+import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 import static org.trellisldp.http.impl.RdfUtils.filterWithPrefer;
@@ -205,7 +206,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         if (!LDP.RDFSource.equals(res.getInteractionModel())) {
             binaryService.getResolverForPartition(getPartition(path))
                 .map(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
-                    builder.link(identifier + "?ext=upload", Trellis.multipartUploadService.getIRIString()));
+                    builder.link(identifier + "?ext=" + UPLOADS, Trellis.multipartUploadService.getIRIString()));
         }
 
         if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
@@ -244,7 +245,7 @@ public class LdpGetHandler extends BaseLdpHandler {
 
         // Add upload service headers, if relevant
         binaryService.getResolver(dsid).filter(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
-                builder.link(identifier + "?ext=upload", Trellis.multipartUploadService.getIRIString()));
+                builder.link(identifier + "?ext=" + UPLOADS, Trellis.multipartUploadService.getIRIString()));
 
         // Add instance digests, if Requested and supported
         ofNullable(digest).map(WantDigest::getAlgorithms).ifPresent(algs ->

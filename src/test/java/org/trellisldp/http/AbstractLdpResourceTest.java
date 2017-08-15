@@ -1600,6 +1600,38 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
      * Multipart upload tests
      */
     @Test
+    public void testMultipartExtLinkHeaderLDPRS() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        final Response res = target(RESOURCE_PATH).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertFalse(res.getLinks().stream().anyMatch(
+                    hasLink(rdf.createIRI(BASE_URL + RESOURCE_PATH + "?ext=" + UPLOADS),
+                            Trellis.multipartUploadService.getIRIString())));
+    }
+
+    @Test
+    public void testMultipartExtLinkHeaderContainer() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        final Response res = target(RESOURCE_PATH).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasLink(rdf.createIRI(BASE_URL + RESOURCE_PATH + "?ext=" + UPLOADS),
+                            Trellis.multipartUploadService.getIRIString())));
+    }
+
+    @Test
+    public void testMultipartExtLinkHeader() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        final Response res = target(BINARY_PATH).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasLink(rdf.createIRI(BASE_URL + BINARY_PATH + "?ext=" + UPLOADS),
+                            Trellis.multipartUploadService.getIRIString())));
+    }
+
+    @Test
     public void testMultipartGet() {
         when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
         when(mockBinaryResolver.uploadSessionExists(eq(UPLOAD_SESSION_ID))).thenReturn(true);
