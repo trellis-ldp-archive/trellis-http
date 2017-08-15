@@ -15,6 +15,7 @@ package org.trellisldp.http;
 
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
@@ -27,6 +28,12 @@ import org.trellisldp.http.domain.Version;
  * @author acoburn
  */
 public class LdpBaseRequest {
+    /**
+     * The Container context
+     */
+    @Context
+    public ContainerRequestContext ctx;
+
     /**
      * The partition
      */

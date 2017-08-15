@@ -65,7 +65,6 @@ import org.trellisldp.http.impl.LdpPatchHandler;
 import org.trellisldp.http.impl.LdpPostHandler;
 import org.trellisldp.http.impl.LdpPutHandler;
 import org.trellisldp.http.impl.MementoResource;
-import org.trellisldp.spi.AgentService;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
@@ -97,15 +96,13 @@ public class LdpResource extends BaseLdpResource {
      * @param ioService the i/o service
      * @param constraintService the RDF constraint enforcing service
      * @param binaryService the datastream service
-     * @param agentService the agent service
      * @param partitions a map of partitions for use with custom hostnames
      * @param unsupportedMediaTypes any unsupported media types
      */
     public LdpResource(final ResourceService resourceService, final IOService ioService,
             final ConstraintService constraintService, final BinaryService binaryService,
-            final AgentService agentService, final Map<String, String> partitions,
-            final Collection<String> unsupportedMediaTypes) {
-        super(partitions, agentService);
+            final Map<String, String> partitions, final Collection<String> unsupportedMediaTypes) {
+        super(partitions);
         this.resourceService = resourceService;
         this.ioService = ioService;
         this.binaryService = binaryService;

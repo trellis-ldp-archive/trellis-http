@@ -52,7 +52,7 @@ public class AgentAuthorizationFilter implements ContainerRequestFilter {
     @Override
     public void filter(final ContainerRequestContext ctx) throws IOException {
         final SecurityContext sec = ctx.getSecurityContext();
-        if (isNull(sec) || isNull(sec.getUserPrincipal())) {
+        if (isNull(sec.getUserPrincipal())) {
             ctx.setProperty(SESSION_PROPERTY, new HttpSession());
         } else if (sec.isUserInRole(adminRole)) {
             ctx.setProperty(SESSION_PROPERTY, new HttpSession(Trellis.RepositoryAdministrator));

@@ -37,7 +37,7 @@ public class LdpUserResourceTest extends AbstractLdpResourceTest {
 
         final ResourceConfig config = new ResourceConfig();
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService,
-                    mockBinaryService, mockAgentService, partitions, singletonList("invalid/type")));
+                    mockBinaryService, partitions, singletonList("invalid/type")));
         config.register(new TestAuthenticationFilter("testUser", "group"));
         config.register(TrailingSlashFilter.class);
         config.register(new WebAcFilter(partitions.entrySet().stream().map(Map.Entry::getKey).collect(toSet()),

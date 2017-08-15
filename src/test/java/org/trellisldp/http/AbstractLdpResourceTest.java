@@ -155,6 +155,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     private final static IRI identifier = rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH);
 
+    private final static IRI root = rdf.createIRI(TRELLIS_PREFIX + REPO1);
+
     private final static IRI binaryIdentifier = rdf.createIRI(TRELLIS_PREFIX + BINARY_PATH);
 
     private final static IRI binaryInternalIdentifier = rdf.createIRI("file:some/file");
@@ -204,6 +206,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockResourceService.get(any(IRI.class), any(Instant.class)))
             .thenReturn(Optional.of(mockVersionedResource));
         when(mockResourceService.get(eq(identifier))).thenReturn(Optional.of(mockResource));
+        when(mockResourceService.get(eq(root))).thenReturn(Optional.of(mockResource));
         when(mockResourceService.get(eq(childIdentifier))).thenReturn(Optional.empty());
         when(mockResourceService.get(eq(childIdentifier), any(Instant.class))).thenReturn(Optional.empty());
         when(mockResourceService.get(eq(binaryIdentifier))).thenReturn(Optional.of(mockBinaryResource));
@@ -375,6 +378,24 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testGetDefaultType() {
         final Response res = target(RESOURCE_PATH).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(TEXT_TURTLE_TYPE.isCompatible(res.getMediaType()));
+        assertTrue(res.getMediaType().isCompatible(TEXT_TURTLE_TYPE));
+    }
+
+    @Test
+    public void testGetRootSlash() {
+        final Response res = target(REPO1 + "/").request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(TEXT_TURTLE_TYPE.isCompatible(res.getMediaType()));
+        assertTrue(res.getMediaType().isCompatible(TEXT_TURTLE_TYPE));
+    }
+
+    @Test
+    public void testGetRoot() {
+        final Response res = target(REPO1).request().get();
 
         assertEquals(OK, res.getStatusInfo());
         assertTrue(TEXT_TURTLE_TYPE.isCompatible(res.getMediaType()));
@@ -1464,6 +1485,23 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
+    /**
+     * Some other method
+     */
+    @Test
+    public void testOtherMethod() {
+        final Response res = target(RESOURCE_PATH).request().method("FOO");
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+    }
+
+    /**
+     * An other partition
+     */
+    @Test
+    public void testOtherParition() {
+        final Response res = target("other/object").request().get();
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
 
     protected static Predicate<Link> hasLink(final IRI iri, final String rel) {
         return link -> rel.equals(link.getRel()) && iri.getIRIString().equals(link.getUri().toString());

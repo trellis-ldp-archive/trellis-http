@@ -17,6 +17,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.nonNull;
 import static javax.ws.rs.Priorities.AUTHORIZATION;
+import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
+import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
 import static org.trellisldp.http.domain.HttpConstants.SESSION_PROPERTY;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
@@ -29,11 +31,13 @@ import java.util.Set;
 
 import javax.annotation.Priority;
 import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.NotAllowedException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.PreMatching;
 
+import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
 import org.trellisldp.http.domain.HttpConstants;
 import org.trellisldp.http.impl.HttpSession;
@@ -94,13 +98,15 @@ public class WebAcFilter implements ContainerRequestFilter {
                 verifyCanWrite(s, path);
             } else if (appendable.contains(method)) {
                 verifyCanAppend(s, path);
+            } else {
+                throw new NotAllowedException(status(METHOD_NOT_ALLOWED).build());
             }
         }
     }
 
     private void verifyCanAppend(final Session session, final String path) {
-        if (!accessService.anyMatch(session, rdf.createIRI(TRELLIS_PREFIX + path),
-                        iri -> ACL.Append.equals(iri) || ACL.Write.equals(iri))) {
+        final IRI iri = rdf.createIRI(TRELLIS_PREFIX + path);
+        if (!accessService.anyMatch(session, iri, x -> ACL.Append.equals(x) || ACL.Write.equals(x))) {
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
                 throw new NotAuthorizedException(challenges.get(0),
                         challenges.subList(1, challenges.size()).toArray());

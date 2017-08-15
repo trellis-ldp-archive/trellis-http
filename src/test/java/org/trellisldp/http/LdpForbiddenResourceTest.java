@@ -120,7 +120,7 @@ public class LdpForbiddenResourceTest extends JerseyTest {
         config.register(new WebAcFilter(partitions.entrySet().stream().map(Map.Entry::getKey).collect(toSet()),
                     emptyList(), mockAccessControlService));
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService, mockBinaryService,
-                    mockAgentService, partitions, emptyList()));
+                    partitions, emptyList()));
         return config;
     }
 
