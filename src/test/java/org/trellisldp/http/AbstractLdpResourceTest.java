@@ -98,6 +98,7 @@ import org.mockito.Mock;
 import org.trellisldp.api.Binary;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.VersionRange;
+import org.trellisldp.http.impl.HttpSession;
 import org.trellisldp.io.JenaIOService;
 import org.trellisldp.spi.AccessControlService;
 import org.trellisldp.spi.AgentService;
@@ -1676,10 +1677,15 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testMultipartPost() {
+        final BinaryService.MultipartUpload upload = new BinaryService.MultipartUpload();
+        upload.binary = mockBinary;
+        upload.session = new HttpSession();
+        upload.baseUrl = BASE_URL;
+        upload.path = BINARY_PATH;
+
         when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
         when(mockBinaryResolver.uploadSessionExists(eq(UPLOAD_SESSION_ID))).thenReturn(true);
-        when(mockBinaryResolver.completeUpload(eq(UPLOAD_SESSION_ID), any()))
-            .thenReturn(new SimpleEntry<>(binaryIdentifier, mockBinary));
+        when(mockBinaryResolver.completeUpload(eq(UPLOAD_SESSION_ID), any())).thenReturn(upload);
 
         final Response res = target("upload/" + REPO1 + "/" + UPLOAD_SESSION_ID).request()
             .post(entity("{\"key\": \"value\"}", APPLICATION_JSON_TYPE));

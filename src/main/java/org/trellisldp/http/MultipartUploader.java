@@ -16,8 +16,14 @@ package org.trellisldp.http;
 import static java.net.URI.create;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
+import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.Response.created;
 import static javax.ws.rs.core.Response.ok;
+import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
+import static org.trellisldp.spi.RDFUtils.auditCreation;
+import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.vocabulary.RDF.type;
 
 import com.codahale.metrics.annotation.Timed;
 
@@ -35,8 +41,15 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.rdf.api.Dataset;
+import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.RDF;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ResourceService;
+import org.trellisldp.vocabulary.DC;
+import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.Trellis;
+import org.trellisldp.vocabulary.XSD;
 
 /**
  * @author acoburn
@@ -48,13 +61,14 @@ public class MultipartUploader {
 
     private final ResourceService resourceService;
 
+    private static final RDF rdf = getInstance();
+
     /**
      * Create a multipart uploader object
      * @param resourceService the resource service
      * @param binaryService the binary service
      */
-    public MultipartUploader(final ResourceService resourceService,
-            final BinaryService binaryService) {
+    public MultipartUploader(final ResourceService resourceService, final BinaryService binaryService) {
         this.resourceService = resourceService;
         this.binaryService = binaryService;
     }
@@ -91,25 +105,32 @@ public class MultipartUploader {
     @Consumes("application/json")
     public Response createBinary(@PathParam("partition") final String partition,
             @PathParam("id") final String id, final InputStream input) {
+
+        // TODO -- read input into this map
         final Map<Integer, String> partDigests = emptyMap();
         return binaryService.getResolverForPartition(partition)
             .filter(BinaryService.Resolver::supportsMultipartUpload)
             .filter(svc -> svc.uploadSessionExists(id))
             .map(svc -> svc.completeUpload(id, partDigests))
-            // TODO - store in repository
-            //
-            //final Map<Integer, String> partDigests = emptyMap();
-            //binaryService.getResolverForPartition(getPartition(path)).map(resolver ->
-                    //resolver.completeUpload(uploadId, partDigests)).ifPresent(binary -> {
-                //dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalIdentifier, DC.hasPart,
-                            //binary.getIdentifier()));
-                //dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binary.getIdentifier(), DC.format,
-                            //rdf.createLiteral(binary.getMimeType().orElse(APPLICATION_OCTET_STREAM))));
-                //binary.getSize().ifPresent(size ->
-                        //dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binary.getIdentifier(), DC.extent,
-                                //rdf.createLiteral(size.toString(), XSD.long_))));
-            //});
-            .map(binary -> created(create(binary.getKey().getIRIString())).build())
+            .map(upload -> {
+                final Dataset dataset = rdf.createDataset();
+                final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + upload.path);
+
+                // Add Audit quads
+                auditCreation(identifier, upload.session).stream().map(skolemizeQuads(resourceService, upload.baseUrl))
+                    .forEach(dataset::add);
+                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.NonRDFSource));
+                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.hasPart,
+                            upload.binary.getIdentifier()));
+                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, upload.binary.getIdentifier(), DC.format,
+                            rdf.createLiteral(upload.binary.getMimeType().orElse(APPLICATION_OCTET_STREAM))));
+                upload.binary.getSize().ifPresent(size -> dataset.add(rdf.createQuad(Trellis.PreferServerManaged,
+                                upload.binary.getIdentifier(), DC.extent, rdf.createLiteral(size.toString(),
+                                    XSD.long_))));
+
+                resourceService.put(identifier, dataset);
+                return created(create(upload.baseUrl + upload.path)).build();
+            })
             .orElseThrow(NotFoundException::new);
     }
 
@@ -129,6 +150,7 @@ public class MultipartUploader {
             @PathParam("id") final String id,
             @PathParam("partNumber") final Integer partNumber,
             final InputStream part) {
+
         return binaryService.getResolverForPartition(partition)
             .filter(BinaryService.Resolver::supportsMultipartUpload)
             .filter(res -> res.uploadSessionExists(id))
@@ -145,6 +167,7 @@ public class MultipartUploader {
     @Timed
     public void abortUpload(@PathParam("partition") final String partition,
             @PathParam("id") final String id) {
+
         binaryService.getResolverForPartition(partition)
             .filter(BinaryService.Resolver::supportsMultipartUpload)
             .filter(res -> res.uploadSessionExists(id))
