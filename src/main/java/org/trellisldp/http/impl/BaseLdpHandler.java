@@ -59,6 +59,7 @@ public class BaseLdpHandler {
 
     protected final ResourceService resourceService;
 
+    protected String partition = "";
     protected String path = "";
     protected String baseUrl = "";
     protected List<MediaType> acceptableTypes = singletonList(WILDCARD_TYPE);
@@ -93,15 +94,6 @@ public class BaseLdpHandler {
     }
 
     /**
-     * Get the partition name, given the path
-     * @param path the path
-     * @return the partition portion of the path
-     */
-    protected static String getPartition(final String path) {
-        return path.split("/", 2)[0];
-    }
-
-    /**
      * Check the request for a cache-related response
      * @param request the request
      * @param modified the modified time
@@ -127,6 +119,14 @@ public class BaseLdpHandler {
         } else {
             this.path = path;
         }
+    }
+
+    /**
+     * Set the partition
+     * @param partition the partition
+     */
+    public void setPartition(final String partition) {
+        this.partition = partition;
     }
 
     /**

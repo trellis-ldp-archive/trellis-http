@@ -124,7 +124,6 @@ public class LdpPostHandler extends BaseLdpHandler {
             }
 
         } else if (nonNull(entity)) {
-            final String partition = getPartition(path);
             final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(partition).get());
             binaryService.setContent(partition, binaryLocation, entity);
             dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalIdentifier, DC.hasPart, binaryLocation));

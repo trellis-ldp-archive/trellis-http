@@ -150,7 +150,6 @@ public class LdpGetHandler extends BaseLdpHandler {
         final Optional<RDFSyntax> syntax = getSyntax(acceptableTypes, res.getBinary()
                 .map(b -> b.getMimeType().orElse(APPLICATION_OCTET_STREAM)));
 
-        // TODO add acl header, if in effect
         final ResponseBuilder builder = basicGetResponseBuilder(res, syntax);
 
         // Add NonRDFSource-related "describe*" link headers
@@ -163,7 +162,7 @@ public class LdpGetHandler extends BaseLdpHandler {
             }
         });
 
-        // TODO -- review this conditional (should ACLs be excluded?)
+        // Only show memento links for the user-managed graph (not ACL)
         if (Trellis.PreferUserManaged.equals(graphName)) {
             builder.link(identifier, "original timegate")
                 .links(MementoResource.getMementoLinks(identifier, res.getMementos()).toArray(Link[]::new));
@@ -181,27 +180,30 @@ public class LdpGetHandler extends BaseLdpHandler {
 
     private ResponseBuilder getLdpRs(final String identifier, final Resource res, final ResponseBuilder builder,
             final RDFSyntax syntax, final IRI profile) {
+
+        // Check for a cache hit
         final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier), true);
         final ResponseBuilder cacheBuilder = checkCache(request, res.getModified(), etag);
         if (nonNull(cacheBuilder)) {
             return cacheBuilder;
         }
+
         builder.tag(etag);
         if (res.isMemento()) {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
         } else if (Trellis.PreferAccessControl.equals(graphName)) {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH));
         } else if (res.getInteractionModel().equals(LDP.RDFSource)) {
-            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE, PATCH));
+            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH, PUT, DELETE));
         } else {
-            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, POST, DELETE, PATCH));
+            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH, PUT, DELETE, POST));
         }
         ofNullable(prefer).ifPresent(p ->
                 builder.header(PREFERENCE_APPLIED, "return=" + p.getPreference().orElse("representation")));
 
         // Add upload service headers, if relevant
         if (!LDP.RDFSource.equals(res.getInteractionModel())) {
-            binaryService.getResolverForPartition(getPartition(path))
+            binaryService.getResolverForPartition(partition)
                 .map(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
                     builder.link(identifier + "?ext=" + UPLOADS, Trellis.multipartUploadService.getIRIString()));
         }
@@ -228,7 +230,6 @@ public class LdpGetHandler extends BaseLdpHandler {
         // Set last-modified to be the binary's last-modified value
         builder.lastModified(from(mod));
 
-        final String partition = getPartition(path);
         final IRI dsid = res.getBinary().map(Binary::getIdentifier).get();
         final InputStream binary = binaryService.getContent(partition, dsid).orElseThrow(() ->
                 new WebApplicationException("Could not load binary resolver for " + dsid.getIRIString()));

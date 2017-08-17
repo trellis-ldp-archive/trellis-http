@@ -160,7 +160,6 @@ public class LdpPutHandler extends BaseLdpHandler {
                 return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
             }
         } else if (nonNull(entity)) {
-            final String partition = getPartition(path);
             final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(partition).get());
             binaryService.setContent(partition, binaryLocation, entity);
             dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalIdentifier, DC.hasPart, binaryLocation));

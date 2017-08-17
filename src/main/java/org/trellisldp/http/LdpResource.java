@@ -121,6 +121,7 @@ public class LdpResource extends BaseLdpResource {
 
         final LdpGetHandler getHandler = new LdpGetHandler(resourceService, ioService, binaryService,
                 req.getRequest());
+        getHandler.setPartition(req.getPartition());
         getHandler.setPath(path);
         getHandler.setBaseUrl(baseUrl);
         getHandler.setAcceptableTypes(acceptableTypes);
@@ -178,6 +179,7 @@ public class LdpResource extends BaseLdpResource {
         final String path = req.getPartition() + req.getPath();
 
         final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(resourceService);
+        optionsHandler.setPartition(req.getPartition());
         optionsHandler.setPath(path);
         optionsHandler.setBaseUrl(req.getBaseUrl(partitions));
         if (ACL.equals(req.getExt())) {
@@ -218,6 +220,7 @@ public class LdpResource extends BaseLdpResource {
 
         final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, ioService, constraintService,
                 req.getRequest());
+        patchHandler.setPartition(req.getPartition());
         patchHandler.setPath(path);
         patchHandler.setBaseUrl(req.getBaseUrl(partitions));
         patchHandler.setAcceptableTypes(req.getHeaders().getAcceptableMediaTypes());
@@ -250,6 +253,7 @@ public class LdpResource extends BaseLdpResource {
         final String path = req.getPartition() + req.getPath();
 
         final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, req.getRequest());
+        deleteHandler.setPartition(req.getPartition());
         deleteHandler.setPath(path);
         deleteHandler.setBaseUrl(req.getBaseUrl(partitions));
         deleteHandler.setSession(session);
@@ -286,6 +290,7 @@ public class LdpResource extends BaseLdpResource {
 
         final LdpPostHandler postHandler = new LdpPostHandler(resourceService, ioService, constraintService,
                 binaryService);
+        postHandler.setPartition(req.getPartition());
         postHandler.setPath(fullPath);
         postHandler.setBaseUrl(baseUrl);
         postHandler.setSession(session);
@@ -334,6 +339,7 @@ public class LdpResource extends BaseLdpResource {
 
         final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, constraintService,
                 binaryService, req.getRequest());
+        putHandler.setPartition(req.getPartition());
         putHandler.setPath(path);
         putHandler.setBaseUrl(baseUrl);
         putHandler.setSession(session);

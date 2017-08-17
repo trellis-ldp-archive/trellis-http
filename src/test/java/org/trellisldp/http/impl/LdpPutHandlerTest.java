@@ -197,6 +197,7 @@ public class LdpPutHandlerTest {
     public void testPutLdpBinaryResourceWithLdprLink() {
         final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService, mockRequest);
+        putHandler.setPartition("partition");
         putHandler.setPath("partition/resource");
         putHandler.setBaseUrl(baseUrl);
         putHandler.setContentType(TEXT_PLAIN);
@@ -221,6 +222,7 @@ public class LdpPutHandlerTest {
         when(mockResource.getBinary()).thenReturn(of(testBinary));
         final LdpPutHandler putHandler = new LdpPutHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService, mockRequest);
+        putHandler.setPartition("partition");
         putHandler.setPath("partition/resource");
         putHandler.setBaseUrl(baseUrl);
         putHandler.setContentType(TEXT_PLAIN);

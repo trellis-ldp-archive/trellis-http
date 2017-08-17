@@ -292,6 +292,7 @@ public class LdpPostHandlerTest {
         final InputStream entity = new ByteArrayInputStream("Some data".getBytes(UTF_8));
         final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService);
+        postHandler.setPartition("partition");
         postHandler.setPath("partition/newresource");
         postHandler.setBaseUrl(baseUrl);
         postHandler.setSession(new HttpSession());
@@ -356,6 +357,7 @@ public class LdpPostHandlerTest {
 
         final LdpPostHandler postHandler = new LdpPostHandler(mockResourceService, mockIoService, mockConstraintService,
                 mockBinaryService);
+        postHandler.setPartition("partition");
         postHandler.setPath("partition/newresource");
         postHandler.setBaseUrl(baseUrl);
         postHandler.setSession(new HttpSession());
