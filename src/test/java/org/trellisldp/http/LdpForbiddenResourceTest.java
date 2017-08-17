@@ -136,6 +136,8 @@ public class LdpForbiddenResourceTest extends JerseyTest {
             .thenReturn(false);
         when(mockAccessControlService.anyMatch(any(Session.class), any(IRI.class), any()))
             .thenReturn(false);
+        when(mockAccessControlService.findAclFor(any(IRI.class)))
+            .thenAnswer(inv -> Optional.of(rdf.createIRI(((IRI) inv.getArgument(0)).getIRIString() + "?ext=acl")));
 
         when(mockAgentService.asAgent("testUser")).thenReturn(agent);
 

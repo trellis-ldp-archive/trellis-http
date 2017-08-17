@@ -38,6 +38,8 @@ public final class HttpConstants {
 
     public static final String ACL = "acl";
 
+    public static final String ACL_PROPERTY = "acl-link";
+
     public static final String APPLICATION_LINK_FORMAT = "application/link-format";
 
     public static final String DIGEST = "Digest";

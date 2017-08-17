@@ -20,6 +20,8 @@ import static javax.ws.rs.Priorities.AUTHORIZATION;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
+import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.http.domain.HttpConstants.ACL_PROPERTY;
 import static org.trellisldp.http.domain.HttpConstants.SESSION_PROPERTY;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
@@ -27,6 +29,7 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Priority;
@@ -39,6 +42,7 @@ import javax.ws.rs.container.PreMatching;
 
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
+import org.slf4j.Logger;
 import org.trellisldp.http.domain.HttpConstants;
 import org.trellisldp.http.impl.HttpSession;
 import org.trellisldp.spi.AccessControlService;
@@ -54,6 +58,8 @@ import org.trellisldp.vocabulary.Trellis;
 public class WebAcFilter implements ContainerRequestFilter {
 
     private static final RDF rdf = getInstance();
+
+    private static final Logger LOGGER = getLogger(WebAcFilter.class);
 
     private final AccessControlService accessService;
     private final Set<String> partitions;
@@ -71,6 +77,7 @@ public class WebAcFilter implements ContainerRequestFilter {
     public WebAcFilter(final Set<String> partitions, final List<String> challenges,
             final AccessControlService accessService) {
         this.accessService = accessService;
+        // TODO -- change this back to a map
         this.partitions = partitions;
         this.challenges = challenges.isEmpty() ? singletonList(BASIC_AUTH) : challenges;
     }
@@ -88,6 +95,16 @@ public class WebAcFilter implements ContainerRequestFilter {
         }
         final String method = ctx.getMethod();
         final String partition = path.split("/")[0];
+
+        final Optional<IRI> acl = accessService.findAclFor(rdf.createIRI(TRELLIS_PREFIX + path));
+
+        if (!acl.isPresent()) {
+            LOGGER.error("No ACL resource found for {}", path);
+            throw new ForbiddenException();
+        }
+
+        // TODO -- verify that this resource has the correct base URL
+        ctx.setProperty(ACL_PROPERTY, acl.map(IRI::getIRIString).get());
 
         if (partitions.contains(partition)) {
             if (HttpConstants.ACL.equals(ctx.getUriInfo().getQueryParameters().getFirst("ext"))) {

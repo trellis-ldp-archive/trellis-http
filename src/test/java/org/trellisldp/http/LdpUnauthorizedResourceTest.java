@@ -133,6 +133,8 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
 
         when(mockAccessControlService.anyMatch(any(Session.class), any(IRI.class), any()))
             .thenReturn(false);
+        when(mockAccessControlService.findAclFor(any(IRI.class)))
+            .thenAnswer(inv -> Optional.of(rdf.createIRI(((IRI) inv.getArgument(0)).getIRIString() + "?ext=acl")));
 
         when(mockVersionedResource.getMementos()).thenReturn(Stream.empty());
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.RDFSource);

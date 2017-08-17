@@ -235,6 +235,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockAccessControlService.canRead(any(Session.class), any(IRI.class))).thenReturn(true);
         when(mockAccessControlService.canWrite(any(Session.class), any(IRI.class))).thenReturn(true);
         when(mockAccessControlService.canControl(any(Session.class), any(IRI.class))).thenReturn(true);
+        when(mockAccessControlService.findAclFor(any(IRI.class)))
+            .thenAnswer(inv -> Optional.of(rdf.createIRI(((IRI) inv.getArgument(0)).getIRIString() + "?ext=acl")));
 
         when(mockVersionedResource.getMementos()).thenAnswer(x -> Stream.of(
                 new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),
