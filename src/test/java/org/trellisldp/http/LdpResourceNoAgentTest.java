@@ -36,6 +36,7 @@ public class LdpResourceNoAgentTest extends AbstractLdpResourceTest {
                     mockBinaryService, partitions, singletonList("invalid/type")));
         config.register(TrailingSlashFilter.class);
         config.register(new MultipartUploader(mockResourceService, mockBinaryService));
+        config.register(new CacheControlFilter(86400));
         return config;
     }
 }

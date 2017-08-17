@@ -24,6 +24,7 @@ import static java.util.Arrays.stream;
 import static java.util.Date.from;
 import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.client.Entity.entity;
+import static javax.ws.rs.core.HttpHeaders.CACHE_CONTROL;
 import static javax.ws.rs.core.HttpHeaders.LINK;
 import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
@@ -1704,6 +1705,24 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         final Response res = target("upload/" + REPO1 + "/" + UPLOAD_SESSION_ID).request().delete();
         assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    /* ************************************ *
+     *      Test cache control headers
+     * ************************************ */
+    @Test
+    public void testCacheControl() {
+        final Response res = target(RESOURCE_PATH).request().get();
+        assertEquals(OK, res.getStatusInfo());
+        assertNotNull(res.getHeaderString(CACHE_CONTROL));
+        assertTrue(res.getHeaderString(CACHE_CONTROL).contains("max-age="));
+    }
+
+    @Test
+    public void testCacheControlOptions() {
+        final Response res = target(RESOURCE_PATH).request().options();
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertNull(res.getHeaderString(CACHE_CONTROL));
     }
 
     protected static Predicate<Link> hasLink(final IRI iri, final String rel) {

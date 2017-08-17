@@ -62,7 +62,6 @@ import java.time.Instant;
 import java.util.Optional;
 
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Request;
@@ -93,8 +92,6 @@ import org.trellisldp.vocabulary.Trellis;
  * @author acoburn
  */
 public class LdpGetHandler extends BaseLdpHandler {
-
-    private static final int cacheAge = 86400;
 
     private static final Logger LOGGER = getLogger(LdpGetHandler.class);
 
@@ -274,9 +271,6 @@ public class LdpGetHandler extends BaseLdpHandler {
     private static ResponseBuilder basicGetResponseBuilder(final Resource res, final Optional<RDFSyntax> syntax) {
         final ResponseBuilder builder = ok();
 
-        final CacheControl cc = new CacheControl();
-        cc.setMaxAge(cacheAge);
-
         // Standard HTTP Headers
         builder.lastModified(from(res.getModified())).variants(VARIANTS);
         if (syntax.isPresent()) {
@@ -313,6 +307,6 @@ public class LdpGetHandler extends BaseLdpHandler {
             builder.header(VARY, ACCEPT_DATETIME);
         }
 
-        return builder.cacheControl(cc);
+        return builder;
     }
 }

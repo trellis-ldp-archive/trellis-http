@@ -39,7 +39,6 @@ import static org.trellisldp.spi.RDFUtils.auditUpdate;
 import java.util.Optional;
 
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
@@ -179,11 +178,6 @@ public class LdpPatchHandler extends BaseLdpHandler {
             } else {
                 return builder.status(NO_CONTENT);
             }
-
-            // Set no-cache directive
-            final CacheControl cc = new CacheControl();
-            cc.setNoCache(true);
-            builder.cacheControl(cc);
 
             return builder;
         }

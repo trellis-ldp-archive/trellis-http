@@ -37,6 +37,7 @@ public class LdpResourceTest extends AbstractLdpResourceTest {
         config.register(TrailingSlashFilter.class);
         config.register(new AgentAuthorizationFilter(mockAgentService, "admin"));
         config.register(new MultipartUploader(mockResourceService, mockBinaryService));
+        config.register(new CacheControlFilter(86400));
         return config;
     }
 }
