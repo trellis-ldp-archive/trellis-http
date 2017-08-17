@@ -189,6 +189,14 @@ public class LdpForbiddenResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testForbiddenNoAcl() {
+        when(mockAccessControlService.findAclFor(any(IRI.class))).thenReturn(Optional.empty());
+        final Response res = target("/repo1/resource").request().get();
+
+        assertEquals(FORBIDDEN, res.getStatusInfo());
+    }
+
+    @Test
     public void testDefaultType() {
         final Response res = target("repo1/resource").request().get();
 
