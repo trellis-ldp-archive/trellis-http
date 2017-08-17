@@ -52,8 +52,10 @@ import org.apache.commons.rdf.api.IRI;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
+import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.PATCH;
 import org.trellisldp.http.domain.Prefer;
+import org.trellisldp.http.impl.HttpSession;
 import org.trellisldp.http.impl.LdpDeleteHandler;
 import org.trellisldp.http.impl.LdpGetHandler;
 import org.trellisldp.http.impl.LdpOptionsHandler;
@@ -65,7 +67,6 @@ import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.Trellis;
 
@@ -212,7 +213,6 @@ public class LdpResource extends BaseLdpResource {
     public Response updateResource(@BeanParam final LdpRequest req, final String body) {
 
         final String path = req.getPartition() + req.getPath();
-        final Session session = req.getSession();
 
         if (nonNull(req.getVersion()) || UPLOADS.equals(req.getExt())) {
             return status(METHOD_NOT_ALLOWED).build();
@@ -225,7 +225,7 @@ public class LdpResource extends BaseLdpResource {
         patchHandler.setBaseUrl(req.getBaseUrl(partitions));
         patchHandler.setAcceptableTypes(req.getHeaders().getAcceptableMediaTypes());
         patchHandler.setPrefer(req.getPrefer());
-        patchHandler.setSession(session);
+        patchHandler.setSession(ofNullable(req.getSession()).orElse(new HttpSession()));
         patchHandler.setSparqlUpdate(body);
         if (ACL.equals(req.getExt())) {
             patchHandler.setGraphName(Trellis.PreferAccessControl);
@@ -244,8 +244,6 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response deleteResource(@BeanParam final LdpRequest req) {
 
-        final Session session = req.getSession();
-
         if (nonNull(req.getExt()) || nonNull(req.getVersion())) {
             return status(METHOD_NOT_ALLOWED).build();
         }
@@ -256,7 +254,7 @@ public class LdpResource extends BaseLdpResource {
         deleteHandler.setPartition(req.getPartition());
         deleteHandler.setPath(path);
         deleteHandler.setBaseUrl(req.getBaseUrl(partitions));
-        deleteHandler.setSession(session);
+        deleteHandler.setSession(ofNullable(req.getSession()).orElse(new HttpSession()));
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
             .map(deleteHandler::deleteResource).orElse(status(NOT_FOUND)).build();
@@ -271,8 +269,6 @@ public class LdpResource extends BaseLdpResource {
     @POST
     @Timed
     public Response createResource(@BeanParam final LdpRequest req, final InputStream body) {
-
-        final Session session = req.getSession();
 
         if (unsupportedTypes.contains(req.getContentType())) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
@@ -293,7 +289,7 @@ public class LdpResource extends BaseLdpResource {
         postHandler.setPartition(req.getPartition());
         postHandler.setPath(fullPath);
         postHandler.setBaseUrl(baseUrl);
-        postHandler.setSession(session);
+        postHandler.setSession(ofNullable(req.getSession()).orElse(new HttpSession()));
         postHandler.setContentType(req.getContentType());
         postHandler.setLink(req.getLink());
         postHandler.setEntity(body);
@@ -324,8 +320,6 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response setResource(@BeanParam final LdpRequest req, final InputStream body) {
 
-        final Session session = req.getSession();
-
         if (unsupportedTypes.contains(req.getContentType())) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
@@ -342,7 +336,7 @@ public class LdpResource extends BaseLdpResource {
         putHandler.setPartition(req.getPartition());
         putHandler.setPath(path);
         putHandler.setBaseUrl(baseUrl);
-        putHandler.setSession(session);
+        putHandler.setSession(ofNullable(req.getSession()).orElse(new HttpSession()));
         putHandler.setContentType(req.getContentType());
         putHandler.setLink(req.getLink());
         putHandler.setEntity(body);

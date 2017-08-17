@@ -11,9 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.trellisldp.http;
+package org.trellisldp.http.domain;
 
-import static java.util.Objects.isNull;
 import static org.trellisldp.http.domain.HttpConstants.SESSION_PROPERTY;
 
 import java.util.Map;
@@ -28,12 +27,6 @@ import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
 
-import org.trellisldp.http.domain.AcceptDatetime;
-import org.trellisldp.http.domain.Prefer;
-import org.trellisldp.http.domain.Range;
-import org.trellisldp.http.domain.Version;
-import org.trellisldp.http.domain.WantDigest;
-import org.trellisldp.http.impl.HttpSession;
 import org.trellisldp.spi.Session;
 
 /**
@@ -194,11 +187,7 @@ public class LdpRequest {
      * @return a session
      */
     public Session getSession() {
-        final Session session = (Session) ctx.getProperty(SESSION_PROPERTY);
-        if (isNull(session)) {
-            return new HttpSession();
-        }
-        return session;
+        return (Session) ctx.getProperty(SESSION_PROPERTY);
     }
 
     /**
