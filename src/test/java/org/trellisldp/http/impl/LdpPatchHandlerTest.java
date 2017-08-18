@@ -144,16 +144,15 @@ public class LdpPatchHandlerTest {
 
     @Test(expected = WebApplicationException.class)
     public void testPatchNoSparql() {
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
-                mockIoService, mockConstraintService);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, null,
+                mockResourceService, mockIoService, mockConstraintService);
         patchHandler.updateResource(mockResource).build();
     }
 
     @Test
     public void testPatchLdprs() {
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
-                mockIoService, mockConstraintService);
-        patchHandler.setSparqlUpdate(insert);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, insert,
+                mockResourceService, mockIoService, mockConstraintService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -167,9 +166,8 @@ public class LdpPatchHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
-                mockIoService, mockConstraintService);
-        patchHandler.setSparqlUpdate(insert);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, insert,
+                mockResourceService, mockIoService, mockConstraintService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -196,9 +194,8 @@ public class LdpPatchHandlerTest {
         when(mockLdpRequest.getPath()).thenReturn("/resource");
         when(mockLdpRequest.getPrefer()).thenReturn(new Prefer("return=representation"));
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
-                mockIoService, mockConstraintService);
-        patchHandler.setSparqlUpdate(insert);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, insert,
+                mockResourceService, mockIoService, mockConstraintService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
 
@@ -221,9 +218,8 @@ public class LdpPatchHandlerTest {
         when(mockLdpRequest.getHeaders().getAcceptableMediaTypes())
             .thenReturn(singletonList(MediaType.valueOf(RDFA_HTML.mediaType)));
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
-                mockIoService, mockConstraintService);
-        patchHandler.setSparqlUpdate(insert);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, insert,
+                mockResourceService, mockIoService, mockConstraintService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
 
@@ -243,9 +239,8 @@ public class LdpPatchHandlerTest {
         when(mockConstraintService.constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any()))
             .thenReturn(Optional.of(Trellis.InvalidRange));
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
-                mockIoService, mockConstraintService);
-        patchHandler.setSparqlUpdate(insert);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, insert,
+                mockResourceService, mockIoService, mockConstraintService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
         assertEquals(BAD_REQUEST, res.getStatusInfo());
@@ -259,10 +254,8 @@ public class LdpPatchHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
-                mockIoService, mockConstraintService);
-
-        patchHandler.setSparqlUpdate(insert);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, insert,
+                mockResourceService, mockIoService, mockConstraintService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
         assertEquals(GONE, res.getStatusInfo());
@@ -275,10 +268,8 @@ public class LdpPatchHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
-                mockIoService, mockConstraintService);
-
-        patchHandler.setSparqlUpdate(insert);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, insert,
+                mockResourceService, mockIoService, mockConstraintService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
         assertEquals(CONFLICT, res.getStatusInfo());
@@ -291,10 +282,8 @@ public class LdpPatchHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
-                mockIoService, mockConstraintService);
-
-        patchHandler.setSparqlUpdate(insert);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, insert,
+                mockResourceService, mockIoService, mockConstraintService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
@@ -307,10 +296,8 @@ public class LdpPatchHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
-                mockIoService, mockConstraintService);
-
-        patchHandler.setSparqlUpdate(insert);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, insert,
+                mockResourceService, mockIoService, mockConstraintService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
         assertEquals(BAD_REQUEST, res.getStatusInfo());

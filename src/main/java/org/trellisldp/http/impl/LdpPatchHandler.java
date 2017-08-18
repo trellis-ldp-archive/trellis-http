@@ -26,6 +26,7 @@ import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
@@ -73,30 +74,24 @@ public class LdpPatchHandler extends BaseLdpHandler {
 
     private final IOService ioService;
     private final ConstraintService constraintService;
-
-    private String sparqlUpdate = null;
+    private final String sparqlUpdate;
 
     /**
      * Create a handler for PATCH operations
      * @param partitions the partitions
      * @param req the LDP request
+     * @param sparqlUpdate the sparql update body
      * @param resourceService the resource service
      * @param ioService the serialization service
      * @param constraintService the RDF constraint service
      */
     public LdpPatchHandler(final Map<String, String> partitions, final LdpRequest req,
+            final String sparqlUpdate,
             final ResourceService resourceService, final IOService ioService,
             final ConstraintService constraintService) {
         super(partitions, req, resourceService);
         this.ioService = ioService;
         this.constraintService = constraintService;
-    }
-
-    /**
-     * Set the sparql update body
-     * @param sparqlUpdate the sparql update command
-     */
-    public void setSparqlUpdate(final String sparqlUpdate) {
         this.sparqlUpdate = sparqlUpdate;
     }
 
@@ -131,6 +126,7 @@ public class LdpPatchHandler extends BaseLdpHandler {
 
         // Update existing graph
         final Graph graph = rdf.createGraph();
+        final IRI graphName = ACL.equals(req.getExt()) ? Trellis.PreferAccessControl : Trellis.PreferUserManaged;
         res.stream(graphName).forEach(graph::add);
         try {
             ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath());

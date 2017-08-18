@@ -159,9 +159,9 @@ public class LdpOptionsHandlerTest {
 
     @Test
     public void testOptionsAcl() {
+        when(mockRequest.getExt()).thenReturn("acl");
 
         final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(emptyMap(), mockRequest, mockResourceService);
-        optionsHandler.setGraphName(Trellis.PreferAccessControl);
 
         final Response res = optionsHandler.ldpOptions(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());

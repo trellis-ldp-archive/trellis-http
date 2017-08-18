@@ -29,6 +29,7 @@ import static javax.ws.rs.core.Response.status;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
+import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.PATCH;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
@@ -38,6 +39,7 @@ import java.util.Map;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 
+import org.apache.commons.rdf.api.IRI;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
@@ -75,6 +77,8 @@ public class LdpOptionsHandler extends BaseLdpHandler {
         final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
 
         LOGGER.debug("OPTIONS request for {}", identifier);
+
+        final IRI graphName = ACL.equals(req.getExt()) ? Trellis.PreferAccessControl : Trellis.PreferUserManaged;
 
         // Check if this is already deleted
         final ResponseBuilder deleted = checkDeleted(res, identifier);

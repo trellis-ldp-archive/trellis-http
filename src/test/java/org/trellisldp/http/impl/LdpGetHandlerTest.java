@@ -516,10 +516,10 @@ public class LdpGetHandlerTest {
     public void testGetAcl() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(TEXT_TURTLE_TYPE));
+        when(mockLdpRequest.getExt()).thenReturn("acl");
 
         final LdpGetHandler getHandler = new LdpGetHandler(emptyMap(), mockLdpRequest, mockResourceService,
                 mockIoService, mockBinaryService);
-        getHandler.setGraphName(Trellis.PreferAccessControl);
 
         final Response res = getHandler.getRepresentation(mockResource).build();
         assertEquals(OK, res.getStatusInfo());

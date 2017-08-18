@@ -29,6 +29,7 @@ import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Map;
@@ -68,23 +69,26 @@ public class LdpPutHandler extends BaseLdpHandler {
     private final BinaryService binaryService;
     private final ConstraintService constraintService;
     private final IOService ioService;
+    private final InputStream entity;
 
     /**
      * Create a builder for an LDP POST response
      * @param partitions the partitions
      * @param req the LDP request
+     * @param entity the entity
      * @param resourceService the resource service
      * @param ioService the serialization service
      * @param constraintService the RDF constraint service
      * @param binaryService the binary service
      */
-    public LdpPutHandler(final Map<String, String> partitions, final LdpRequest req,
+    public LdpPutHandler(final Map<String, String> partitions, final LdpRequest req, final InputStream entity,
             final ResourceService resourceService, final IOService ioService,
             final ConstraintService constraintService, final BinaryService binaryService) {
         super(partitions, req, resourceService);
         this.ioService = ioService;
         this.constraintService = constraintService;
         this.binaryService = binaryService;
+        this.entity = entity;
     }
 
     /**

@@ -145,7 +145,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         });
 
         // Only show memento links for the user-managed graph (not ACL)
-        if (Trellis.PreferUserManaged.equals(graphName)) {
+        if (!ACL.equals(req.getExt())) {
             builder.link(identifier, "original timegate")
                 .links(MementoResource.getMementoLinks(identifier, res.getMementos()).toArray(Link[]::new));
         }
@@ -173,7 +173,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         builder.tag(etag);
         if (res.isMemento()) {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
-        } else if (Trellis.PreferAccessControl.equals(graphName)) {
+        } else if (ACL.equals(req.getExt())) {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH));
         } else if (res.getInteractionModel().equals(LDP.RDFSource)) {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH, PUT, DELETE));

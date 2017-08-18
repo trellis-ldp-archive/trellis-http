@@ -124,7 +124,7 @@ public class LdpPostHandlerTest {
 
         when(mockRequest.getSession()).thenReturn(new HttpSession());
         when(mockRequest.getPartition()).thenReturn("partition");
-        when(mockRequest.getPath()).thenReturn("/newresource");
+        when(mockRequest.getPath()).thenReturn("");
         when(mockRequest.getBaseUrl(any())).thenReturn(baseUrl);
     }
 
@@ -132,8 +132,8 @@ public class LdpPostHandlerTest {
     public void testPostLdprs() {
         when(mockRequest.getLink()).thenReturn(fromUri(LDP.Container.getIRIString()).rel("type").build());
 
-        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, "/newresource", null,
+                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -146,8 +146,8 @@ public class LdpPostHandlerTest {
 
     @Test
     public void testDefaultType1() {
-        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, "/newresource", null,
+                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -162,8 +162,8 @@ public class LdpPostHandlerTest {
     public void testDefaultType2() {
         when(mockRequest.getContentType()).thenReturn("text/plain");
 
-        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, "/newresource", null,
+                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -178,8 +178,8 @@ public class LdpPostHandlerTest {
     public void testDefaultType3() {
         when(mockRequest.getLink()).thenReturn(fromUri(LDP.Resource.getIRIString()).rel("type").build());
 
-        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, "/newresource", null,
+                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -195,8 +195,8 @@ public class LdpPostHandlerTest {
         when(mockRequest.getContentType()).thenReturn("text/plain");
         when(mockRequest.getLink()).thenReturn(fromUri(LDP.Resource.getIRIString()).rel("type").build());
 
-        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, "/newresource", null,
+                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -211,8 +211,8 @@ public class LdpPostHandlerTest {
     public void testDefaultType5() {
         when(mockRequest.getContentType()).thenReturn("text/turtle");
 
-        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, "/newresource", null,
+                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -235,10 +235,8 @@ public class LdpPostHandlerTest {
 
         when(mockRequest.getContentType()).thenReturn("text/turtle");
 
-        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
-
-        postHandler.setEntity(entity);
+        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, "/newresource", entity,
+                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -273,10 +271,8 @@ public class LdpPostHandlerTest {
         final InputStream entity = new ByteArrayInputStream("Some data".getBytes(UTF_8));
         when(mockRequest.getContentType()).thenReturn("text/plain");
 
-        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
-
-        postHandler.setEntity(entity);
+        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, "/newresource", entity,
+                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -318,10 +314,8 @@ public class LdpPostHandlerTest {
 
         when(mockRequest.getContentType()).thenReturn("text/turtle");
 
-        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
-
-        postHandler.setEntity(entity);
+        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, "/newresource", entity,
+                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(BAD_REQUEST, res.getStatusInfo());
@@ -334,8 +328,8 @@ public class LdpPostHandlerTest {
             .thenReturn(false);
         when(mockRequest.getContentType()).thenReturn("text/turtle");
 
-        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+        final LdpPostHandler postHandler = new LdpPostHandler(partitions, mockRequest, "/newresource", null,
+                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());

@@ -23,7 +23,6 @@ import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
-import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +32,6 @@ import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
-import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
@@ -57,9 +55,6 @@ public class BaseLdpHandler {
     protected final Map<String, String> partitions;
     protected final LdpRequest req;
     protected final ResourceService resourceService;
-
-    protected InputStream entity = null;
-    protected IRI graphName = Trellis.PreferUserManaged;
 
     /**
      * A base class for response handling
@@ -104,19 +99,4 @@ public class BaseLdpHandler {
         return null;
     }
 
-    /**
-     * Set the graph being targed for updates
-     * @param graphName the name of the graph
-     */
-    public void setGraphName(final IRI graphName) {
-        this.graphName = graphName;
-    }
-
-    /**
-     * Set the entity
-     * @param entity the entity
-     */
-    public void setEntity(final InputStream entity) {
-        this.entity = entity;
-    }
 }

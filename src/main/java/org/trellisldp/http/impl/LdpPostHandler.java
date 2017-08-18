@@ -29,6 +29,7 @@ import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
@@ -64,32 +65,30 @@ public class LdpPostHandler extends BaseLdpHandler {
     private final BinaryService binaryService;
     private final ConstraintService constraintService;
     private final IOService ioService;
-    private String id = "";
+    private final String id;
+    private final InputStream entity;
 
     /**
      * Create a builder for an LDP POST response
      * @param partitions the partitions
      * @param req the LDP request
+     * @param id the new resource's identifier
+     * @param entity the entity
      * @param resourceService the resource service
      * @param ioService the serialization service
      * @param constraintService the RDF constraint service
      * @param binaryService the datastream service
      */
     public LdpPostHandler(final Map<String, String> partitions, final LdpRequest req,
+            final String id, final InputStream entity,
             final ResourceService resourceService, final IOService ioService,
             final ConstraintService constraintService, final BinaryService binaryService) {
         super(partitions, req, resourceService);
         this.ioService = ioService;
         this.binaryService = binaryService;
         this.constraintService = constraintService;
-    }
-
-    /**
-     * Set the new part of the resource path
-     * @param id the new part of the path
-     */
-    public void setIdentifier(final String id) {
         this.id = id;
+        this.entity = entity;
     }
 
     /**

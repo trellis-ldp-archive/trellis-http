@@ -23,7 +23,6 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
 import static javax.ws.rs.core.Response.status;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
@@ -121,10 +120,6 @@ public class LdpResource extends BaseLdpResource {
 
         final LdpGetHandler getHandler = new LdpGetHandler(partitions, req, resourceService, ioService, binaryService);
 
-        if (ACL.equals(req.getExt())) {
-            getHandler.setGraphName(Trellis.PreferAccessControl);
-        }
-
         // Fetch a versioned resource
         if (nonNull(req.getVersion())) {
             LOGGER.info("Getting versioned resource: {}", req.getVersion().toString());
@@ -164,10 +159,6 @@ public class LdpResource extends BaseLdpResource {
 
         final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(partitions, req, resourceService);
 
-        if (ACL.equals(req.getExt())) {
-            optionsHandler.setGraphName(Trellis.PreferAccessControl);
-        }
-
         if (nonNull(req.getVersion())) {
             return resourceService.get(identifier, req.getVersion().getInstant()).map(optionsHandler::ldpOptions)
                 .orElse(status(NOT_FOUND)).build();
@@ -198,12 +189,8 @@ public class LdpResource extends BaseLdpResource {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(partitions, req, resourceService, ioService,
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(partitions, req, body, resourceService, ioService,
                 constraintService);
-        patchHandler.setSparqlUpdate(body);
-        if (ACL.equals(req.getExt())) {
-            patchHandler.setGraphName(Trellis.PreferAccessControl);
-        }
 
         return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
                 .map(patchHandler::updateResource).orElse(status(NOT_FOUND)).build();
@@ -252,10 +239,8 @@ public class LdpResource extends BaseLdpResource {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
-        final LdpPostHandler postHandler = new LdpPostHandler(partitions, req, resourceService, ioService,
-                constraintService, binaryService);
-        postHandler.setEntity(body);
-        postHandler.setIdentifier(identifier);
+        final LdpPostHandler postHandler = new LdpPostHandler(partitions, req, identifier, body, resourceService,
+                ioService, constraintService, binaryService);
 
         // First check if this is a container
         final Optional<Resource> parent = resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX);
@@ -293,9 +278,8 @@ public class LdpResource extends BaseLdpResource {
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 
-        final LdpPutHandler putHandler = new LdpPutHandler(partitions, req, resourceService, ioService,
+        final LdpPutHandler putHandler = new LdpPutHandler(partitions, req, body, resourceService, ioService,
                 constraintService, binaryService);
-        putHandler.setEntity(body);
 
         return resourceService.get(identifier, MAX).map(putHandler::setResource)
             .orElseGet(putHandler::setResource).build();
