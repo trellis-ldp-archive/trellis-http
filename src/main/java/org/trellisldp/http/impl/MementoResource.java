@@ -36,9 +36,9 @@ import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Function;
@@ -55,6 +55,7 @@ import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.VersionRange;
+import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
@@ -95,13 +96,16 @@ public final class MementoResource {
 
     /**
      * Create a response builder for a TimeMap response
-     * @param identifier the public identifier for the resource
-     * @param acceptableTypes the acceptable types from HTTP headers
+     * @param partitions the partitions
+     * @param req the LDP request
      * @param serializer the serializer to use
      * @return a response builder object
      */
-    public Response.ResponseBuilder getTimeMapBuilder(final String identifier, final List<MediaType> acceptableTypes,
-            final IOService serializer) {
+    public Response.ResponseBuilder getTimeMapBuilder(final Map<String, String> partitions,
+            final LdpRequest req, final IOService serializer) {
+
+        final List<MediaType> acceptableTypes = req.getHeaders().getAcceptableMediaTypes();
+        final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
         final Response.ResponseBuilder builder = Response.ok().link(identifier, ORIGINAL + " " + TIMEGATE);
         final List<Link> links = getMementoLinks(identifier, resource.getMementos()).collect(toList());
         builder.links(links.toArray(new Link[0]))
@@ -123,13 +127,14 @@ public final class MementoResource {
 
     /**
      * Create a response builder for a TimeGate response
-     * @param identifier the public identifier for the resource
-     * @param datetime the datetime for the corresponding memento
+     * @param partitions the partitions
+     * @param req the LDP request
      * @return a response builder object
      */
-    public Response.ResponseBuilder getTimeGateBuilder(final String identifier, final Instant datetime) {
+    public Response.ResponseBuilder getTimeGateBuilder(final Map<String, String> partitions, final LdpRequest req) {
+        final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
         return Response.status(FOUND)
-            .location(fromUri(identifier + "?version=" + datetime.toEpochMilli()).build())
+            .location(fromUri(identifier + "?version=" + req.getDatetime().getInstant().toEpochMilli()).build())
             .link(identifier, ORIGINAL + " " + TIMEGATE)
             .links(getMementoLinks(identifier, resource.getMementos()).toArray(Link[]::new))
             .header(VARY, ACCEPT_DATETIME);

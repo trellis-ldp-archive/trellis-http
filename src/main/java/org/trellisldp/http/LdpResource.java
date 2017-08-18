@@ -32,7 +32,6 @@ import com.codahale.metrics.annotation.Timed;
 
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -44,7 +43,6 @@ import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.IRI;
@@ -113,11 +111,8 @@ public class LdpResource extends BaseLdpResource {
     @GET
     @Timed
     public Response getResource(@BeanParam final LdpRequest req) {
-        final List<MediaType> acceptableTypes = req.getHeaders().getAcceptableMediaTypes();
-        final String baseUrl = req.getBaseUrl(partitions);
-        final String path = req.getPartition() + req.getPath();
-        final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + path);
 
+        final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
         final LdpGetHandler getHandler = new LdpGetHandler(partitions, req, resourceService, ioService, binaryService);
 
         // Fetch a versioned resource
@@ -130,15 +125,14 @@ public class LdpResource extends BaseLdpResource {
         } else if (TIMEMAP.equals(req.getExt())) {
             LOGGER.info("Getting timemap resource");
             return resourceService.get(identifier).map(MementoResource::new)
-                .map(res -> res.getTimeMapBuilder(baseUrl + path, acceptableTypes, ioService))
+                .map(res -> res.getTimeMapBuilder(partitions, req, ioService))
                 .orElse(status(NOT_FOUND)).build();
 
         // Fetch a timegate
         } else if (nonNull(req.getDatetime())) {
             LOGGER.info("Getting timegate resource: {}", req.getDatetime().getInstant());
             return resourceService.get(identifier, req.getDatetime().getInstant())
-                .map(MementoResource::new).map(res -> res.getTimeGateBuilder(baseUrl + path,
-                            req.getDatetime().getInstant()))
+                .map(MementoResource::new).map(res -> res.getTimeGateBuilder(partitions, req))
                 .orElse(status(NOT_FOUND)).build();
         }
 
@@ -156,7 +150,6 @@ public class LdpResource extends BaseLdpResource {
     public Response options(@BeanParam final LdpRequest req) {
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-
         final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(partitions, req, resourceService);
 
         if (nonNull(req.getVersion())) {
@@ -183,17 +176,15 @@ public class LdpResource extends BaseLdpResource {
     @Consumes("application/sparql-update")
     public Response updateResource(@BeanParam final LdpRequest req, final String body) {
 
-        final String path = req.getPartition() + req.getPath();
-
         if (nonNull(req.getVersion()) || UPLOADS.equals(req.getExt())) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
+        final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
         final LdpPatchHandler patchHandler = new LdpPatchHandler(partitions, req, body, resourceService, ioService,
                 constraintService);
 
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
-                .map(patchHandler::updateResource).orElse(status(NOT_FOUND)).build();
+        return resourceService.get(identifier, MAX).map(patchHandler::updateResource).orElse(status(NOT_FOUND)).build();
     }
 
     /**
@@ -210,7 +201,6 @@ public class LdpResource extends BaseLdpResource {
         }
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-
         final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(partitions, req, resourceService);
 
         return resourceService.get(identifier, MAX).map(deleteHandler::deleteResource)
@@ -277,7 +267,6 @@ public class LdpResource extends BaseLdpResource {
         }
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-
         final LdpPutHandler putHandler = new LdpPutHandler(partitions, req, body, resourceService, ioService,
                 constraintService, binaryService);
 
