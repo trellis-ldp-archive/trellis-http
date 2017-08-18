@@ -14,6 +14,7 @@
 package org.trellisldp.http.impl;
 
 import static java.time.Instant.ofEpochSecond;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -38,7 +39,6 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_RANGES;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
-import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.RDF.type;
@@ -51,6 +51,7 @@ import java.util.stream.Stream;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
@@ -73,6 +74,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import org.trellisldp.api.Resource;
+import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
@@ -110,6 +112,12 @@ public class LdpPatchHandlerTest {
     @Mock
     private Request mockRequest;
 
+    @Mock
+    private LdpRequest mockLdpRequest;
+
+    @Mock
+    private HttpHeaders mockHttpHeaders;
+
     @Captor
     private ArgumentCaptor<Graph> graphArgument;
 
@@ -126,40 +134,25 @@ public class LdpPatchHandlerTest {
         when(mockResourceService.skolemize(any(IRI.class))).then(returnsFirstArg());
         when(mockResourceService.skolemize(any(BlankNode.class)))
             .thenAnswer(inv -> rdf.createIRI(BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
-    }
-
-    @Test(expected = WebApplicationException.class)
-    public void testPatchNoSession() {
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,
-                mockConstraintService, mockRequest);
-        patchHandler.setPath("resource");
-        patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
-        patchHandler.setSparqlUpdate(insert);
-
-        patchHandler.updateResource(mockResource).build();
+        when(mockLdpRequest.getRequest()).thenReturn(mockRequest);
+        when(mockLdpRequest.getPath()).thenReturn("resource");
+        when(mockLdpRequest.getPartition()).thenReturn("");
+        when(mockLdpRequest.getBaseUrl(any())).thenReturn(baseUrl);
+        when(mockLdpRequest.getHeaders()).thenReturn(mockHttpHeaders);
+        when(mockHttpHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(TEXT_TURTLE_TYPE));
     }
 
     @Test(expected = WebApplicationException.class)
     public void testPatchNoSparql() {
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,
-                mockConstraintService, mockRequest);
-        patchHandler.setPath("resource");
-        patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
-        patchHandler.setSession(new HttpSession());
-
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
+                mockIoService, mockConstraintService);
         patchHandler.updateResource(mockResource).build();
     }
 
     @Test
     public void testPatchLdprs() {
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,
-                mockConstraintService, mockRequest);
-        patchHandler.setPath("resource");
-        patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
-        patchHandler.setSession(new HttpSession());
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
+                mockIoService, mockConstraintService);
         patchHandler.setSparqlUpdate(insert);
 
         final Response res = patchHandler.updateResource(mockResource).build();
@@ -171,14 +164,11 @@ public class LdpPatchHandlerTest {
         final Triple triple = rdf.createTriple(identifier, RDFS.label, rdf.createLiteral("A label"));
 
         when(mockResource.stream(eq(Trellis.PreferUserManaged))).thenAnswer(x -> Stream.of(triple));
+        when(mockLdpRequest.getPartition()).thenReturn("partition");
+        when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,
-                mockConstraintService, mockRequest);
-        patchHandler.setPath("partition/resource");
-        patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setSession(new HttpSession());
-        patchHandler.setContentType(APPLICATION_SPARQL_UPDATE);
-        patchHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
+                mockIoService, mockConstraintService);
         patchHandler.setSparqlUpdate(insert);
 
         final Response res = patchHandler.updateResource(mockResource).build();
@@ -202,15 +192,13 @@ public class LdpPatchHandlerTest {
 
     @Test
     public void testPreferRepresentation() {
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,
-                mockConstraintService, mockRequest);
-        patchHandler.setPath("partition/resource");
-        patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setSession(new HttpSession());
-        patchHandler.setContentType(APPLICATION_SPARQL_UPDATE);
-        patchHandler.setAcceptableTypes(singletonList(TEXT_TURTLE_TYPE));
+        when(mockLdpRequest.getPartition()).thenReturn("partition");
+        when(mockLdpRequest.getPath()).thenReturn("/resource");
+        when(mockLdpRequest.getPrefer()).thenReturn(new Prefer("return=representation"));
+
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
+                mockIoService, mockConstraintService);
         patchHandler.setSparqlUpdate(insert);
-        patchHandler.setPrefer(new Prefer("return=representation"));
 
         final Response res = patchHandler.updateResource(mockResource).build();
 
@@ -227,15 +215,15 @@ public class LdpPatchHandlerTest {
 
     @Test
     public void testPreferHTMLRepresentation() {
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,
-                mockConstraintService, mockRequest);
-        patchHandler.setPath("partition/resource");
-        patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setSession(new HttpSession());
-        patchHandler.setContentType(APPLICATION_SPARQL_UPDATE);
-        patchHandler.setAcceptableTypes(singletonList(MediaType.valueOf(RDFA_HTML.mediaType)));
+        when(mockLdpRequest.getPartition()).thenReturn("partition");
+        when(mockLdpRequest.getPath()).thenReturn("/resource");
+        when(mockLdpRequest.getPrefer()).thenReturn(new Prefer("return=representation"));
+        when(mockLdpRequest.getHeaders().getAcceptableMediaTypes())
+            .thenReturn(singletonList(MediaType.valueOf(RDFA_HTML.mediaType)));
+
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
+                mockIoService, mockConstraintService);
         patchHandler.setSparqlUpdate(insert);
-        patchHandler.setPrefer(new Prefer("return=representation"));
 
         final Response res = patchHandler.updateResource(mockResource).build();
 
@@ -254,12 +242,9 @@ public class LdpPatchHandlerTest {
     public void testConstraint() {
         when(mockConstraintService.constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any()))
             .thenReturn(Optional.of(Trellis.InvalidRange));
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,
-                mockConstraintService, mockRequest);
-        patchHandler.setPath("resource");
-        patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setSession(new HttpSession());
-        patchHandler.setContentType(APPLICATION_SPARQL_UPDATE);
+
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
+                mockIoService, mockConstraintService);
         patchHandler.setSparqlUpdate(insert);
 
         final Response res = patchHandler.updateResource(mockResource).build();
@@ -271,13 +256,12 @@ public class LdpPatchHandlerTest {
     public void testDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
+        when(mockLdpRequest.getPartition()).thenReturn("partition");
+        when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,
-                mockConstraintService, mockRequest);
-        patchHandler.setPath("partition/resource");
-        patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setSession(new HttpSession());
-        patchHandler.setContentType(APPLICATION_SPARQL_UPDATE);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
+                mockIoService, mockConstraintService);
+
         patchHandler.setSparqlUpdate(insert);
 
         final Response res = patchHandler.updateResource(mockResource).build();
@@ -288,13 +272,12 @@ public class LdpPatchHandlerTest {
     public void testConflict() {
         when(mockRequest.evaluatePreconditions(any(Date.class), any(EntityTag.class)))
             .thenReturn(status(CONFLICT));
+        when(mockLdpRequest.getPartition()).thenReturn("partition");
+        when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,
-                mockConstraintService, mockRequest);
-        patchHandler.setPath("partition/resource");
-        patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setSession(new HttpSession());
-        patchHandler.setContentType(APPLICATION_SPARQL_UPDATE);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
+                mockIoService, mockConstraintService);
+
         patchHandler.setSparqlUpdate(insert);
 
         final Response res = patchHandler.updateResource(mockResource).build();
@@ -305,13 +288,12 @@ public class LdpPatchHandlerTest {
     public void testError() {
         when(mockResourceService.put(eq(rdf.createIRI(TRELLIS_PREFIX + "partition/resource")), any(Dataset.class)))
             .thenReturn(false);
+        when(mockLdpRequest.getPartition()).thenReturn("partition");
+        when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,
-                mockConstraintService, mockRequest);
-        patchHandler.setPath("partition/resource");
-        patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setSession(new HttpSession());
-        patchHandler.setContentType(APPLICATION_SPARQL_UPDATE);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
+                mockIoService, mockConstraintService);
+
         patchHandler.setSparqlUpdate(insert);
 
         final Response res = patchHandler.updateResource(mockResource).build();
@@ -322,13 +304,12 @@ public class LdpPatchHandlerTest {
     public void testError2() {
         doThrow(RuntimeRepositoryException.class).when(mockIoService)
             .update(any(Graph.class), eq(insert), eq(identifier.getIRIString()));
+        when(mockLdpRequest.getPartition()).thenReturn("partition");
+        when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(mockResourceService, mockIoService,
-                mockConstraintService, mockRequest);
-        patchHandler.setPath("partition/resource");
-        patchHandler.setBaseUrl(baseUrl);
-        patchHandler.setSession(new HttpSession());
-        patchHandler.setContentType(APPLICATION_SPARQL_UPDATE);
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(emptyMap(), mockLdpRequest, mockResourceService,
+                mockIoService, mockConstraintService);
+
         patchHandler.setSparqlUpdate(insert);
 
         final Response res = patchHandler.updateResource(mockResource).build();

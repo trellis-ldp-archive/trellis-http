@@ -33,12 +33,15 @@ import static org.trellisldp.http.domain.HttpConstants.PATCH;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 
+import java.util.Map;
+
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
+import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.Trellis;
@@ -54,10 +57,13 @@ public class LdpOptionsHandler extends BaseLdpHandler {
 
     /**
      * An OPTIONS response builder
+     * @param partitions the partitions
+     * @param req the LDP request
      * @param resourceService the resource service
      */
-    public LdpOptionsHandler(final ResourceService resourceService) {
-        super(resourceService);
+    public LdpOptionsHandler(final Map<String, String> partitions, final LdpRequest req,
+            final ResourceService resourceService) {
+        super(partitions, req, resourceService);
     }
 
     /**
@@ -66,7 +72,7 @@ public class LdpOptionsHandler extends BaseLdpHandler {
      * @return the response builder
      */
     public ResponseBuilder ldpOptions(final Resource res) {
-        final String identifier = baseUrl + path;
+        final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
 
         LOGGER.debug("OPTIONS request for {}", identifier);
 

@@ -13,7 +13,6 @@
  */
 package org.trellisldp.http.impl;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
@@ -32,12 +31,11 @@ import static org.trellisldp.spi.RDFUtils.auditUpdate;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
-import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.Dataset;
@@ -47,10 +45,12 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
 import org.trellisldp.api.Binary;
 import org.trellisldp.api.Resource;
+import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
+import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
@@ -68,23 +68,23 @@ public class LdpPutHandler extends BaseLdpHandler {
     private final BinaryService binaryService;
     private final ConstraintService constraintService;
     private final IOService ioService;
-    private final Request request;
 
     /**
      * Create a builder for an LDP POST response
+     * @param partitions the partitions
+     * @param req the LDP request
      * @param resourceService the resource service
      * @param ioService the serialization service
      * @param constraintService the RDF constraint service
      * @param binaryService the binary service
-     * @param request the request
      */
-    public LdpPutHandler(final ResourceService resourceService, final IOService ioService,
-            final ConstraintService constraintService, final BinaryService binaryService, final Request request) {
-        super(resourceService);
+    public LdpPutHandler(final Map<String, String> partitions, final LdpRequest req,
+            final ResourceService resourceService, final IOService ioService,
+            final ConstraintService constraintService, final BinaryService binaryService) {
+        super(partitions, req, resourceService);
         this.ioService = ioService;
         this.constraintService = constraintService;
         this.binaryService = binaryService;
-        this.request = request;
     }
 
     /**
@@ -93,12 +93,12 @@ public class LdpPutHandler extends BaseLdpHandler {
      * @return the response builder
      */
     public ResponseBuilder setResource(final Resource res) {
-        final String identifier = baseUrl + path;
+        final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
         final EntityTag etag;
         final Instant modified;
 
-        if (res.getBinary().isPresent() &&
-                !ofNullable(contentType).flatMap(RDFSyntax::byMediaType).isPresent()) {
+        if (res.getBinary().isPresent() && !ofNullable(req.getContentType()).flatMap(RDFSyntax::byMediaType)
+                .isPresent()) {
             modified = res.getBinary().map(Binary::getModified).get();
             etag = new EntityTag(md5Hex(modified + identifier));
         } else {
@@ -107,7 +107,7 @@ public class LdpPutHandler extends BaseLdpHandler {
         }
 
         // Check the cache
-        final ResponseBuilder cache = checkCache(request, modified, etag);
+        final ResponseBuilder cache = checkCache(req.getRequest(), modified, etag);
         if (nonNull(cache)) {
             return cache;
         }
@@ -119,22 +119,21 @@ public class LdpPutHandler extends BaseLdpHandler {
      * @return the response builder
      */
     public ResponseBuilder setResource() {
-        final String identifier = baseUrl + path;
-        if (isNull(session)) {
-            throw new WebApplicationException("Missing Session", BAD_REQUEST);
-        }
-
+        final String baseUrl = req.getBaseUrl(partitions);
+        final String identifier = baseUrl + req.getPartition() + req.getPath();
+        final String contentType = req.getContentType();
+        final Session session = ofNullable(req.getSession()).orElse(new HttpSession());
         final Optional<RDFSyntax> rdfSyntax = ofNullable(contentType).flatMap(RDFSyntax::byMediaType)
             .filter(SUPPORTED_RDF_TYPES::contains);
 
         LOGGER.info("Setting resource as {}", identifier);
 
         final IRI defaultType = nonNull(contentType) && !rdfSyntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
-        final IRI ldpType = ofNullable(link).filter(l -> "type".equals(l.getRel()))
+        final IRI ldpType = ofNullable(req.getLink()).filter(l -> "type".equals(l.getRel()))
                     .map(Link::getUri).map(URI::toString).map(rdf::createIRI)
                     .filter(l -> !LDP.Resource.equals(l)).orElse(defaultType);
 
-        final IRI internalIdentifier = rdf.createIRI(TRELLIS_PREFIX + path);
+        final IRI internalIdentifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 
         final Dataset dataset = rdf.createDataset();
 
@@ -160,11 +159,11 @@ public class LdpPutHandler extends BaseLdpHandler {
                 return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
             }
         } else if (nonNull(entity)) {
-            final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(partition).get());
-            binaryService.setContent(partition, binaryLocation, entity);
+            final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(req.getPartition()).get());
+            binaryService.setContent(req.getPartition(), binaryLocation, entity);
             dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalIdentifier, DC.hasPart, binaryLocation));
             dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.format,
-                        rdf.createLiteral(ofNullable(contentType).orElse(APPLICATION_OCTET_STREAM))));
+                        rdf.createLiteral(ofNullable(req.getContentType()).orElse(APPLICATION_OCTET_STREAM))));
         }
 
         if (resourceService.put(internalIdentifier, dataset)) {

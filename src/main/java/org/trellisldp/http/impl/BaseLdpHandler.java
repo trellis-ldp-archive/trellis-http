@@ -14,9 +14,7 @@
 package org.trellisldp.http.impl;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static java.util.Date.from;
-import static javax.ws.rs.core.MediaType.WILDCARD_TYPE;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
@@ -28,10 +26,10 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
@@ -40,9 +38,8 @@ import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
-import org.trellisldp.http.domain.Prefer;
+import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.Trellis;
 
@@ -57,27 +54,25 @@ public class BaseLdpHandler {
 
     protected static final List<RDFSyntax> SUPPORTED_RDF_TYPES = asList(TURTLE, JSONLD, NTRIPLES);
 
+    protected final Map<String, String> partitions;
+    protected final LdpRequest req;
     protected final ResourceService resourceService;
 
-    protected String partition = "";
-    protected String path = "";
-    protected String baseUrl = "";
-    protected List<MediaType> acceptableTypes = singletonList(WILDCARD_TYPE);
-    protected Session session = null;
-    protected Prefer prefer = null;
-    protected Link link = null;
     protected InputStream entity = null;
-    protected String contentType = null;
     protected IRI graphName = Trellis.PreferUserManaged;
 
     /**
      * A base class for response handling
+     * @param partitions the partitions
+     * @param req the LDP request
      * @param resourceService the resource service
      */
-    public BaseLdpHandler(final ResourceService resourceService) {
+    public BaseLdpHandler(final Map<String, String> partitions, final LdpRequest req,
+            final ResourceService resourceService) {
+        this.partitions = partitions;
+        this.req = req;
         this.resourceService = resourceService;
     }
-
 
     /**
      * Check if this is a deleted resource, and if so return an appropriate response
@@ -110,34 +105,6 @@ public class BaseLdpHandler {
     }
 
     /**
-     * Set the path
-     * @param path the path
-     */
-    public void setPath(final String path) {
-        if (path.startsWith("/")) {
-            this.path = path.substring(1);
-        } else {
-            this.path = path;
-        }
-    }
-
-    /**
-     * Set the partition
-     * @param partition the partition
-     */
-    public void setPartition(final String partition) {
-        this.partition = partition;
-    }
-
-    /**
-     * Set the acceptable types
-     * @param acceptableTypes the acceptable types
-     */
-    public void setAcceptableTypes(final List<MediaType> acceptableTypes) {
-        this.acceptableTypes = acceptableTypes;
-    }
-
-    /**
      * Set the graph being targed for updates
      * @param graphName the name of the graph
      */
@@ -146,54 +113,10 @@ public class BaseLdpHandler {
     }
 
     /**
-     * Set the link header
-     * @param link the link
-     */
-    public void setLink(final Link link) {
-        this.link = link;
-    }
-
-    /**
-     * Set the content-type
-     * @param contentType the content type
-     */
-    public void setContentType(final String contentType) {
-        this.contentType = contentType;
-    }
-
-    /**
      * Set the entity
      * @param entity the entity
      */
     public void setEntity(final InputStream entity) {
         this.entity = entity;
-    }
-
-    /**
-     * Set the baseUrl
-     * @param baseUrl the baseUrl
-     */
-    public void setBaseUrl(final String baseUrl) {
-        if (baseUrl.endsWith("/")) {
-            this.baseUrl = baseUrl;
-        } else {
-            this.baseUrl = baseUrl + "/";
-        }
-    }
-
-    /**
-     * Set the prefer values
-     * @param prefer the prefer header
-     */
-    public void setPrefer(final Prefer prefer) {
-        this.prefer = prefer;
-    }
-
-    /**
-     * Set the session
-     * @param session the session
-     */
-    public void setSession(final Session session) {
-        this.session = session;
     }
 }

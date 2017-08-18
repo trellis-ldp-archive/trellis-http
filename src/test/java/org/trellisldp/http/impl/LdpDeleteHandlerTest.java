@@ -14,6 +14,7 @@
 package org.trellisldp.http.impl;
 
 import static java.time.Instant.ofEpochSecond;
+import static java.util.Collections.emptyMap;
 import static java.util.Date.from;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
@@ -29,7 +30,6 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
@@ -44,6 +44,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.trellisldp.api.Resource;
+import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.AS;
@@ -75,6 +76,9 @@ public class LdpDeleteHandlerTest {
     @Mock
     private Session mockSession;
 
+    @Mock
+    private LdpRequest mockLdpRequest;
+
     @Before
     public void setUp() {
         final IRI iri = rdf.createIRI("trellis:repo");
@@ -90,6 +94,12 @@ public class LdpDeleteHandlerTest {
         when(mockResourceService.skolemize(eq(Trellis.AnonymousUser))).thenReturn(Trellis.AnonymousUser);
         when(mockResourceService.skolemize(eq(date))).thenReturn(date);
 
+        when(mockLdpRequest.getSession()).thenReturn(mockSession);
+        when(mockLdpRequest.getBaseUrl(any())).thenReturn(baseUrl);
+        when(mockLdpRequest.getPath()).thenReturn("/");
+        when(mockLdpRequest.getPartition()).thenReturn("");
+        when(mockLdpRequest.getRequest()).thenReturn(mockRequest);
+
         when(mockSession.getCreated()).thenReturn(time);
         when(mockSession.getAgent()).thenReturn(Trellis.AnonymousUser);
         when(mockSession.getDelegatedBy()).thenReturn(Optional.empty());
@@ -97,33 +107,17 @@ public class LdpDeleteHandlerTest {
 
     @Test
     public void testDelete() {
-        final LdpDeleteHandler handler = new LdpDeleteHandler(mockResourceService, mockRequest);
-        handler.setPath("/");
-        handler.setBaseUrl(baseUrl);
-        handler.setSession(mockSession);
+        final LdpDeleteHandler handler = new LdpDeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
 
         final Response res = handler.deleteResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
-    }
-
-    @Test(expected = WebApplicationException.class)
-    public void testNoSession() {
-        final LdpDeleteHandler handler = new LdpDeleteHandler(mockResourceService, mockRequest);
-        handler.setPath("/");
-        handler.setBaseUrl(baseUrl);
-
-        handler.deleteResource(mockResource).build();
     }
 
     @Test
     public void testCache() {
         when(mockRequest.evaluatePreconditions(eq(from(time)), any(EntityTag.class)))
                 .thenReturn(status(PRECONDITION_FAILED));
-
-        final LdpDeleteHandler handler = new LdpDeleteHandler(mockResourceService, mockRequest);
-        handler.setPath("/");
-        handler.setBaseUrl(baseUrl);
-        handler.setSession(mockSession);
+        final LdpDeleteHandler handler = new LdpDeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
 
         final Response res = handler.deleteResource(mockResource).build();
         assertEquals(PRECONDITION_FAILED, res.getStatusInfo());
@@ -134,10 +128,7 @@ public class LdpDeleteHandlerTest {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
 
-        final LdpDeleteHandler handler = new LdpDeleteHandler(mockResourceService, mockRequest);
-        handler.setPath("/");
-        handler.setBaseUrl(baseUrl);
-        handler.setSession(new HttpSession());
+        final LdpDeleteHandler handler = new LdpDeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
 
         final Response res = handler.deleteResource(mockResource).build();
         assertEquals(GONE, res.getStatusInfo());

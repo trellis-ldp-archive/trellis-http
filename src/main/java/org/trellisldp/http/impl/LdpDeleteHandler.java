@@ -13,9 +13,8 @@
  */
 package org.trellisldp.http.impl;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
@@ -23,15 +22,17 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.RDFUtils.auditDeletion;
 
-import javax.ws.rs.WebApplicationException;
+import java.util.Map;
+
 import javax.ws.rs.core.EntityTag;
-import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.Dataset;
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
+import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.ResourceService;
+import org.trellisldp.spi.Session;
 
 /**
  * The DELETE response builder
@@ -42,16 +43,15 @@ public class LdpDeleteHandler extends BaseLdpHandler {
 
     private static final Logger LOGGER = getLogger(LdpDeleteHandler.class);
 
-    private final Request request;
-
     /**
      * Create a builder for an LDP DELETE response
+     * @param partitions the partitions
+     * @param req the LDP request
      * @param resourceService the resource service
-     * @param request the request
      */
-    public LdpDeleteHandler(final ResourceService resourceService, final Request request) {
-        super(resourceService);
-        this.request = request;
+    public LdpDeleteHandler(final Map<String, String> partitions, final LdpRequest req,
+            final ResourceService resourceService) {
+        super(partitions, req, resourceService);
     }
 
     /**
@@ -60,12 +60,10 @@ public class LdpDeleteHandler extends BaseLdpHandler {
      * @return a response builder
      */
     public ResponseBuilder deleteResource(final Resource res) {
-        final String identifier = baseUrl + path;
+        final String baseUrl = req.getBaseUrl(partitions);
+        final String identifier = baseUrl + req.getPartition() + req.getPath();
 
-        // Check for a valid session
-        if (isNull(session)) {
-            throw new WebApplicationException("Missing Session", BAD_REQUEST);
-        }
+        final Session session = ofNullable(req.getSession()).orElse(new HttpSession());
 
         // Check if this is already deleted
         final ResponseBuilder deleted = checkDeleted(res, identifier);
@@ -75,7 +73,7 @@ public class LdpDeleteHandler extends BaseLdpHandler {
 
         // Check the cache
         final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier));
-        final ResponseBuilder cache = checkCache(request, res.getModified(), etag);
+        final ResponseBuilder cache = checkCache(req.getRequest(), res.getModified(), etag);
         if (nonNull(cache)) {
             return cache;
         }

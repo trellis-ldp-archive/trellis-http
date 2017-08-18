@@ -54,8 +54,6 @@ import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.PATCH;
-import org.trellisldp.http.domain.Prefer;
-import org.trellisldp.http.impl.HttpSession;
 import org.trellisldp.http.impl.LdpDeleteHandler;
 import org.trellisldp.http.impl.LdpGetHandler;
 import org.trellisldp.http.impl.LdpOptionsHandler;
@@ -115,57 +113,42 @@ public class LdpResource extends BaseLdpResource {
      */
     @GET
     @Timed
-    public Response getResourceAny(@BeanParam final LdpRequest req) {
+    public Response getResource(@BeanParam final LdpRequest req) {
         final List<MediaType> acceptableTypes = req.getHeaders().getAcceptableMediaTypes();
-        final String path = req.getPartition() + req.getPath();
         final String baseUrl = req.getBaseUrl(partitions);
+        final String path = req.getPartition() + req.getPath();
+        final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + path);
 
-        final LdpGetHandler getHandler = new LdpGetHandler(resourceService, ioService, binaryService,
-                req.getRequest());
-        getHandler.setPartition(req.getPartition());
-        getHandler.setPath(path);
-        getHandler.setBaseUrl(baseUrl);
-        getHandler.setAcceptableTypes(acceptableTypes);
+        final LdpGetHandler getHandler = new LdpGetHandler(partitions, req, resourceService, ioService, binaryService);
+
         if (ACL.equals(req.getExt())) {
-            // TODO make this more compact?
-            getHandler.setPrefer(new Prefer("return=representation; include=\"" +
-                        Trellis.PreferAccessControl.getIRIString() + "\"; omit=\"" +
-                        Trellis.PreferUserManaged.getIRIString() + " " +
-                        LDP.PreferContainment.getIRIString() + " " +
-                        LDP.PreferMembership.getIRIString() + "\""));
             getHandler.setGraphName(Trellis.PreferAccessControl);
-        } else {
-            getHandler.setPrefer(req.getPrefer());
         }
-        getHandler.setWantDigest(req.getDigest());
-        getHandler.setRange(req.getRange());
 
         // Fetch a versioned resource
         if (nonNull(req.getVersion())) {
             LOGGER.info("Getting versioned resource: {}", req.getVersion().toString());
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), req.getVersion().getInstant())
+            return resourceService.get(identifier, req.getVersion().getInstant())
                 .map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
 
         // Fetch a timemap
         } else if (TIMEMAP.equals(req.getExt())) {
             LOGGER.info("Getting timemap resource");
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path)).map(MementoResource::new)
+            return resourceService.get(identifier).map(MementoResource::new)
                 .map(res -> res.getTimeMapBuilder(baseUrl + path, acceptableTypes, ioService))
                 .orElse(status(NOT_FOUND)).build();
 
         // Fetch a timegate
         } else if (nonNull(req.getDatetime())) {
             LOGGER.info("Getting timegate resource: {}", req.getDatetime().getInstant());
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path),
-                    req.getDatetime().getInstant())
+            return resourceService.get(identifier, req.getDatetime().getInstant())
                 .map(MementoResource::new).map(res -> res.getTimeGateBuilder(baseUrl + path,
                             req.getDatetime().getInstant()))
                 .orElse(status(NOT_FOUND)).build();
         }
 
         // Fetch the current state of the resource
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
-                .map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
+        return resourceService.get(identifier).map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
     }
 
     /**
@@ -177,27 +160,24 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response options(@BeanParam final LdpRequest req) {
 
-        final String path = req.getPartition() + req.getPath();
+        final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 
-        final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(resourceService);
-        optionsHandler.setPartition(req.getPartition());
-        optionsHandler.setPath(path);
-        optionsHandler.setBaseUrl(req.getBaseUrl(partitions));
+        final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(partitions, req, resourceService);
+
         if (ACL.equals(req.getExt())) {
             optionsHandler.setGraphName(Trellis.PreferAccessControl);
         }
 
         if (nonNull(req.getVersion())) {
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), req.getVersion().getInstant())
-                .map(optionsHandler::ldpOptions).orElse(status(NOT_FOUND)).build();
+            return resourceService.get(identifier, req.getVersion().getInstant()).map(optionsHandler::ldpOptions)
+                .orElse(status(NOT_FOUND)).build();
 
         } else if (TIMEMAP.equals(req.getExt())) {
-            return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
-                .map(optionsHandler::ldpOptions).orElse(status(NOT_FOUND)).build();
+            return resourceService.get(identifier, MAX).map(optionsHandler::ldpOptions)
+                .orElse(status(NOT_FOUND)).build();
         }
 
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path))
-            .map(optionsHandler::ldpOptions).orElse(status(NOT_FOUND)).build();
+        return resourceService.get(identifier).map(optionsHandler::ldpOptions).orElse(status(NOT_FOUND)).build();
     }
 
 
@@ -218,14 +198,8 @@ public class LdpResource extends BaseLdpResource {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(resourceService, ioService, constraintService,
-                req.getRequest());
-        patchHandler.setPartition(req.getPartition());
-        patchHandler.setPath(path);
-        patchHandler.setBaseUrl(req.getBaseUrl(partitions));
-        patchHandler.setAcceptableTypes(req.getHeaders().getAcceptableMediaTypes());
-        patchHandler.setPrefer(req.getPrefer());
-        patchHandler.setSession(ofNullable(req.getSession()).orElse(new HttpSession()));
+        final LdpPatchHandler patchHandler = new LdpPatchHandler(partitions, req, resourceService, ioService,
+                constraintService);
         patchHandler.setSparqlUpdate(body);
         if (ACL.equals(req.getExt())) {
             patchHandler.setGraphName(Trellis.PreferAccessControl);
@@ -248,16 +222,12 @@ public class LdpResource extends BaseLdpResource {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
-        final String path = req.getPartition() + req.getPath();
+        final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 
-        final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(resourceService, req.getRequest());
-        deleteHandler.setPartition(req.getPartition());
-        deleteHandler.setPath(path);
-        deleteHandler.setBaseUrl(req.getBaseUrl(partitions));
-        deleteHandler.setSession(ofNullable(req.getSession()).orElse(new HttpSession()));
+        final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(partitions, req, resourceService);
 
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
-            .map(deleteHandler::deleteResource).orElse(status(NOT_FOUND)).build();
+        return resourceService.get(identifier, MAX).map(deleteHandler::deleteResource)
+            .orElse(status(NOT_FOUND)).build();
     }
 
     /**
@@ -275,32 +245,25 @@ public class LdpResource extends BaseLdpResource {
         }
 
         final String path = req.getPartition() + req.getPath();
-        final String baseUrl = req.getBaseUrl(partitions);
-
-        final String fullPath = path + "/" + ofNullable(req.getSlug())
+        final String identifier = "/" + ofNullable(req.getSlug())
             .orElseGet(resourceService.getIdentifierSupplier());
 
         if (nonNull(req.getExt()) || nonNull(req.getVersion())) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
-        final LdpPostHandler postHandler = new LdpPostHandler(resourceService, ioService, constraintService,
-                binaryService);
-        postHandler.setPartition(req.getPartition());
-        postHandler.setPath(fullPath);
-        postHandler.setBaseUrl(baseUrl);
-        postHandler.setSession(ofNullable(req.getSession()).orElse(new HttpSession()));
-        postHandler.setContentType(req.getContentType());
-        postHandler.setLink(req.getLink());
+        final LdpPostHandler postHandler = new LdpPostHandler(partitions, req, resourceService, ioService,
+                constraintService, binaryService);
         postHandler.setEntity(body);
+        postHandler.setIdentifier(identifier);
 
         // First check if this is a container
         final Optional<Resource> parent = resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX);
         if (parent.isPresent()) {
             final Optional<IRI> ixModel = parent.map(Resource::getInteractionModel);
             if (ixModel.filter(type -> ldpResourceTypes(type).anyMatch(LDP.Container::equals)).isPresent()) {
-                return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + fullPath), MAX).map(x -> status(CONFLICT))
-                    .orElseGet(postHandler::createResource).build();
+                return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path + identifier), MAX)
+                    .map(x -> status(CONFLICT)).orElseGet(postHandler::createResource).build();
            } else if (ixModel.filter(LDP.Resource::equals).isPresent() &&
                     parent.get().getTypes().anyMatch(Trellis.DeletedResource::equals)) {
                 return status(GONE).build();
@@ -328,20 +291,13 @@ public class LdpResource extends BaseLdpResource {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
-        final String baseUrl = req.getBaseUrl(partitions);
-        final String path = req.getPartition() + req.getPath();
+        final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 
-        final LdpPutHandler putHandler = new LdpPutHandler(resourceService, ioService, constraintService,
-                binaryService, req.getRequest());
-        putHandler.setPartition(req.getPartition());
-        putHandler.setPath(path);
-        putHandler.setBaseUrl(baseUrl);
-        putHandler.setSession(ofNullable(req.getSession()).orElse(new HttpSession()));
-        putHandler.setContentType(req.getContentType());
-        putHandler.setLink(req.getLink());
+        final LdpPutHandler putHandler = new LdpPutHandler(partitions, req, resourceService, ioService,
+                constraintService, binaryService);
         putHandler.setEntity(body);
 
-        return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path), MAX)
-                .map(putHandler::setResource).orElseGet(putHandler::setResource).build();
+        return resourceService.get(identifier, MAX).map(putHandler::setResource)
+            .orElseGet(putHandler::setResource).build();
     }
 }

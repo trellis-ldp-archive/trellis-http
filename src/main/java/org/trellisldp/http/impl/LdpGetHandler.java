@@ -39,6 +39,7 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_RANGES;
+import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.DIGEST;
 import static org.trellisldp.http.domain.HttpConstants.MEMENTO_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.PATCH;
@@ -59,12 +60,12 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
-import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 
@@ -75,8 +76,8 @@ import org.slf4j.Logger;
 
 import org.trellisldp.api.Binary;
 import org.trellisldp.api.Resource;
+import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.Prefer;
-import org.trellisldp.http.domain.Range;
 import org.trellisldp.http.domain.WantDigest;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.IOService;
@@ -97,40 +98,21 @@ public class LdpGetHandler extends BaseLdpHandler {
 
     private final IOService ioService;
     private final BinaryService binaryService;
-    private final Request request;
-
-    private Range range = null;
-    private WantDigest digest = null;
 
     /**
      * A GET response builder
+     * @param partitions the partitions
+     * @param req the LDP request
      * @param resourceService the resource service
      * @param ioService the serialization service
      * @param binaryService the binary service
-     * @param request the HTTP request
      */
-    public LdpGetHandler(final ResourceService resourceService, final IOService ioService,
-            final BinaryService binaryService, final Request request) {
-        super(resourceService);
+    public LdpGetHandler(final Map<String, String> partitions, final LdpRequest req,
+            final ResourceService resourceService, final IOService ioService,
+            final BinaryService binaryService) {
+        super(partitions, req, resourceService);
         this.ioService = ioService;
         this.binaryService = binaryService;
-        this.request = request;
-    }
-
-    /**
-     * Set the WantDigest value
-     * @param digest the digest
-     */
-    public void setWantDigest(final WantDigest digest) {
-        this.digest = digest;
-    }
-
-    /**
-     * Set the Range value
-     * @param range the range
-     */
-    public void setRange(final Range range) {
-        this.range = range;
     }
 
     /**
@@ -139,7 +121,7 @@ public class LdpGetHandler extends BaseLdpHandler {
      * @return the response builder
      */
     public ResponseBuilder getRepresentation(final Resource res) {
-        final String identifier = baseUrl + path;
+        final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
 
         // Check if this is already deleted
         final ResponseBuilder deleted = checkDeleted(res, identifier);
@@ -147,7 +129,7 @@ public class LdpGetHandler extends BaseLdpHandler {
             return deleted;
         }
 
-        final Optional<RDFSyntax> syntax = getSyntax(acceptableTypes, res.getBinary()
+        final Optional<RDFSyntax> syntax = getSyntax(req.getHeaders().getAcceptableMediaTypes(), res.getBinary()
                 .map(b -> b.getMimeType().orElse(APPLICATION_OCTET_STREAM)));
 
         final ResponseBuilder builder = basicGetResponseBuilder(res, syntax);
@@ -174,7 +156,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         }
 
         // RDFSource responses (weak ETags, etc)
-        final IRI profile = getProfile(acceptableTypes, syntax.get());
+        final IRI profile = getProfile(req.getHeaders().getAcceptableMediaTypes(), syntax.get());
         return getLdpRs(identifier, res, builder, syntax.get(), profile);
     }
 
@@ -183,7 +165,7 @@ public class LdpGetHandler extends BaseLdpHandler {
 
         // Check for a cache hit
         final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier), true);
-        final ResponseBuilder cacheBuilder = checkCache(request, res.getModified(), etag);
+        final ResponseBuilder cacheBuilder = checkCache(req.getRequest(), res.getModified(), etag);
         if (nonNull(cacheBuilder)) {
             return cacheBuilder;
         }
@@ -198,12 +180,19 @@ public class LdpGetHandler extends BaseLdpHandler {
         } else {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH, PUT, DELETE, POST));
         }
+
+        final Prefer prefer = ACL.equals(req.getExt()) ?
+            new Prefer("return=representation; include=\"" + Trellis.PreferAccessControl.getIRIString() + "\"; " +
+                    "omit=\"" + Trellis.PreferUserManaged.getIRIString() + " " +
+                        LDP.PreferContainment.getIRIString() + " " +
+                        LDP.PreferMembership.getIRIString() + "\"") : req.getPrefer();
+
         ofNullable(prefer).ifPresent(p ->
                 builder.header(PREFERENCE_APPLIED, "return=" + p.getPreference().orElse("representation")));
 
         // Add upload service headers, if relevant
         if (!LDP.RDFSource.equals(res.getInteractionModel())) {
-            binaryService.getResolverForPartition(partition)
+            binaryService.getResolverForPartition(req.getPartition())
                 .map(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
                     builder.link(identifier + "?ext=" + UPLOADS, Trellis.multipartUploadService.getIRIString()));
         }
@@ -213,7 +202,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         } else {
             return builder.entity(ResourceStreamer.quadStreamer(ioService,
                         res.stream().filter(filterWithPrefer(prefer))
-                        .map(unskolemizeQuads(resourceService, baseUrl)),
+                        .map(unskolemizeQuads(resourceService, req.getBaseUrl(partitions))),
                         syntax, ofNullable(profile).orElseGet(() ->
                             RDFA_HTML.equals(syntax) ? getInstance().createIRI(identifier) : JSONLD.expanded)));
         }
@@ -222,7 +211,7 @@ public class LdpGetHandler extends BaseLdpHandler {
     private ResponseBuilder getLdpNr(final String identifier, final Resource res, final ResponseBuilder builder) {
         final Instant mod = res.getBinary().map(Binary::getModified).get();
         final EntityTag etag = new EntityTag(md5Hex(mod + identifier));
-        final ResponseBuilder cacheBuilder = checkCache(request, mod, etag);
+        final ResponseBuilder cacheBuilder = checkCache(req.getRequest(), mod, etag);
         if (nonNull(cacheBuilder)) {
             return cacheBuilder;
         }
@@ -231,7 +220,7 @@ public class LdpGetHandler extends BaseLdpHandler {
         builder.lastModified(from(mod));
 
         final IRI dsid = res.getBinary().map(Binary::getIdentifier).get();
-        final InputStream binary = binaryService.getContent(partition, dsid).orElseThrow(() ->
+        final InputStream binary = binaryService.getContent(req.getPartition(), dsid).orElseThrow(() ->
                 new WebApplicationException("Could not load binary resolver for " + dsid.getIRIString()));
         builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes").tag(etag);
 
@@ -246,25 +235,25 @@ public class LdpGetHandler extends BaseLdpHandler {
                 builder.link(identifier + "?ext=" + UPLOADS, Trellis.multipartUploadService.getIRIString()));
 
         // Add instance digests, if Requested and supported
-        ofNullable(digest).map(WantDigest::getAlgorithms).ifPresent(algs ->
+        ofNullable(req.getDigest()).map(WantDigest::getAlgorithms).ifPresent(algs ->
                 algs.stream().filter(binaryService.supportedAlgorithms()::contains).findFirst()
-                .ifPresent(alg -> binaryService.getContent(partition, dsid)
+                .ifPresent(alg -> binaryService.getContent(req.getPartition(), dsid)
                     .flatMap(is -> binaryService.hexDigest(alg, is))
                     .ifPresent(d -> builder.header(DIGEST, d))));
 
         // Range Requests
-        if (nonNull(range)) {
+        if (nonNull(req.getRange())) {
             try {
-                final long skipped = binary.skip(range.getFrom());
-                if (skipped < range.getFrom()) {
+                final long skipped = binary.skip(req.getRange().getFrom());
+                if (skipped < req.getRange().getFrom()) {
                     LOGGER.warn("Trying to skip more data available in the input stream! {}, {}",
-                            skipped, range.getFrom());
+                            skipped, req.getRange().getFrom());
                 }
             } catch (final IOException ex) {
                 LOGGER.error("Error seeking through binary: {}", ex.getMessage());
                 return status(BAD_REQUEST).entity(ex.getMessage());
             }
-            return builder.entity(new BoundedInputStream(binary, range.getTo() - range.getFrom()));
+            return builder.entity(new BoundedInputStream(binary, req.getRange().getTo() - req.getRange().getFrom()));
         }
         return builder.entity(binary);
     }

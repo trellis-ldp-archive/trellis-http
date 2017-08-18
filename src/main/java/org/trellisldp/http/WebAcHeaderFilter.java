@@ -16,6 +16,7 @@ package org.trellisldp.http;
 import static java.util.Objects.nonNull;
 import static javax.ws.rs.core.HttpHeaders.LINK;
 import static javax.ws.rs.core.Link.fromUri;
+import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.ACL_PROPERTY;
 
 import java.io.IOException;
@@ -33,7 +34,7 @@ public class WebAcHeaderFilter implements ContainerResponseFilter {
     public void filter(final ContainerRequestContext req, final ContainerResponseContext res) throws IOException {
         final Object acl = req.getProperty(ACL_PROPERTY);
         if (nonNull(acl)) {
-            res.getHeaders().add(LINK, fromUri((String) acl).rel(ACL_PROPERTY).build());
+            res.getHeaders().add(LINK, fromUri((String) acl).rel(ACL).build());
         }
     }
 }

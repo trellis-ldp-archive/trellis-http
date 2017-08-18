@@ -36,11 +36,11 @@ import static org.trellisldp.http.impl.RdfUtils.unskolemizeTriples;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
 
+import java.util.Map;
 import java.util.Optional;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
-import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.Dataset;
@@ -50,11 +50,13 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
+import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.RuntimeRepositoryException;
+import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
@@ -71,23 +73,23 @@ public class LdpPatchHandler extends BaseLdpHandler {
 
     private final IOService ioService;
     private final ConstraintService constraintService;
-    private final Request request;
 
     private String sparqlUpdate = null;
 
     /**
      * Create a handler for PATCH operations
+     * @param partitions the partitions
+     * @param req the LDP request
      * @param resourceService the resource service
      * @param ioService the serialization service
      * @param constraintService the RDF constraint service
-     * @param request the HTTP request
      */
-    public LdpPatchHandler(final ResourceService resourceService, final IOService ioService,
-            final ConstraintService constraintService, final Request request) {
-        super(resourceService);
+    public LdpPatchHandler(final Map<String, String> partitions, final LdpRequest req,
+            final ResourceService resourceService, final IOService ioService,
+            final ConstraintService constraintService) {
+        super(partitions, req, resourceService);
         this.ioService = ioService;
         this.constraintService = constraintService;
-        this.request = request;
     }
 
     /**
@@ -104,13 +106,13 @@ public class LdpPatchHandler extends BaseLdpHandler {
      * @return the Response builder
      */
     public ResponseBuilder updateResource(final Resource res) {
-        final String identifier = baseUrl + path;
+        final String baseUrl = req.getBaseUrl(partitions);
+        final String identifier = baseUrl + req.getPartition() + req.getPath();
+
         if (isNull(sparqlUpdate)) {
             throw new WebApplicationException("Missing Sparql-Update body", BAD_REQUEST);
         }
-        if (isNull(session)) {
-            throw new WebApplicationException("Missing Session", BAD_REQUEST);
-        }
+        final Session session = ofNullable(req.getSession()).orElse(new HttpSession());
 
         // Check if this is already deleted
         final ResponseBuilder deleted = checkDeleted(res, identifier);
@@ -120,7 +122,7 @@ public class LdpPatchHandler extends BaseLdpHandler {
 
         // Check the cache
         final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier));
-        final ResponseBuilder cache = checkCache(request, res.getModified(), etag);
+        final ResponseBuilder cache = checkCache(req.getRequest(), res.getModified(), etag);
         if (nonNull(cache)) {
             return cache;
         }
@@ -131,7 +133,7 @@ public class LdpPatchHandler extends BaseLdpHandler {
         final Graph graph = rdf.createGraph();
         res.stream(graphName).forEach(graph::add);
         try {
-            ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + path);
+            ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath());
         } catch (final RuntimeRepositoryException ex) {
             LOGGER.warn(ex.getMessage());
             return status(BAD_REQUEST).type(TEXT_PLAIN).entity("Invalid RDF: " + ex.getMessage());
@@ -166,9 +168,10 @@ public class LdpPatchHandler extends BaseLdpHandler {
             ldpResourceTypes(res.getInteractionModel()).map(IRI::getIRIString)
                 .forEach(type -> builder.link(type, "type"));
 
-            if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("representation"::equals).isPresent()) {
-                final RDFSyntax syntax = getSyntax(acceptableTypes, empty()).get();
-                final IRI profile = getProfile(acceptableTypes, syntax);
+            if (ofNullable(req.getPrefer()).flatMap(Prefer::getPreference).filter("representation"::equals)
+                    .isPresent()) {
+                final RDFSyntax syntax = getSyntax(req.getHeaders().getAcceptableMediaTypes(), empty()).get();
+                final IRI profile = getProfile(req.getHeaders().getAcceptableMediaTypes(), syntax);
                 builder.header(PREFERENCE_APPLIED, "return=representation")
                        .type(syntax.mediaType)
                        .entity(ResourceStreamer.tripleStreamer(ioService,
