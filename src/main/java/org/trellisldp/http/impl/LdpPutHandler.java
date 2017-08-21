@@ -21,7 +21,10 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
+import static org.apache.commons.codec.binary.Base64.encodeBase64String;
+import static org.apache.commons.codec.digest.DigestUtils.getDigest;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
+import static org.apache.commons.codec.digest.DigestUtils.updateDigest;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
@@ -29,12 +32,15 @@ import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
 
-import java.io.InputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response.ResponseBuilder;
@@ -69,7 +75,7 @@ public class LdpPutHandler extends BaseLdpHandler {
     private final BinaryService binaryService;
     private final ConstraintService constraintService;
     private final IOService ioService;
-    private final InputStream entity;
+    private final File entity;
 
     /**
      * Create a builder for an LDP POST response
@@ -81,7 +87,7 @@ public class LdpPutHandler extends BaseLdpHandler {
      * @param constraintService the RDF constraint service
      * @param binaryService the binary service
      */
-    public LdpPutHandler(final Map<String, String> partitions, final LdpRequest req, final InputStream entity,
+    public LdpPutHandler(final Map<String, String> partitions, final LdpRequest req, final File entity,
             final ResourceService resourceService, final IOService ioService,
             final ConstraintService constraintService, final BinaryService binaryService) {
         super(partitions, req, resourceService);
@@ -137,40 +143,53 @@ public class LdpPutHandler extends BaseLdpHandler {
                     .map(Link::getUri).map(URI::toString).map(rdf::createIRI)
                     .filter(l -> !LDP.Resource.equals(l)).orElse(defaultType);
 
-        final IRI internalIdentifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
+        final IRI internalId = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 
         final Dataset dataset = rdf.createDataset();
 
         // Add audit quads
-        auditUpdate(internalIdentifier, session).stream().map(skolemizeQuads(resourceService, baseUrl))
+        auditUpdate(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
             .forEach(dataset::add);
 
         // Add LDP type
-        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalIdentifier, RDF.type, ldpType));
+        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalId, RDF.type, ldpType));
 
         // Add user-supplied data
-        if (nonNull(entity) && rdfSyntax.isPresent()) {
-            ioService.read(entity, identifier, rdfSyntax.get())
-                .map(skolemizeTriples(resourceService, baseUrl)).forEach(triple -> {
-                    dataset.add(rdf.createQuad(Trellis.PreferUserManaged, triple.getSubject(),
-                            triple.getPredicate(), triple.getObject()));
-                });
+        try {
+            if (nonNull(entity) && rdfSyntax.isPresent()) {
+                ioService.read(new FileInputStream(entity), identifier, rdfSyntax.get())
+                    .map(skolemizeTriples(resourceService, baseUrl)).forEach(triple -> {
+                        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, triple.getSubject(),
+                                triple.getPredicate(), triple.getObject()));
+                    });
 
-            // Check for any constraints
-            final Optional<String> constraint = dataset.getGraph(Trellis.PreferUserManaged)
-                .flatMap(g -> constraintService.constrainedBy(ldpType, baseUrl, g)).map(IRI::getIRIString);
-            if (constraint.isPresent()) {
-                return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
+                // Check for any constraints
+                final Optional<String> constraint = dataset.getGraph(Trellis.PreferUserManaged)
+                    .flatMap(g -> constraintService.constrainedBy(ldpType, baseUrl, g)).map(IRI::getIRIString);
+                if (constraint.isPresent()) {
+                    return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
+                }
+            } else if (nonNull(entity)) {
+                if (nonNull(req.getDigest())) {
+                    // Check the expected digest value
+                    final String digest = encodeBase64String(updateDigest(getDigest(req.getDigest().getAlgorithm()),
+                                new FileInputStream(entity)).digest());
+                    if (!digest.equals(req.getDigest().getDigest())) {
+                        return status(BAD_REQUEST);
+                    }
+                }
+
+                final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(req.getPartition()).get());
+                binaryService.setContent(req.getPartition(), binaryLocation, new FileInputStream(entity));
+                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalId, DC.hasPart, binaryLocation));
+                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.format,
+                            rdf.createLiteral(ofNullable(req.getContentType()).orElse(APPLICATION_OCTET_STREAM))));
             }
-        } else if (nonNull(entity)) {
-            final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(req.getPartition()).get());
-            binaryService.setContent(req.getPartition(), binaryLocation, entity);
-            dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalIdentifier, DC.hasPart, binaryLocation));
-            dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.format,
-                        rdf.createLiteral(ofNullable(req.getContentType()).orElse(APPLICATION_OCTET_STREAM))));
+        } catch (final IOException ex) {
+            throw new WebApplicationException(ex);
         }
 
-        if (resourceService.put(internalIdentifier, dataset)) {
+        if (resourceService.put(internalId, dataset)) {
             final ResponseBuilder builder = status(NO_CONTENT);
 
             ldpResourceTypes(ldpType).map(IRI::getIRIString)
@@ -178,7 +197,7 @@ public class LdpPutHandler extends BaseLdpHandler {
             return builder;
         }
 
-        LOGGER.error("Unable to persist data to location at {}", internalIdentifier.getIRIString());
+        LOGGER.error("Unable to persist data to location at {}", internalId.getIRIString());
         return serverError().type(TEXT_PLAIN)
             .entity("Unable to persist data. Please consult the logs for more information");
     }

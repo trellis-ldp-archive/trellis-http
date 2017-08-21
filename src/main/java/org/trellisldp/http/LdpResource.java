@@ -30,7 +30,7 @@ import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 
 import com.codahale.metrics.annotation.Timed;
 
-import java.io.InputStream;
+import java.io.File;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -215,7 +215,7 @@ public class LdpResource extends BaseLdpResource {
      */
     @POST
     @Timed
-    public Response createResource(@BeanParam final LdpRequest req, final InputStream body) {
+    public Response createResource(@BeanParam final LdpRequest req, final File body) {
 
         if (unsupportedTypes.contains(req.getContentType())) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
@@ -256,7 +256,7 @@ public class LdpResource extends BaseLdpResource {
      */
     @PUT
     @Timed
-    public Response setResource(@BeanParam final LdpRequest req, final InputStream body) {
+    public Response setResource(@BeanParam final LdpRequest req, final File body) {
 
         if (unsupportedTypes.contains(req.getContentType())) {
             return status(UNSUPPORTED_MEDIA_TYPE).build();

@@ -235,7 +235,7 @@ public class LdpGetHandler extends BaseLdpHandler {
                 builder.link(identifier + "?ext=" + UPLOADS, Trellis.multipartUploadService.getIRIString()));
 
         // Add instance digests, if Requested and supported
-        ofNullable(req.getDigest()).map(WantDigest::getAlgorithms).ifPresent(algs ->
+        ofNullable(req.getWantDigest()).map(WantDigest::getAlgorithms).ifPresent(algs ->
                 algs.stream().filter(binaryService.supportedAlgorithms()::contains).findFirst()
                 .ifPresent(alg -> binaryService.getContent(req.getPartition(), dsid)
                     .flatMap(is -> binaryService.hexDigest(alg, is))

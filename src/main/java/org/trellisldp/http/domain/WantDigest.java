@@ -21,7 +21,7 @@ import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
 import java.util.Map;
 
@@ -49,9 +49,9 @@ public class WantDigest {
             this.algorithms = stream(wantDigest.split(",")).map(String::trim).map(alg -> {
                 final String[] parts = alg.split(";", 2);
                 if (parts.length == 2) {
-                    return new AbstractMap.SimpleImmutableEntry<>(parts[0], getValue(parts[1]));
+                    return new SimpleImmutableEntry<>(parts[0], getValue(parts[1]));
                 }
-                return new AbstractMap.SimpleImmutableEntry<>(parts[0], 1.0f);
+                return new SimpleImmutableEntry<>(parts[0], 1.0f);
             }).sorted((e1, e2) -> compare(e2.getValue(), e1.getValue())).map(Map.Entry::getKey)
             .map(String::toUpperCase).collect(toList());
         } else {

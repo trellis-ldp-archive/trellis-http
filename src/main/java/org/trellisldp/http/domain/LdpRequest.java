@@ -64,7 +64,7 @@ public class LdpRequest {
     private Prefer prefer;
 
     @HeaderParam("Want-Digest")
-    private WantDigest digest;
+    private WantDigest wantDigest;
 
     @HeaderParam("Range")
     private Range range;
@@ -77,6 +77,9 @@ public class LdpRequest {
 
     @HeaderParam("Slug")
     private String slug;
+
+    @HeaderParam("Digest")
+    private Digest digest;
 
     /**
      * Get the Content-Type header
@@ -122,7 +125,15 @@ public class LdpRequest {
      * Get the Want-Digest header
      * @return the Want-Digest header
      */
-    public WantDigest getDigest() {
+    public WantDigest getWantDigest() {
+        return wantDigest;
+    }
+
+    /**
+     * Get the Digest header
+     * @return the Digest header
+     */
+    public Digest getDigest() {
         return digest;
     }
 

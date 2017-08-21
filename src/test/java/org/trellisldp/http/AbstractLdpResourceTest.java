@@ -29,6 +29,7 @@ import static javax.ws.rs.core.HttpHeaders.LINK;
 import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
@@ -286,6 +287,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
             .thenAnswer(x -> Optional.of(new ByteArrayInputStream("Some input stream".getBytes(UTF_8))));
         when(mockBinaryService.getResolver(eq(binaryInternalIdentifier))).thenReturn(Optional.of(mockBinaryResolver));
         when(mockBinaryService.getResolverForPartition(eq(REPO1))).thenReturn(Optional.of(mockBinaryResolver));
+        when(mockBinaryService.getIdentifierSupplier(eq(REPO1))).thenReturn(() -> RANDOM_VALUE);
 
         when(mockResource.getMementos()).thenAnswer(x -> Stream.empty());
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
@@ -1364,6 +1366,74 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPostBinary() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
+                    any(Instant.class))).thenReturn(Optional.empty());
+        final Response res = target(RESOURCE_PATH).request().header("Slug", "newresource")
+            .post(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(CREATED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    @Test
+    public void testPostBinaryWithInvalidDigest() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
+                    any(Instant.class))).thenReturn(Optional.empty());
+        final Response res = target(RESOURCE_PATH).request().header("Slug", "newresource")
+            .header("Digest", "md5=blahblah").post(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPostBinaryWithMd5Digest() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
+                    any(Instant.class))).thenReturn(Optional.empty());
+        final Response res = target(RESOURCE_PATH).request().header("Digest", "md5=BJozgIQwPzzVzSxvjQsWkA==")
+            .header("Slug", "newresource").post(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(CREATED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    @Test
+    public void testPostBinaryWithSha1Digest() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
+                    any(Instant.class))).thenReturn(Optional.empty());
+        final Response res = target(RESOURCE_PATH).request().header("Digest", "sha=3VWEuvPnAM6riDQJUu4TG7A4Ots=")
+            .header("Slug", "newresource").post(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(CREATED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    @Test
+    public void testPostBinaryWithSha256Digest() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
+                    any(Instant.class))).thenReturn(Optional.empty());
+        final Response res = target(RESOURCE_PATH).request()
+            .header("Digest", "sha-256=voCCIRTNXosNlEgQ/7IuX5dFNvFQx5MfG/jy1AKiLMU=")
+            .header("Slug", "newresource").post(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(CREATED, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    @Test
     public void testPostInvalidContent() {
         final Response res = target(RESOURCE_PATH).request().post(entity("blah blah blah", "invalid/type"));
 
@@ -1430,6 +1500,58 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         assertEquals(UNSUPPORTED_MEDIA_TYPE, res.getStatusInfo());
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testPutBinary() {
+        final Response res = target(BINARY_PATH).request().put(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    @Test
+    public void testPutBinaryWithInvalidDigest() {
+        final Response res = target(BINARY_PATH).request().header("Digest", "md5=blahblah")
+            .put(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutBinaryWithMd5Digest() {
+        final Response res = target(BINARY_PATH).request().header("Digest", "md5=BJozgIQwPzzVzSxvjQsWkA==")
+            .put(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    @Test
+    public void testPutBinaryWithSha1Digest() {
+        final Response res = target(BINARY_PATH).request().header("Digest", "sha=3VWEuvPnAM6riDQJUu4TG7A4Ots=")
+            .put(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    @Test
+    public void testPutBinaryWithSha256Digest() {
+        final Response res = target(BINARY_PATH).request()
+            .header("Digest", "sha-256=voCCIRTNXosNlEgQ/7IuX5dFNvFQx5MfG/jy1AKiLMU=")
+            .put(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
     }
 
     @Test
