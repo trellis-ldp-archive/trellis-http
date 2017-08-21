@@ -16,6 +16,7 @@ package org.trellisldp.http.impl;
 import static java.net.URI.create;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -36,6 +37,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -153,8 +155,11 @@ public class LdpPostHandler extends BaseLdpHandler {
                     }
                 }
 
+                // TODO JDK9, use map literal
+                final Map<String, String> metadata = new HashMap<>();
+                metadata.put(CONTENT_TYPE, ofNullable(contentType).orElse(APPLICATION_OCTET_STREAM));
                 final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(req.getPartition()).get());
-                binaryService.setContent(req.getPartition(), binaryLocation, new FileInputStream(entity));
+                binaryService.setContent(req.getPartition(), binaryLocation, new FileInputStream(entity), metadata);
                 dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalId, DC.hasPart, binaryLocation));
                 dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.format,
                             rdf.createLiteral(ofNullable(contentType).orElse(APPLICATION_OCTET_STREAM))));

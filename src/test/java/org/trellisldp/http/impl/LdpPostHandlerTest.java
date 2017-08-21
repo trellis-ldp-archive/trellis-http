@@ -18,6 +18,7 @@ import static java.time.Instant.ofEpochSecond;
 import static java.util.Collections.emptyMap;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
@@ -118,6 +119,9 @@ public class LdpPostHandlerTest {
 
     @Captor
     private ArgumentCaptor<InputStream> inputStreamArgument;
+
+    @Captor
+    private ArgumentCaptor<Map<String, String>> metadataArgument;
 
     @Before
     public void setUp() {
@@ -291,9 +295,11 @@ public class LdpPostHandlerTest {
         verify(mockIoService, never()).read(any(), any(), any());
         verify(mockConstraintService, never()).constrainedBy(any(), eq(baseUrl), any());
 
-        verify(mockBinaryService).setContent(eq("partition"), iriArgument.capture(), inputStreamArgument.capture());
+        verify(mockBinaryService).setContent(eq("partition"), iriArgument.capture(), inputStreamArgument.capture(),
+                metadataArgument.capture());
         assertTrue(iriArgument.getValue().getIRIString().startsWith("file:"));
         assertTrue(contentEquals(inputStreamArgument.getValue(), getClass().getResourceAsStream("/simpleData.txt")));
+        assertEquals("text/plain", metadataArgument.getValue().get(CONTENT_TYPE));
 
         verify(mockResourceService).put(eq(identifier), datasetArgument.capture());
         assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
@@ -330,9 +336,11 @@ public class LdpPostHandlerTest {
         verify(mockIoService, never()).read(any(), any(), any());
         verify(mockConstraintService, never()).constrainedBy(any(), eq(baseUrl), any());
 
-        verify(mockBinaryService).setContent(eq("partition"), iriArgument.capture(), inputStreamArgument.capture());
+        verify(mockBinaryService).setContent(eq("partition"), iriArgument.capture(), inputStreamArgument.capture(),
+                metadataArgument.capture());
         assertTrue(iriArgument.getValue().getIRIString().startsWith("file:"));
         assertTrue(contentEquals(inputStreamArgument.getValue(), getClass().getResourceAsStream("/simpleData.txt")));
+        assertEquals("text/plain", metadataArgument.getValue().get(CONTENT_TYPE));
 
         verify(mockResourceService).put(eq(identifier), datasetArgument.capture());
         assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
