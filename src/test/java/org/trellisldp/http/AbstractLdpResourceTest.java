@@ -280,9 +280,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockBinary.getMimeType()).thenReturn(Optional.of(BINARY_MIME_TYPE));
         when(mockBinary.getSize()).thenReturn(Optional.of(BINARY_SIZE));
 
-        when(mockBinaryService.supportedAlgorithms()).thenReturn(new HashSet<>(asList("MD5", "SHA1")));
-        when(mockBinaryService.hexDigest(eq("MD5"), any(InputStream.class))).thenReturn(Optional.of("md5-digest"));
-        when(mockBinaryService.hexDigest(eq("SHA1"), any(InputStream.class))).thenReturn(Optional.of("sha1-digest"));
+        when(mockBinaryService.supportedAlgorithms()).thenReturn(new HashSet<>(asList("MD5", "SHA")));
+        when(mockBinaryService.base64Digest(eq("MD5"), any(InputStream.class))).thenReturn(Optional.of("md5-digest"));
+        when(mockBinaryService.base64Digest(eq("SHA"), any(InputStream.class))).thenReturn(Optional.of("sha1-digest"));
         when(mockBinaryService.getContent(eq(REPO1), eq(binaryInternalIdentifier)))
             .thenAnswer(x -> Optional.of(new ByteArrayInputStream("Some input stream".getBytes(UTF_8))));
         when(mockBinaryService.getResolver(eq(binaryInternalIdentifier))).thenReturn(Optional.of(mockBinaryResolver));
@@ -561,7 +561,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testGetBinaryDigestSha1() throws IOException {
-        final Response res = target(BINARY_PATH).request().header(WANT_DIGEST, "SHA1").get();
+        final Response res = target(BINARY_PATH).request().header(WANT_DIGEST, "SHA").get();
 
         assertEquals(OK, res.getStatusInfo());
         assertFalse(res.getAllowedMethods().contains("PATCH"));

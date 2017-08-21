@@ -62,6 +62,7 @@ import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.Trellis;
+import org.trellisldp.vocabulary.XSD;
 
 /**
  * The PUT response handler
@@ -184,6 +185,8 @@ public class LdpPutHandler extends BaseLdpHandler {
                 dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalId, DC.hasPart, binaryLocation));
                 dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.format,
                             rdf.createLiteral(ofNullable(req.getContentType()).orElse(APPLICATION_OCTET_STREAM))));
+                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.extent,
+                            rdf.createLiteral(Long.toString(entity.length()), XSD.long_)));
             }
         } catch (final IOException ex) {
             throw new WebApplicationException(ex);

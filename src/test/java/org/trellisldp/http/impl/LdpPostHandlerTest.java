@@ -305,7 +305,7 @@ public class LdpPostHandlerTest {
 
         // Audit adds 5 triples + 3 server managed + 0 user managed
         assertEquals(5L, datasetArgument.getValue().stream(of(Trellis.PreferAudit), null, null, null).count());
-        assertEquals(3L, datasetArgument.getValue().stream(of(Trellis.PreferServerManaged), null, null, null).count());
+        assertEquals(4L, datasetArgument.getValue().stream(of(Trellis.PreferServerManaged), null, null, null).count());
         assertEquals(0L, datasetArgument.getValue().stream(of(Trellis.PreferUserManaged), null, null, null).count());
     }
 
@@ -344,7 +344,7 @@ public class LdpPostHandlerTest {
 
         // Audit adds 5 triples + 3 server managed + 0 user managed
         assertEquals(5L, datasetArgument.getValue().stream(of(Trellis.PreferAudit), null, null, null).count());
-        assertEquals(3L, datasetArgument.getValue().stream(of(Trellis.PreferServerManaged), null, null, null).count());
+        assertEquals(4L, datasetArgument.getValue().stream(of(Trellis.PreferServerManaged), null, null, null).count());
         assertEquals(0L, datasetArgument.getValue().stream(of(Trellis.PreferUserManaged), null, null, null).count());
     }
 
