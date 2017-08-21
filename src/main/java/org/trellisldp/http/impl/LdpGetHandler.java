@@ -69,6 +69,7 @@ import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
@@ -238,7 +239,8 @@ public class LdpGetHandler extends BaseLdpHandler {
         ofNullable(req.getWantDigest()).map(WantDigest::getAlgorithms).ifPresent(algs ->
                 algs.stream().filter(binaryService.supportedAlgorithms()::contains).findFirst()
                 .ifPresent(alg -> binaryService.getContent(req.getPartition(), dsid)
-                    .flatMap(is -> binaryService.base64Digest(alg, is))
+                    .flatMap(is -> binaryService.digest(alg, is))
+                    .map(Base64::encodeBase64String)
                     .ifPresent(d -> builder.header(DIGEST, d))));
 
         // Range Requests
