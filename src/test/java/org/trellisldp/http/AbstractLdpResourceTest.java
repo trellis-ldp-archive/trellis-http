@@ -37,7 +37,6 @@ import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
-import static org.apache.commons.codec.binary.Base64.encodeBase64String;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -282,10 +281,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockBinary.getSize()).thenReturn(Optional.of(BINARY_SIZE));
 
         when(mockBinaryService.supportedAlgorithms()).thenReturn(new HashSet<>(asList("MD5", "SHA")));
-        when(mockBinaryService.digest(eq("MD5"), any(InputStream.class)))
-            .thenReturn(Optional.of("md5-digest".getBytes(UTF_8)));
-        when(mockBinaryService.digest(eq("SHA"), any(InputStream.class)))
-            .thenReturn(Optional.of("sha1-digest".getBytes(UTF_8)));
+        when(mockBinaryService.digest(eq("MD5"), any(InputStream.class))).thenReturn(Optional.of("md5-digest"));
+        when(mockBinaryService.digest(eq("SHA"), any(InputStream.class))).thenReturn(Optional.of("sha1-digest"));
         when(mockBinaryService.getContent(eq(REPO1), eq(binaryInternalIdentifier)))
             .thenAnswer(x -> Optional.of(new ByteArrayInputStream("Some input stream".getBytes(UTF_8))));
         when(mockBinaryService.getResolver(eq(binaryInternalIdentifier))).thenReturn(Optional.of(mockBinaryResolver));
@@ -550,7 +547,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
         assertNotNull(res.getHeaderString(ACCEPT_RANGES));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
-        assertEquals(encodeBase64String("md5-digest".getBytes(UTF_8)), res.getHeaderString(DIGEST));
+        assertEquals("md5-digest", res.getHeaderString(DIGEST));
 
         final List<String> varies = res.getStringHeaders().get(VARY);
         assertTrue(varies.contains(RANGE));
@@ -582,7 +579,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
         assertNotNull(res.getHeaderString(ACCEPT_RANGES));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
-        assertEquals(encodeBase64String("sha1-digest".getBytes(UTF_8)), res.getHeaderString(DIGEST));
+        assertEquals("sha1-digest", res.getHeaderString(DIGEST));
 
         final List<String> varies = res.getStringHeaders().get(VARY);
         assertTrue(varies.contains(RANGE));
