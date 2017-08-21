@@ -14,11 +14,9 @@
 package org.trellisldp.http;
 
 import static java.net.URI.create;
-import static java.util.Collections.emptyMap;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.Response.created;
-import static javax.ws.rs.core.Response.ok;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
@@ -30,6 +28,10 @@ import com.codahale.metrics.annotation.Timed;
 import java.io.InputStream;
 import java.util.Map;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -78,19 +80,29 @@ public class MultipartUploader {
      * @param partition the partition
      * @param id the upload id
      * @return a response
+     *
+     * <p>Note: the response structure will be like this:</p>
+     * <pre>{
+     *   "1": "somehash",
+     *   "2": "otherhash",
+     *   "3": "anotherhash"
+     * }</pre>
      */
     @GET
     @Timed
     @Produces("application/json")
-    public Response listUploads(@PathParam("partition") final String partition,
+    public String listUploads(@PathParam("partition") final String partition,
             @PathParam("id") final String id) {
-        return binaryService.getResolverForPartition(partition)
+        final JsonObjectBuilder builder = Json.createObjectBuilder();
+
+        binaryService.getResolverForPartition(partition)
             .filter(BinaryService.Resolver::supportsMultipartUpload)
             .filter(res -> res.uploadSessionExists(id))
-            .map(res -> res.listParts(id).collect(toList()))
-            // TODO make this list into an actual JSON response
-            .map(parts -> ok().entity(parts.toString()).build())
-            .orElseThrow(NotFoundException::new);
+            .map(res -> res.listParts(id))
+            .orElseThrow(NotFoundException::new)
+            .forEach(x -> builder.add(x.getKey().toString(), x.getValue()));
+
+        return builder.build().toString();
     }
 
     /**
@@ -99,6 +111,13 @@ public class MultipartUploader {
      * @param id the identifier
      * @param input the input value
      * @return a response
+     *
+     * <p>Note: The structure should be like this:<p>
+     * <pre>{
+     *   "1": "somehash",
+     *   "2": "otherhash",
+     *   "3": "anotherhash"
+     * }</pre>
      */
     @POST
     @Timed
@@ -106,8 +125,12 @@ public class MultipartUploader {
     public Response createBinary(@PathParam("partition") final String partition,
             @PathParam("id") final String id, final InputStream input) {
 
-        // TODO -- read input into this map
-        final Map<Integer, String> partDigests = emptyMap();
+        final JsonReader reader = Json.createReader(input);
+        final JsonObject obj = reader.readObject();
+        reader.close();
+        final Map<Integer, String> partDigests = obj.keySet().stream()
+            .collect(toMap(Integer::parseInt, obj::getString));
+
         return binaryService.getResolverForPartition(partition)
             .filter(BinaryService.Resolver::supportsMultipartUpload)
             .filter(svc -> svc.uploadSessionExists(id))
@@ -141,6 +164,11 @@ public class MultipartUploader {
      *  @param partNumber the part number
      *  @param part the input stream
      *  @return a response
+     *
+     *  <p>Note: the response will be a json structure, such as:</p>
+     *  <pre>{
+     *    "digest": "a-hash"
+     *  }</pre>
      */
     @PUT
     @Timed
@@ -151,11 +179,15 @@ public class MultipartUploader {
             @PathParam("partNumber") final Integer partNumber,
             final InputStream part) {
 
-        return binaryService.getResolverForPartition(partition)
+        final JsonObjectBuilder builder = Json.createObjectBuilder();
+
+        final String digest = binaryService.getResolverForPartition(partition)
             .filter(BinaryService.Resolver::supportsMultipartUpload)
             .filter(res -> res.uploadSessionExists(id))
             .map(res -> res.uploadPart(id, partNumber, part))
             .orElseThrow(NotFoundException::new);
+
+        return builder.add("digest", digest).build().toString();
     }
 
     /**

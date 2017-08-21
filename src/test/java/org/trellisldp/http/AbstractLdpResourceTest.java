@@ -1788,7 +1788,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
             .put(entity("blah blah blah", TEXT_PLAIN_TYPE));
         assertEquals(OK, res.getStatusInfo());
         final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
-        assertEquals("digest1", entity);
+        assertEquals("{\"digest\":\"digest1\"}", entity);
     }
 
     @Test
@@ -1810,7 +1810,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockBinaryResolver.completeUpload(eq(UPLOAD_SESSION_ID), any())).thenReturn(upload);
 
         final Response res = target("upload/" + REPO1 + "/" + UPLOAD_SESSION_ID).request()
-            .post(entity("{\"key\": \"value\"}", APPLICATION_JSON_TYPE));
+            .post(entity("{\"20\": \"value\"}", APPLICATION_JSON_TYPE));
         assertEquals(CREATED, res.getStatusInfo());
     }
 
