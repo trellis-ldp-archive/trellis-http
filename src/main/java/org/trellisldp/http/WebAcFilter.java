@@ -21,7 +21,6 @@ import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.http.domain.HttpConstants.ACL_PROPERTY;
 import static org.trellisldp.http.domain.HttpConstants.SESSION_PROPERTY;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
@@ -29,7 +28,6 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Priority;
@@ -95,16 +93,6 @@ public class WebAcFilter implements ContainerRequestFilter {
         }
         final String method = ctx.getMethod();
         final String partition = path.split("/")[0];
-
-        final Optional<IRI> acl = accessService.findAclFor(rdf.createIRI(TRELLIS_PREFIX + path));
-
-        if (!acl.isPresent()) {
-            LOGGER.error("No ACL resource found for {}", path);
-            throw new ForbiddenException();
-        }
-
-        // TODO -- verify that this resource has the correct base URL
-        ctx.setProperty(ACL_PROPERTY, acl.map(IRI::getIRIString).get());
 
         if (partitions.contains(partition)) {
             if (HttpConstants.ACL.equals(ctx.getUriInfo().getQueryParameters().getFirst("ext"))) {
