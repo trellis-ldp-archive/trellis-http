@@ -155,10 +155,6 @@ public class LdpResource extends BaseLdpResource {
         if (nonNull(req.getVersion())) {
             return resourceService.get(identifier, req.getVersion().getInstant()).map(optionsHandler::ldpOptions)
                 .orElse(status(NOT_FOUND)).build();
-
-        } else if (TIMEMAP.equals(req.getExt())) {
-            return resourceService.get(identifier, MAX).map(optionsHandler::ldpOptions)
-                .orElse(status(NOT_FOUND)).build();
         }
 
         return resourceService.get(identifier).map(optionsHandler::ldpOptions).orElse(status(NOT_FOUND)).build();

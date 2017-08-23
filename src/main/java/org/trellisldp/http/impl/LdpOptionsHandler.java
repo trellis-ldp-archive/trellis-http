@@ -31,6 +31,7 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.PATCH;
+import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 
@@ -88,7 +89,7 @@ public class LdpOptionsHandler extends BaseLdpHandler {
 
         final ResponseBuilder builder = status(NO_CONTENT);
 
-        if (res.isMemento()) {
+        if (res.isMemento() || TIMEMAP.equals(req.getExt())) {
             // Mementos are read-only
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
         } else {
