@@ -56,12 +56,12 @@ import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.PATCH;
-import org.trellisldp.http.impl.LdpDeleteHandler;
-import org.trellisldp.http.impl.LdpGetHandler;
-import org.trellisldp.http.impl.LdpOptionsHandler;
-import org.trellisldp.http.impl.LdpPatchHandler;
-import org.trellisldp.http.impl.LdpPostHandler;
-import org.trellisldp.http.impl.LdpPutHandler;
+import org.trellisldp.http.impl.DeleteHandler;
+import org.trellisldp.http.impl.GetHandler;
+import org.trellisldp.http.impl.OptionsHandler;
+import org.trellisldp.http.impl.PatchHandler;
+import org.trellisldp.http.impl.PostHandler;
+import org.trellisldp.http.impl.PutHandler;
 import org.trellisldp.http.impl.MementoResource;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
@@ -118,7 +118,7 @@ public class LdpResource extends BaseLdpResource {
     public Response getResource(@BeanParam final LdpRequest req) {
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-        final LdpGetHandler getHandler = new LdpGetHandler(partitions, req, resourceService, ioService, binaryService);
+        final GetHandler getHandler = new GetHandler(partitions, req, resourceService, ioService, binaryService);
 
         // Fetch a versioned resource
         if (nonNull(req.getVersion())) {
@@ -155,7 +155,7 @@ public class LdpResource extends BaseLdpResource {
     public Response options(@BeanParam final LdpRequest req) {
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-        final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(partitions, req, resourceService);
+        final OptionsHandler optionsHandler = new OptionsHandler(partitions, req, resourceService);
 
         if (nonNull(req.getVersion())) {
             return resourceService.get(identifier, req.getVersion().getInstant()).map(optionsHandler::ldpOptions)
@@ -182,7 +182,7 @@ public class LdpResource extends BaseLdpResource {
         }
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-        final LdpPatchHandler patchHandler = new LdpPatchHandler(partitions, req, body, resourceService, ioService,
+        final PatchHandler patchHandler = new PatchHandler(partitions, req, body, resourceService, ioService,
                 constraintService);
 
         return resourceService.get(identifier, MAX).map(patchHandler::updateResource).orElse(status(NOT_FOUND)).build();
@@ -202,7 +202,7 @@ public class LdpResource extends BaseLdpResource {
         }
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-        final LdpDeleteHandler deleteHandler = new LdpDeleteHandler(partitions, req, resourceService);
+        final DeleteHandler deleteHandler = new DeleteHandler(partitions, req, resourceService);
 
         return resourceService.get(identifier, MAX).map(deleteHandler::deleteResource)
             .orElse(status(NOT_FOUND)).build();
@@ -240,7 +240,7 @@ public class LdpResource extends BaseLdpResource {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
-        final LdpPostHandler postHandler = new LdpPostHandler(partitions, req, identifier, body, resourceService,
+        final PostHandler postHandler = new PostHandler(partitions, req, identifier, body, resourceService,
                 ioService, constraintService, binaryService);
 
         // First check if this is a container
@@ -278,7 +278,7 @@ public class LdpResource extends BaseLdpResource {
         }
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-        final LdpPutHandler putHandler = new LdpPutHandler(partitions, req, body, resourceService, ioService,
+        final PutHandler putHandler = new PutHandler(partitions, req, body, resourceService, ioService,
                 constraintService, binaryService);
 
         return resourceService.get(identifier, MAX).map(putHandler::setResource)

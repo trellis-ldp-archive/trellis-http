@@ -92,9 +92,9 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-public class LdpGetHandler extends BaseLdpHandler {
+public class GetHandler extends BaseLdpHandler {
 
-    private static final Logger LOGGER = getLogger(LdpGetHandler.class);
+    private static final Logger LOGGER = getLogger(GetHandler.class);
 
     private final IOService ioService;
     private final BinaryService binaryService;
@@ -107,7 +107,7 @@ public class LdpGetHandler extends BaseLdpHandler {
      * @param ioService the serialization service
      * @param binaryService the binary service
      */
-    public LdpGetHandler(final Map<String, String> partitions, final LdpRequest req,
+    public GetHandler(final Map<String, String> partitions, final LdpRequest req,
             final ResourceService resourceService, final IOService ioService,
             final BinaryService binaryService) {
         super(partitions, req, resourceService);

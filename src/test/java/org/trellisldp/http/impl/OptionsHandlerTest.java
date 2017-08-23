@@ -63,7 +63,7 @@ import org.trellisldp.vocabulary.Trellis;
  * @author acoburn
  */
 @RunWith(MockitoJUnitRunner.class)
-public class LdpOptionsHandlerTest {
+public class OptionsHandlerTest {
 
     private final static Instant time = ofEpochSecond(1496262729);
     private final static Instant binaryTime = ofEpochSecond(1496262750);
@@ -93,7 +93,7 @@ public class LdpOptionsHandlerTest {
     @Test
     public void testOptionsLdprs() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
-        final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(emptyMap(), mockRequest, mockResourceService);
+        final OptionsHandler optionsHandler = new OptionsHandler(emptyMap(), mockRequest, mockResourceService);
 
         final Response res = optionsHandler.ldpOptions(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -113,7 +113,7 @@ public class LdpOptionsHandlerTest {
     @Test
     public void testOptionsLdpc() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.IndirectContainer);
-        final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(emptyMap(), mockRequest, mockResourceService);
+        final OptionsHandler optionsHandler = new OptionsHandler(emptyMap(), mockRequest, mockResourceService);
 
         final Response res = optionsHandler.ldpOptions(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -141,7 +141,7 @@ public class LdpOptionsHandlerTest {
     public void testOptionsLdpnr() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
 
-        final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(emptyMap(), mockRequest, mockResourceService);
+        final OptionsHandler optionsHandler = new OptionsHandler(emptyMap(), mockRequest, mockResourceService);
 
         final Response res = optionsHandler.ldpOptions(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -161,7 +161,7 @@ public class LdpOptionsHandlerTest {
     public void testOptionsAcl() {
         when(mockRequest.getExt()).thenReturn("acl");
 
-        final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(emptyMap(), mockRequest, mockResourceService);
+        final OptionsHandler optionsHandler = new OptionsHandler(emptyMap(), mockRequest, mockResourceService);
 
         final Response res = optionsHandler.ldpOptions(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -183,7 +183,7 @@ public class LdpOptionsHandlerTest {
     public void testOptionsMemento() {
         when(mockResource.isMemento()).thenReturn(true);
 
-        final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(emptyMap(), mockRequest, mockResourceService);
+        final OptionsHandler optionsHandler = new OptionsHandler(emptyMap(), mockRequest, mockResourceService);
 
         final Response res = optionsHandler.ldpOptions(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -205,7 +205,7 @@ public class LdpOptionsHandlerTest {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
 
-        final LdpOptionsHandler optionsHandler = new LdpOptionsHandler(emptyMap(), mockRequest, mockResourceService);
+        final OptionsHandler optionsHandler = new OptionsHandler(emptyMap(), mockRequest, mockResourceService);
 
         final Response res = optionsHandler.ldpOptions(mockResource).build();
         assertEquals(GONE, res.getStatusInfo());

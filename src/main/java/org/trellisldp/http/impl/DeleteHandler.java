@@ -39,9 +39,9 @@ import org.trellisldp.spi.Session;
  *
  * @author acoburn
  */
-public class LdpDeleteHandler extends BaseLdpHandler {
+public class DeleteHandler extends BaseLdpHandler {
 
-    private static final Logger LOGGER = getLogger(LdpDeleteHandler.class);
+    private static final Logger LOGGER = getLogger(DeleteHandler.class);
 
     /**
      * Create a builder for an LDP DELETE response
@@ -49,7 +49,7 @@ public class LdpDeleteHandler extends BaseLdpHandler {
      * @param req the LDP request
      * @param resourceService the resource service
      */
-    public LdpDeleteHandler(final Map<String, String> partitions, final LdpRequest req,
+    public DeleteHandler(final Map<String, String> partitions, final LdpRequest req,
             final ResourceService resourceService) {
         super(partitions, req, resourceService);
     }

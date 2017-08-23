@@ -57,7 +57,7 @@ import org.trellisldp.vocabulary.XSD;
  * @author acoburn
  */
 @RunWith(MockitoJUnitRunner.class)
-public class LdpDeleteHandlerTest {
+public class DeleteHandlerTest {
 
     private final static RDF rdf = getInstance();
     private final static Instant time = ofEpochSecond(1496262729);
@@ -107,7 +107,7 @@ public class LdpDeleteHandlerTest {
 
     @Test
     public void testDelete() {
-        final LdpDeleteHandler handler = new LdpDeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
+        final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
 
         final Response res = handler.deleteResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -117,7 +117,7 @@ public class LdpDeleteHandlerTest {
     public void testCache() {
         when(mockRequest.evaluatePreconditions(eq(from(time)), any(EntityTag.class)))
                 .thenReturn(status(PRECONDITION_FAILED));
-        final LdpDeleteHandler handler = new LdpDeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
+        final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
 
         final Response res = handler.deleteResource(mockResource).build();
         assertEquals(PRECONDITION_FAILED, res.getStatusInfo());
@@ -128,7 +128,7 @@ public class LdpDeleteHandlerTest {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
 
-        final LdpDeleteHandler handler = new LdpDeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
+        final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
 
         final Response res = handler.deleteResource(mockResource).build();
         assertEquals(GONE, res.getStatusInfo());

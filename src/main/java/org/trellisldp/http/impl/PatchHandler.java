@@ -68,9 +68,9 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-public class LdpPatchHandler extends BaseLdpHandler {
+public class PatchHandler extends BaseLdpHandler {
 
-    private static final Logger LOGGER = getLogger(LdpPatchHandler.class);
+    private static final Logger LOGGER = getLogger(PatchHandler.class);
 
     private final IOService ioService;
     private final ConstraintService constraintService;
@@ -85,7 +85,7 @@ public class LdpPatchHandler extends BaseLdpHandler {
      * @param ioService the serialization service
      * @param constraintService the RDF constraint service
      */
-    public LdpPatchHandler(final Map<String, String> partitions, final LdpRequest req,
+    public PatchHandler(final Map<String, String> partitions, final LdpRequest req,
             final String sparqlUpdate,
             final ResourceService resourceService, final IOService ioService,
             final ConstraintService constraintService) {

@@ -55,9 +55,9 @@ import org.trellisldp.vocabulary.Trellis;
  *
  * @author acoburn
  */
-public class LdpOptionsHandler extends BaseLdpHandler {
+public class OptionsHandler extends BaseLdpHandler {
 
-    private static final Logger LOGGER = getLogger(LdpOptionsHandler.class);
+    private static final Logger LOGGER = getLogger(OptionsHandler.class);
 
     /**
      * An OPTIONS response builder
@@ -65,7 +65,7 @@ public class LdpOptionsHandler extends BaseLdpHandler {
      * @param req the LDP request
      * @param resourceService the resource service
      */
-    public LdpOptionsHandler(final Map<String, String> partitions, final LdpRequest req,
+    public OptionsHandler(final Map<String, String> partitions, final LdpRequest req,
             final ResourceService resourceService) {
         super(partitions, req, resourceService);
     }
