@@ -32,6 +32,7 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.PATCH;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
+import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 
@@ -90,8 +91,11 @@ public class LdpOptionsHandler extends BaseLdpHandler {
         final ResponseBuilder builder = status(NO_CONTENT);
 
         if (res.isMemento() || TIMEMAP.equals(req.getExt())) {
-            // Mementos are read-only
+            // Mementos and TimeMaps are read-only
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
+        } else if (UPLOADS.equals(req.getExt())) {
+            // Upload handlers accept POST
+            builder.header(ALLOW, join(",", POST, OPTIONS));
         } else {
             builder.header(ACCEPT_PATCH, APPLICATION_SPARQL_UPDATE);
             if (Trellis.PreferAccessControl.equals(graphName)) {

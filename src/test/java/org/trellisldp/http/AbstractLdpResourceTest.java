@@ -58,6 +58,7 @@ import static org.trellisldp.http.domain.HttpConstants.PREFER;
 import static org.trellisldp.http.domain.HttpConstants.RANGE;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
+import static org.trellisldp.http.domain.HttpConstants.UPLOAD_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.WANT_DIGEST;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON_TYPE;
@@ -1732,6 +1733,49 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertFalse(res.getLinks().stream().anyMatch(
                     hasLink(rdf.createIRI(BASE_URL + RESOURCE_PATH + "?ext=" + UPLOADS),
                             Trellis.multipartUploadService.getIRIString())));
+    }
+
+    @Test
+    public void testMultipartOptions() {
+        final Response res = target(BINARY_PATH).queryParam("ext", UPLOADS).request().options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertFalse(res.getAllowedMethods().contains("GET"));
+        assertFalse(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertTrue(res.getAllowedMethods().contains("POST"));
+    }
+
+    @Test
+    public void testMultipartStart() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.initiateUpload(eq(REPO1), any(), any()))
+            .thenReturn(RANDOM_VALUE);
+        final Response res = target(BINARY_PATH).queryParam("ext", UPLOADS).request()
+            .post(entity("", TEXT_PLAIN_TYPE));
+
+        assertEquals(CREATED, res.getStatusInfo());
+        assertEquals(BASE_URL + UPLOAD_PREFIX + REPO1 + "/" + RANDOM_VALUE, res.getLocation().toString());
+    }
+
+    @Test
+    public void testMultipartStartError() {
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        final Response res = target(BINARY_PATH).queryParam("ext", UPLOADS).request()
+            .post(entity("", TEXT_PLAIN_TYPE));
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+    }
+
+    @Test
+    public void testMultipartStartNotAllowed() {
+        final Response res = target(BINARY_PATH).queryParam("ext", UPLOADS).request()
+            .post(entity("", TEXT_PLAIN_TYPE));
+
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
     }
 
     @Test

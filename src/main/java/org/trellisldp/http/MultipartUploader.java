@@ -18,6 +18,7 @@ import static java.util.stream.Collectors.toMap;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.Response.created;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.domain.HttpConstants.UPLOAD_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
 import static org.trellisldp.spi.RDFUtils.getInstance;
@@ -56,7 +57,7 @@ import org.trellisldp.vocabulary.XSD;
 /**
  * @author acoburn
  */
-@Path("upload/{partition}/{id}")
+@Path(UPLOAD_PREFIX + "{partition}/{id}")
 public class MultipartUploader {
 
     private final BinaryService binaryService;

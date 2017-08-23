@@ -13,10 +13,13 @@
  */
 package org.trellisldp.http;
 
+import static java.net.URI.create;
 import static java.time.Instant.MAX;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
+import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
@@ -26,6 +29,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
+import static org.trellisldp.http.domain.HttpConstants.UPLOAD_PREFIX;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 
 import com.codahale.metrics.annotation.Timed;
@@ -43,6 +47,7 @@ import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.IRI;
@@ -220,6 +225,16 @@ public class LdpResource extends BaseLdpResource {
         final String path = req.getPartition() + req.getPath();
         final String identifier = "/" + ofNullable(req.getSlug())
             .orElseGet(resourceService.getIdentifierSupplier());
+
+        if (UPLOADS.equals(req.getExt()) && binaryService.getResolverForPartition(req.getPartition())
+                .filter(BinaryService.Resolver::supportsMultipartUpload).isPresent()) {
+            final String uploadId = binaryService.getResolverForPartition(req.getPartition())
+                .map(res-> res.initiateUpload(req.getPartition(), rdf.createIRI(TRELLIS_PREFIX + path + identifier),
+                            req.getContentType()))
+                .orElseThrow(() -> new WebApplicationException("Cannot initiate multipart upload", BAD_REQUEST));
+            return status(CREATED).location(create(req.getBaseUrl(partitions) + UPLOAD_PREFIX + req.getPartition() +
+                        "/" + uploadId)).build();
+        }
 
         if (nonNull(req.getExt()) || nonNull(req.getVersion())) {
             return status(METHOD_NOT_ALLOWED).build();
