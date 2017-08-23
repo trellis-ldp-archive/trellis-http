@@ -99,8 +99,8 @@ public class LdpOptionsHandler extends BaseLdpHandler {
         } else {
             builder.header(ACCEPT_PATCH, APPLICATION_SPARQL_UPDATE);
             if (Trellis.PreferAccessControl.equals(graphName)) {
-                // ACL resources allow a limited set of methods (no PUT, DELETE or POST)
-                builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH));
+                // ACL resources allow a limited set of methods (no DELETE or POST)
+                builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH, PUT));
             } else if (res.getInteractionModel().equals(LDP.RDFSource) ||
                     res.getInteractionModel().equals(LDP.NonRDFSource)) {
                 // If it's not a container, POST isn't allowed

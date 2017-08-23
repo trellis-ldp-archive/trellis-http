@@ -1201,7 +1201,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertEquals(NO_CONTENT, res.getStatusInfo());
 
         assertTrue(res.getAllowedMethods().contains("PATCH"));
-        assertFalse(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
         assertFalse(res.getAllowedMethods().contains("DELETE"));
         assertTrue(res.getAllowedMethods().contains("GET"));
         assertTrue(res.getAllowedMethods().contains("HEAD"));
@@ -1488,6 +1488,17 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testPutAcl() {
         final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request()
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    @Test
+    public void testPutUploads() {
+        final Response res = target(RESOURCE_PATH).queryParam("ext", UPLOADS).request()
             .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());

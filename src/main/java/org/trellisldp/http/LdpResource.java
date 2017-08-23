@@ -273,7 +273,7 @@ public class LdpResource extends BaseLdpResource {
             return status(UNSUPPORTED_MEDIA_TYPE).build();
         }
 
-        if (nonNull(req.getExt()) || nonNull(req.getVersion())) {
+        if (nonNull(req.getVersion()) || UPLOADS.equals(req.getExt())) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 

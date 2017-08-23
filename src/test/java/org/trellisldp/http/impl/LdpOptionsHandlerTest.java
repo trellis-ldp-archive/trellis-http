@@ -173,7 +173,7 @@ public class LdpOptionsHandlerTest {
         assertTrue(allow.contains(GET));
         assertTrue(allow.contains(HEAD));
         assertTrue(allow.contains(OPTIONS));
-        assertFalse(allow.contains(PUT));
+        assertTrue(allow.contains(PUT));
         assertFalse(allow.contains(DELETE));
         assertTrue(allow.contains(PATCH));
         assertFalse(allow.contains(POST));

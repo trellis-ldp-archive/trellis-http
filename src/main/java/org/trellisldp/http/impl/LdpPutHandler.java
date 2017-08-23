@@ -27,6 +27,7 @@ import static org.apache.commons.codec.digest.DigestUtils.getDigest;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.codec.digest.DigestUtils.updateDigest;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
@@ -149,6 +150,7 @@ public class LdpPutHandler extends BaseLdpHandler {
         final IRI internalId = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 
         final Dataset dataset = rdf.createDataset();
+        final IRI graphName = ACL.equals(req.getExt()) ? Trellis.PreferAccessControl : Trellis.PreferUserManaged;
 
         // Add audit quads
         auditUpdate(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
@@ -162,12 +164,12 @@ public class LdpPutHandler extends BaseLdpHandler {
             if (nonNull(entity) && rdfSyntax.isPresent()) {
                 ioService.read(new FileInputStream(entity), identifier, rdfSyntax.get())
                     .map(skolemizeTriples(resourceService, baseUrl)).forEach(triple -> {
-                        dataset.add(rdf.createQuad(Trellis.PreferUserManaged, triple.getSubject(),
+                        dataset.add(rdf.createQuad(graphName, triple.getSubject(),
                                 triple.getPredicate(), triple.getObject()));
                     });
 
                 // Check for any constraints
-                final Optional<String> constraint = dataset.getGraph(Trellis.PreferUserManaged)
+                final Optional<String> constraint = dataset.getGraph(graphName)
                     .flatMap(g -> constraintService.constrainedBy(ldpType, baseUrl, g)).map(IRI::getIRIString);
                 if (constraint.isPresent()) {
                     return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
