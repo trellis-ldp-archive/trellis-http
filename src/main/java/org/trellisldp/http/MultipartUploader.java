@@ -112,7 +112,7 @@ public class MultipartUploader {
      * @param input the input value
      * @return a response
      *
-     * <p>Note: The structure should be like this:<p>
+     * <p>Note: The structure should be like this:</p>
      * <pre>{
      *   "1": "somehash",
      *   "2": "otherhash",
