@@ -112,6 +112,7 @@ public class WebAcFilter implements ContainerRequestFilter {
     private void verifyCanAppend(final Session session, final String path) {
         final IRI iri = rdf.createIRI(TRELLIS_PREFIX + path);
         if (!accessService.anyMatch(session, iri, x -> ACL.Append.equals(x) || ACL.Write.equals(x))) {
+            LOGGER.warn("User: {} cannot Append to {}", session.getAgent().toString(), path);
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
                 throw new NotAuthorizedException(challenges.get(0),
                         challenges.subList(1, challenges.size()).toArray());
@@ -122,6 +123,7 @@ public class WebAcFilter implements ContainerRequestFilter {
 
     private void verifyCanControl(final Session session, final String path) {
         if (!accessService.canControl(session, rdf.createIRI(TRELLIS_PREFIX + path))) {
+            LOGGER.warn("User: {} cannot Control {}", session.getAgent().toString(), path);
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
                 throw new NotAuthorizedException(challenges.get(0),
                         challenges.subList(1, challenges.size()).toArray());
@@ -132,6 +134,7 @@ public class WebAcFilter implements ContainerRequestFilter {
 
     private void verifyCanWrite(final Session session, final String path) {
         if (!accessService.canWrite(session, rdf.createIRI(TRELLIS_PREFIX + path))) {
+            LOGGER.warn("User: {} cannot Write to {}", session.getAgent().toString(), path);
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
                 throw new NotAuthorizedException(challenges.get(0),
                         challenges.subList(1, challenges.size()).toArray());
@@ -142,6 +145,7 @@ public class WebAcFilter implements ContainerRequestFilter {
 
     private void verifyCanRead(final Session session, final String path) {
         if (!accessService.canRead(session, rdf.createIRI(TRELLIS_PREFIX + path))) {
+            LOGGER.warn("User: {} cannot Read from {}", session.getAgent().toString(), path);
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
                 throw new NotAuthorizedException(challenges.get(0),
                         challenges.subList(1, challenges.size()).toArray());
