@@ -14,6 +14,7 @@
 package org.trellisldp.http;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.nonNull;
 import static javax.ws.rs.Priorities.AUTHORIZATION;
@@ -95,7 +96,7 @@ public class WebAcFilter implements ContainerRequestFilter {
         final String partition = path.split("/")[0];
 
         if (partitions.contains(partition)) {
-            if (HttpConstants.ACL.equals(ctx.getUriInfo().getQueryParameters().getFirst("ext"))) {
+            if (ctx.getUriInfo().getQueryParameters().getOrDefault("ext", emptyList()).contains(HttpConstants.ACL)) {
                 verifyCanControl(s, path);
             } else if (readable.contains(method)) {
                 verifyCanRead(s, path);
