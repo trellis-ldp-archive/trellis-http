@@ -16,9 +16,10 @@ package org.trellisldp.http.impl;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.trellisldp.http.domain.HttpConstants.DEFAULT_REPRESENTATION;
-import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.spi.RDFUtils.toExternalTerm;
+import static org.trellisldp.spi.RDFUtils.toInternalTerm;
 
 import java.util.HashSet;
 import java.util.List;
@@ -36,7 +37,6 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
-import org.apache.commons.rdf.api.RDFTerm;
 import org.apache.commons.rdf.api.Triple;
 
 import org.trellisldp.http.domain.Prefer;
@@ -68,46 +68,14 @@ public final class RdfUtils {
     }
 
     /**
-     * Convert an internal IRI to an external IRI
-     * @param term the RDF term
-     * @param baseUrl the base URL
-     * @return a converted RDF term
-     */
-    public static RDFTerm toExternalIri(final RDFTerm term, final String baseUrl) {
-        if (term instanceof IRI) {
-            final String iri = ((IRI) term).getIRIString();
-            if (iri.startsWith(TRELLIS_PREFIX)) {
-                return rdf.createIRI(baseUrl + iri.substring(TRELLIS_PREFIX.length()));
-            }
-        }
-        return term;
-    }
-
-    /**
-     * Convert an external IRI to an internal IRI
-     * @param term the RDF term
-     * @param baseUrl the base URL
-     * @return a converted RDF term
-     */
-    public static RDFTerm toInternalIri(final RDFTerm term, final String baseUrl) {
-        if (term instanceof IRI) {
-            final String iri = ((IRI) term).getIRIString();
-            if (iri.startsWith(baseUrl)) {
-                return rdf.createIRI(TRELLIS_PREFIX + iri.substring(baseUrl.length()));
-            }
-        }
-        return term;
-    }
-
-    /**
      * Convert triples from a skolemized form to an externa form
      * @param svc the resourceService
      * @param baseUrl the baseUrl
      * @return a mapping function
      */
     public static Function<Triple, Triple> unskolemizeTriples(final ResourceService svc, final String baseUrl) {
-        return triple -> rdf.createTriple((BlankNodeOrIRI) toExternalIri(svc.unskolemize(triple.getSubject()), baseUrl),
-                    triple.getPredicate(), toExternalIri(svc.unskolemize(triple.getObject()), baseUrl));
+        return triple -> rdf.createTriple((BlankNodeOrIRI) toExternalTerm(svc.unskolemize(triple.getSubject()),
+                    baseUrl), triple.getPredicate(), toExternalTerm(svc.unskolemize(triple.getObject()), baseUrl));
     }
 
     /**
@@ -117,8 +85,8 @@ public final class RdfUtils {
      * @return a mapping function
      */
     public static Function<Triple, Triple> skolemizeTriples(final ResourceService svc, final String baseUrl) {
-        return triple -> rdf.createTriple((BlankNodeOrIRI) toInternalIri(svc.skolemize(triple.getSubject()), baseUrl),
-                triple.getPredicate(), toInternalIri(svc.skolemize(triple.getObject()), baseUrl));
+        return triple -> rdf.createTriple((BlankNodeOrIRI) toInternalTerm(svc.skolemize(triple.getSubject()), baseUrl),
+                triple.getPredicate(), toInternalTerm(svc.skolemize(triple.getObject()), baseUrl));
     }
 
     /**
@@ -129,8 +97,8 @@ public final class RdfUtils {
      */
     public static Function<Quad, Quad> unskolemizeQuads(final ResourceService svc, final String baseUrl) {
         return quad -> rdf.createQuad(quad.getGraphName().orElse(Trellis.PreferUserManaged),
-                    (BlankNodeOrIRI) toExternalIri(svc.unskolemize(quad.getSubject()), baseUrl),
-                    quad.getPredicate(), toExternalIri(svc.unskolemize(quad.getObject()), baseUrl));
+                    (BlankNodeOrIRI) toExternalTerm(svc.unskolemize(quad.getSubject()), baseUrl),
+                    quad.getPredicate(), toExternalTerm(svc.unskolemize(quad.getObject()), baseUrl));
     }
 
     /**
@@ -141,8 +109,8 @@ public final class RdfUtils {
      */
     public static Function<Quad, Quad> skolemizeQuads(final ResourceService svc, final String baseUrl) {
         return quad -> rdf.createQuad(quad.getGraphName().orElse(Trellis.PreferUserManaged),
-                (BlankNodeOrIRI) toInternalIri(svc.skolemize(quad.getSubject()), baseUrl), quad.getPredicate(),
-                toInternalIri(svc.skolemize(quad.getObject()), baseUrl));
+                (BlankNodeOrIRI) toInternalTerm(svc.skolemize(quad.getSubject()), baseUrl), quad.getPredicate(),
+                toInternalTerm(svc.skolemize(quad.getObject()), baseUrl));
     }
 
     /**

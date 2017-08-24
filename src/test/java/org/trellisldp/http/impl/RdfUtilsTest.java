@@ -121,29 +121,6 @@ public class RdfUtilsTest {
     }
 
     @Test
-    public void testExternalize() {
-        final IRI iri1 = rdf.createIRI("trellis:repository/resource");
-        final IRI iri2 = rdf.createIRI("http://example.org/resource");
-        final Literal literal = rdf.createLiteral("Text");
-        final String externalUrl = "http://localhost/api/";
-        assertEquals(rdf.createIRI(externalUrl + "repository/resource"), RdfUtils.toExternalIri(iri1, externalUrl));
-        assertEquals(iri2, RdfUtils.toExternalIri(iri2, externalUrl));
-        assertEquals(literal, RdfUtils.toExternalIri(literal, externalUrl));
-    }
-
-    @Test
-    public void testInternalize() {
-        final IRI iri1 = rdf.createIRI("trellis:repository/resource");
-        final IRI iri2 = rdf.createIRI("http://example.org/resource");
-        final Literal literal = rdf.createLiteral("Text");
-        final String externalUrl = "http://localhost/api/";
-
-        assertEquals(iri1, RdfUtils.toInternalIri(rdf.createIRI(externalUrl + "repository/resource"), externalUrl));
-        assertEquals(iri2, RdfUtils.toInternalIri(iri2, externalUrl));
-        assertEquals(literal, RdfUtils.toInternalIri(literal, externalUrl));
-    }
-
-    @Test
     public void testSkolemize() {
         final IRI iri = rdf.createIRI("trellis:repository/resource");
         final IRI anonIri = rdf.createIRI("trellis:bnode/foo");
