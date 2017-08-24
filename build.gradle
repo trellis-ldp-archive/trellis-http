@@ -50,7 +50,6 @@ ext {
     jacksonVersion = '2.9.0'
 
     /* OSGi */
-    spiflyVersion = '1.0.8'
     projectOsgiVersion = project.version.replaceAll("-SNAPSHOT", ".SNAPSHOT")
 }
 
@@ -116,6 +115,19 @@ jacocoTestReport {
 
 release {
     tagTemplate = '$name-$version'
+}
+
+jar {
+    manifest {
+        description project.description
+        docURL project.docURL
+        vendor project.vendor
+        license project.license
+
+        instruction 'Automatic-Module-Name', 'org.trellisldp.http'
+        instruction 'Import-Package', '*'
+        instruction 'Export-Package', "org.trellisldp.http;version=${projectOsgiVersion}"
+    }
 }
 
 
