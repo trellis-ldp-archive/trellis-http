@@ -32,6 +32,7 @@ public class TrailingSlashFilter implements ContainerRequestFilter {
     public void filter(final ContainerRequestContext ctx) throws IOException {
         final String path = ctx.getUriInfo().getPath();
         if (path.endsWith("/")) {
+            System.out.println("Redirecting: " + path);
             ctx.abortWith(seeOther(fromUri(path.substring(0, path.length() - 1)).build()).build());
         }
     }

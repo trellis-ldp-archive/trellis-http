@@ -101,6 +101,10 @@ gradle.projectsEvaluated {
     }
 }
 
+test {
+    jvmArgs '--add-modules', 'java.xml.bind'
+}
+
 jacocoTestReport {
     reports {
         xml.enabled = true
