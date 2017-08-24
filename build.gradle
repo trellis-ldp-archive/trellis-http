@@ -102,7 +102,9 @@ gradle.projectsEvaluated {
 }
 
 test {
-    jvmArgs '--add-modules', 'java.xml.bind'
+    if (org.gradle.internal.jvm.Jvm.current().getJavaVersion().isJava9Compatible()) {
+        jvmArgs '--add-modules', 'java.xml.bind'
+    }
 }
 
 jacocoTestReport {
