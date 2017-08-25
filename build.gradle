@@ -71,15 +71,15 @@ dependencies {
     implementation group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
     implementation group: 'org.trellisldp', name: 'trellis-vocabulary', version: trellisVocabularyVersion
 
-    testCompile group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
-    testCompile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jacksonVersion
-    testCompile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersion
-    testCompile group: 'junit', name: 'junit', version: junitVersion
-    testCompile group: 'org.glassfish', name: 'javax.json', version: jsonVersion
-    testCompile group: 'org.glassfish.jersey.core', name: 'jersey-server', version: jerseyVersion
-    testCompile group: 'org.glassfish.jersey.test-framework.providers', name: 'jersey-test-framework-provider-inmemory', version: jerseyVersion
-    testCompile group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
-    testCompile group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisJenaIOVersion
+    testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
+    testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jacksonVersion
+    testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersion
+    testImplementation group: 'junit', name: 'junit', version: junitVersion
+    testImplementation group: 'org.glassfish', name: 'javax.json', version: jsonVersion
+    testImplementation group: 'org.glassfish.jersey.core', name: 'jersey-server', version: jerseyVersion
+    testImplementation group: 'org.glassfish.jersey.test-framework.providers', name: 'jersey-test-framework-provider-inmemory', version: jerseyVersion
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
+    testImplementation group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisJenaIOVersion
 
     buildToolsConfig 'org.trellisldp:trellis-build-tools:0.1.1'
 }
