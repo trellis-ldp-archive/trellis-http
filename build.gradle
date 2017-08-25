@@ -71,7 +71,6 @@ dependencies {
     implementation group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
     implementation group: 'org.trellisldp', name: 'trellis-vocabulary', version: trellisVocabularyVersion
 
-    testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
     testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jacksonVersion
     testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersion
     testImplementation group: 'junit', name: 'junit', version: junitVersion
@@ -80,6 +79,8 @@ dependencies {
     testImplementation group: 'org.glassfish.jersey.test-framework.providers', name: 'jersey-test-framework-provider-inmemory', version: jerseyVersion
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
     testImplementation group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisJenaIOVersion
+
+    testRuntimeClasspath group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
 
     buildToolsConfig 'org.trellisldp:trellis-build-tools:0.1.1'
 }
@@ -255,6 +256,7 @@ task processBuildTools(type: Copy) {
 checkstyle {
     configFile = rootProject.file('build/checkstyle/checkstyle.xml')
     configProperties.checkstyleConfigDir = rootProject.file('build/checkstyle/')
+    toolVersion = '8.1'
 }
 
 sonarqube {
