@@ -82,7 +82,7 @@ dependencies {
 
     testRuntimeClasspath group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
 
-    buildToolsConfig 'org.trellisldp:trellis-build-tools:0.1.1'
+    buildToolsConfig 'org.trellisldp:trellis-build-tools:0.2.0'
 }
 
 repositories {
