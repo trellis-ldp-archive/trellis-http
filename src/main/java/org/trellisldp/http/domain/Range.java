@@ -35,8 +35,6 @@ public class Range {
 
     private static final Logger LOGGER = getLogger(Range.class);
 
-    private static final int radix = 10;
-
     private final Integer from;
 
     private final Integer to;
@@ -74,8 +72,8 @@ public class Range {
             if (parts.length == 2) {
                 try {
                     final Integer[] ints = new Integer[2];
-                    ints[0] = parseInt(parts[0], radix);
-                    ints[1] = parseInt(parts[1], radix);
+                    ints[0] = parseInt(parts[0]);
+                    ints[1] = parseInt(parts[1]);
                     if (ints[0] >= 0 && ints[1] > ints[0]) {
                         return of(ints);
                     }

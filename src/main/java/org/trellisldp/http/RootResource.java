@@ -32,12 +32,15 @@ import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 
 import com.codahale.metrics.annotation.Timed;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
@@ -45,7 +48,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.Triple;
@@ -100,18 +102,19 @@ public class RootResource extends BaseLdpResource {
 
         LOGGER.debug("Request for root resource at: {}", identifier.getIRIString());
 
-        final Graph graph = rdf.createGraph();
+        final List<Triple> graph = new ArrayList<>();
         partitions.entrySet().stream().map(e -> rdf.createIRI(e.getValue() + e.getKey()))
-            .map(obj -> rdf.createTriple(identifier, LDP.contains, obj))
-            .forEach(graph::add);
+            .map(obj -> rdf.createTriple(identifier, LDP.contains, obj)).forEach(graph::add);
 
         properties.stringPropertyNames().stream().filter(propMapping::containsKey)
-            .forEach(name -> graph.add(identifier, propMapping.get(name),
-                        isUrl(properties.getProperty(name)) ?
-                            rdf.createIRI(properties.getProperty(name)) :
-                            rdf.createLiteral(properties.getProperty(name))));
+            .map(name -> rdf.createTriple(identifier, propMapping.get(name), isUrl(properties.getProperty(name)) ?
+                        rdf.createIRI(properties.getProperty(name)) :
+                        rdf.createLiteral(properties.getProperty(name))))
+            .forEach(graph::add);
 
-        final RDFSyntax syntax = getSyntax(headers.getAcceptableMediaTypes(), empty()).get();
+        final RDFSyntax syntax = getSyntax(headers.getAcceptableMediaTypes(), empty())
+            .orElseThrow(NotAcceptableException::new);
+
         return ok().header(ALLOW, join(",", HttpMethod.GET, HEAD, OPTIONS))
                     .link(LDP.Resource.getIRIString(), "type")
                     .link(LDP.RDFSource.getIRIString(), "type")

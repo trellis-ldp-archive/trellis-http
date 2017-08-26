@@ -122,7 +122,7 @@ public class LdpResource extends BaseLdpResource {
 
         // Fetch a versioned resource
         if (nonNull(req.getVersion())) {
-            LOGGER.info("Getting versioned resource: {}", req.getVersion().toString());
+            LOGGER.info("Getting versioned resource: {}", req.getVersion());
             return resourceService.get(identifier, req.getVersion().getInstant())
                 .map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
 

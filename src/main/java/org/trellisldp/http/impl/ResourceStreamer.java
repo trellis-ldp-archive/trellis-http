@@ -58,8 +58,8 @@ public class ResourceStreamer implements StreamingOutput {
      * @param profiles the profile, if any
      * @return the resource streamer
      */
-    final public static ResourceStreamer tripleStreamer(final IOService service,
-            final Stream<Triple> stream, final RDFSyntax syntax, final IRI... profiles) {
+    public static ResourceStreamer tripleStreamer(final IOService service, final Stream<Triple> stream,
+            final RDFSyntax syntax, final IRI... profiles) {
         return new ResourceStreamer(service, stream, syntax, profiles);
     }
 
@@ -71,8 +71,8 @@ public class ResourceStreamer implements StreamingOutput {
      * @param profiles the profile, if any
      * @return the resource streamer
      */
-    final public static ResourceStreamer quadStreamer(final IOService service,
-            final Stream<Quad> stream, final RDFSyntax syntax, final IRI... profiles) {
+    public static ResourceStreamer quadStreamer(final IOService service, final Stream<Quad> stream,
+            final RDFSyntax syntax, final IRI... profiles) {
         return new ResourceStreamer(service, stream.map(Quad::asTriple), syntax, profiles);
     }
 

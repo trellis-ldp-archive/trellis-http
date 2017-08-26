@@ -37,9 +37,13 @@ import static org.trellisldp.http.impl.RdfUtils.unskolemizeTriples;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Response.ResponseBuilder;
@@ -48,6 +52,7 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
+import org.apache.commons.rdf.api.Triple;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
@@ -95,6 +100,25 @@ public class PatchHandler extends BaseLdpHandler {
         this.sparqlUpdate = sparqlUpdate;
     }
 
+    private List<Triple> updateGraph(final Resource res, final IRI graphName) {
+        final List<Triple> triples = new ArrayList<>();
+        // Update existing graph
+        try (final Graph graph = rdf.createGraph()) {
+            res.stream(graphName).forEach(graph::add);
+            ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath());
+            graph.stream().forEach(triples::add);
+
+        } catch (final RuntimeRepositoryException ex) {
+            LOGGER.warn(ex.getMessage());
+            throw new BadRequestException("Invalid RDF: " + ex.getMessage());
+        } catch (final Exception ex) {
+            LOGGER.warn("Error handling graph: {}", ex.getMessage());
+            throw new WebApplicationException("Error handling graph: " + ex.getMessage());
+        }
+
+        return triples;
+    }
+
     /**
      * Update a resource with Sparql-Update and build an HTTP response
      * @param res the resource
@@ -124,61 +148,60 @@ public class PatchHandler extends BaseLdpHandler {
 
         LOGGER.debug("Updating {} via PATCH", identifier);
 
-        // Update existing graph
-        final Graph graph = rdf.createGraph();
         final IRI graphName = ACL.equals(req.getExt()) ? Trellis.PreferAccessControl : Trellis.PreferUserManaged;
-        res.stream(graphName).forEach(graph::add);
-        try {
-            ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath());
-        } catch (final RuntimeRepositoryException ex) {
-            LOGGER.warn(ex.getMessage());
-            return status(BAD_REQUEST).type(TEXT_PLAIN).entity("Invalid RDF: " + ex.getMessage());
-        }
 
-        final Dataset dataset = rdf.createDataset();
-        graph.stream().map(skolemizeTriples(resourceService, baseUrl))
-            .map(t -> rdf.createQuad(graphName, t.getSubject(), t.getPredicate(), t.getObject()))
-            .forEach(dataset::add);
+        // Put triples in buffer
+        final List<Triple> triples = updateGraph(res, graphName);
 
-        // Add audit-related triples
-        auditUpdate(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
-            .forEach(dataset::add);
+        try (final Dataset dataset = rdf.createDataset()) {
 
-        // Add existing LDP type
-        dataset.add(rdf.createQuad(Trellis.PreferServerManaged, res.getIdentifier(), RDF.type,
-                    res.getInteractionModel()));
+            triples.stream().map(skolemizeTriples(resourceService, baseUrl))
+                .map(t -> rdf.createQuad(graphName, t.getSubject(), t.getPredicate(), t.getObject()))
+                .forEach(dataset::add);
 
-        // Check any constraints
-        final Optional<String> constraint = dataset.getGraph(graphName)
-            .flatMap(g -> constraintService.constrainedBy(res.getInteractionModel(), baseUrl, g))
-            .map(IRI::getIRIString);
-        if (constraint.isPresent()) {
-            return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
-        }
+            // Add audit-related triples
+            auditUpdate(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
+                .forEach(dataset::add);
 
-        // Save new dataset
-        if (resourceService.put(res.getIdentifier(), dataset)) {
+            // Add existing LDP type
+            dataset.add(rdf.createQuad(Trellis.PreferServerManaged, res.getIdentifier(), RDF.type,
+                        res.getInteractionModel()));
 
-            final ResponseBuilder builder = ok();
-
-            ldpResourceTypes(res.getInteractionModel()).map(IRI::getIRIString)
-                .forEach(type -> builder.link(type, "type"));
-
-            if (ofNullable(req.getPrefer()).flatMap(Prefer::getPreference).filter("representation"::equals)
-                    .isPresent()) {
-                final RDFSyntax syntax = getSyntax(req.getHeaders().getAcceptableMediaTypes(), empty()).get();
-                final IRI profile = getProfile(req.getHeaders().getAcceptableMediaTypes(), syntax);
-                builder.header(PREFERENCE_APPLIED, "return=representation")
-                       .type(syntax.mediaType)
-                       .entity(ResourceStreamer.tripleStreamer(ioService,
-                            graph.stream().map(unskolemizeTriples(resourceService, baseUrl)),
-                            syntax, ofNullable(profile).orElseGet(() ->
-                                RDFA_HTML.equals(syntax) ? rdf.createIRI(identifier) : JSONLD.expanded)));
-            } else {
-                return builder.status(NO_CONTENT);
+            // Check any constraints
+            final Optional<String> constraint = dataset.getGraph(graphName)
+                .flatMap(g -> constraintService.constrainedBy(res.getInteractionModel(), baseUrl, g))
+                .map(IRI::getIRIString);
+            if (constraint.isPresent()) {
+                return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
             }
 
-            return builder;
+            // Save new dataset
+            if (resourceService.put(res.getIdentifier(), dataset)) {
+
+                final ResponseBuilder builder = ok();
+
+                ldpResourceTypes(res.getInteractionModel()).map(IRI::getIRIString)
+                    .forEach(type -> builder.link(type, "type"));
+
+                if (ofNullable(req.getPrefer()).flatMap(Prefer::getPreference).filter("representation"::equals)
+                        .isPresent()) {
+                    final RDFSyntax syntax = getSyntax(req.getHeaders().getAcceptableMediaTypes(), empty())
+                        .orElseThrow(NotAcceptableException::new);
+                    final IRI profile = getProfile(req.getHeaders().getAcceptableMediaTypes(), syntax);
+                    builder.header(PREFERENCE_APPLIED, "return=representation")
+                           .type(syntax.mediaType)
+                           .entity(ResourceStreamer.tripleStreamer(ioService,
+                                triples.stream().map(unskolemizeTriples(resourceService, baseUrl)),
+                                syntax, ofNullable(profile).orElseGet(() ->
+                                    RDFA_HTML.equals(syntax) ? rdf.createIRI(identifier) : JSONLD.expanded)));
+                } else {
+                    return builder.status(NO_CONTENT);
+                }
+
+                return builder;
+            }
+        } catch (final Exception ex) {
+            LOGGER.error("Error handling dataset: {}", ex.getMessage());
         }
 
         LOGGER.error("Unable to persist data to location at {}", res.getIdentifier().getIRIString());

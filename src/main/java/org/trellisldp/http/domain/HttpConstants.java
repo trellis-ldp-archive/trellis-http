@@ -13,11 +13,13 @@
  */
 package org.trellisldp.http.domain;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
+import static java.util.stream.Collectors.toSet;
 
-import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.rdf.api.IRI;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.Trellis;
 
@@ -64,11 +66,9 @@ public final class HttpConstants {
 
     public static final String WANT_DIGEST = "Want-Digest";
 
-    public static final Set<String> DEFAULT_REPRESENTATION = unmodifiableSet(new HashSet<String>() { {
-        add(LDP.PreferContainment.getIRIString());
-        add(LDP.PreferMembership.getIRIString());
-        add(Trellis.PreferUserManaged.getIRIString());
-    }});
+    public static final Set<String> DEFAULT_REPRESENTATION = unmodifiableSet(asList(
+            LDP.PreferContainment, LDP.PreferMembership, Trellis.PreferUserManaged).stream()
+        .map(IRI::getIRIString).collect(toSet()));
 
     private HttpConstants() {
         // prevent instantiation

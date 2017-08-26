@@ -34,6 +34,7 @@ import static javax.ws.rs.core.Response.ok;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
+import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
@@ -156,8 +157,9 @@ public class GetHandler extends BaseLdpHandler {
         }
 
         // RDFSource responses (weak ETags, etc)
-        final IRI profile = getProfile(req.getHeaders().getAcceptableMediaTypes(), syntax.get());
-        return getLdpRs(identifier, res, builder, syntax.get(), profile);
+        final RDFSyntax s = syntax.orElse(TURTLE);
+        final IRI profile = getProfile(req.getHeaders().getAcceptableMediaTypes(), s);
+        return getLdpRs(identifier, res, builder, s, profile);
     }
 
     private ResponseBuilder getLdpRs(final String identifier, final Resource res, final ResponseBuilder builder,
@@ -209,7 +211,8 @@ public class GetHandler extends BaseLdpHandler {
     }
 
     private ResponseBuilder getLdpNr(final String identifier, final Resource res, final ResponseBuilder builder) {
-        final Instant mod = res.getBinary().map(Binary::getModified).get();
+        final Instant mod = res.getBinary().map(Binary::getModified).orElseThrow(() ->
+                new WebApplicationException("Could not access binary metadata for " + res.getIdentifier()));
         final EntityTag etag = new EntityTag(md5Hex(mod + identifier));
         final ResponseBuilder cacheBuilder = checkCache(req.getRequest(), mod, etag);
         if (nonNull(cacheBuilder)) {
@@ -219,9 +222,10 @@ public class GetHandler extends BaseLdpHandler {
         // Set last-modified to be the binary's last-modified value
         builder.lastModified(from(mod));
 
-        final IRI dsid = res.getBinary().map(Binary::getIdentifier).get();
+        final IRI dsid = res.getBinary().map(Binary::getIdentifier).orElseThrow(() ->
+                new WebApplicationException("Could not access binary metadata for " + res.getIdentifier()));
         final InputStream binary = binaryService.getContent(req.getPartition(), dsid).orElseThrow(() ->
-                new WebApplicationException("Could not load binary resolver for " + dsid.getIRIString()));
+                new WebApplicationException("Could not load binary resolver for " + dsid));
         builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes").tag(etag);
 
         if (res.isMemento()) {
@@ -263,10 +267,10 @@ public class GetHandler extends BaseLdpHandler {
 
         // Standard HTTP Headers
         builder.lastModified(from(res.getModified())).variants(VARIANTS);
-        if (syntax.isPresent()) {
+        syntax.ifPresent(s -> {
             builder.header(VARY, PREFER);
-            builder.type(syntax.get().mediaType);
-        }
+            builder.type(s.mediaType);
+        });
 
         // Add LDP-required headers
         final IRI model = res.getBinary().isPresent() && syntax.isPresent() ?

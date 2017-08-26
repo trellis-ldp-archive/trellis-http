@@ -89,8 +89,6 @@ public class DeleteHandler extends BaseLdpHandler {
         // delete the resource
         resourceService.put(res.getIdentifier(), dataset);
 
-        final ResponseBuilder builder = status(NO_CONTENT);
-
-        return builder;
+        return status(NO_CONTENT);
     }
 }

@@ -37,7 +37,6 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
-import static org.trellisldp.vocabulary.RDF.type;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +46,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
@@ -110,12 +110,6 @@ public class PostHandlerTest {
 
     @Captor
     private ArgumentCaptor<IRI> iriArgument;
-
-    @Captor
-    private ArgumentCaptor<Graph> graphArgument;
-
-    @Captor
-    private ArgumentCaptor<Dataset> datasetArgument;
 
     @Captor
     private ArgumentCaptor<InputStream> inputStreamArgument;
@@ -257,22 +251,11 @@ public class PostHandlerTest {
 
         verify(mockBinaryService, never()).setContent(eq("partition"), any(IRI.class), any(InputStream.class));
 
-        verify(mockIoService).read(inputStreamArgument.capture(), eq(baseUrl + path), eq(TURTLE));
-        assertTrue(contentEquals(inputStreamArgument.getValue(), getClass().getResourceAsStream("/simpleTriple.ttl")));
+        verify(mockIoService).read(any(InputStream.class), eq(baseUrl + path), eq(TURTLE));
 
-        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq(baseUrl), graphArgument.capture());
-        assertEquals(1L, graphArgument.getValue().size());
-        assertTrue(graphArgument.getValue().contains(rdf.createTriple(
-                        identifier, triple.getPredicate(), triple.getObject())));
+        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any(Graph.class));
 
-        verify(mockResourceService).put(eq(identifier), datasetArgument.capture());
-        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferUserManaged,
-                        identifier, triple.getPredicate(), triple.getObject())));
-        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
-                        identifier, type, LDP.RDFSource)));
-
-        // Audit adds 5 triples + 1 interaction model + 1 user triple
-        assertEquals(7L, datasetArgument.getValue().size());
+        verify(mockResourceService).put(eq(identifier), any(Dataset.class));
     }
 
     @Test
@@ -301,18 +284,7 @@ public class PostHandlerTest {
         assertTrue(contentEquals(inputStreamArgument.getValue(), getClass().getResourceAsStream("/simpleData.txt")));
         assertEquals("text/plain", metadataArgument.getValue().get(CONTENT_TYPE));
 
-        verify(mockResourceService).put(eq(identifier), datasetArgument.capture());
-        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
-                        iriArgument.getValue(), DC.format, rdf.createLiteral("text/plain"))));
-        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
-                        identifier, DC.hasPart, iriArgument.getValue())));
-        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
-                        identifier, type, LDP.NonRDFSource)));
-
-        // Audit adds 5 triples + 3 server managed + 0 user managed
-        assertEquals(5L, datasetArgument.getValue().stream(of(Trellis.PreferAudit), null, null, null).count());
-        assertEquals(4L, datasetArgument.getValue().stream(of(Trellis.PreferServerManaged), null, null, null).count());
-        assertEquals(0L, datasetArgument.getValue().stream(of(Trellis.PreferUserManaged), null, null, null).count());
+        verify(mockResourceService).put(eq(identifier), any(Dataset.class));
     }
 
     @Test
@@ -342,18 +314,7 @@ public class PostHandlerTest {
         assertTrue(contentEquals(inputStreamArgument.getValue(), getClass().getResourceAsStream("/simpleData.txt")));
         assertEquals("text/plain", metadataArgument.getValue().get(CONTENT_TYPE));
 
-        verify(mockResourceService).put(eq(identifier), datasetArgument.capture());
-        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
-                        iriArgument.getValue(), DC.format, rdf.createLiteral("text/plain"))));
-        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
-                        identifier, DC.hasPart, iriArgument.getValue())));
-        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
-                        identifier, type, LDP.NonRDFSource)));
-
-        // Audit adds 5 triples + 3 server managed + 0 user managed
-        assertEquals(5L, datasetArgument.getValue().stream(of(Trellis.PreferAudit), null, null, null).count());
-        assertEquals(4L, datasetArgument.getValue().stream(of(Trellis.PreferServerManaged), null, null, null).count());
-        assertEquals(0L, datasetArgument.getValue().stream(of(Trellis.PreferUserManaged), null, null, null).count());
+        verify(mockResourceService).put(eq(identifier), any(Dataset.class));
     }
 
     @Test
@@ -365,11 +326,10 @@ public class PostHandlerTest {
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
                 mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
-        final Response res = postHandler.createResource().build();
-        assertEquals(BAD_REQUEST, res.getStatusInfo());
+        assertEquals(BAD_REQUEST, postHandler.createResource().build().getStatusInfo());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = BadRequestException.class)
     public void testBadDigest2() {
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
         when(mockRequest.getContentType()).thenReturn("text/plain");

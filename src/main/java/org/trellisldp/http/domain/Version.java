@@ -19,11 +19,14 @@ import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.time.Instant;
 import java.util.Optional;
 
 import javax.ws.rs.WebApplicationException;
+
+import org.slf4j.Logger;
 
 /**
  * A class representing a version URI parameter
@@ -31,6 +34,8 @@ import javax.ws.rs.WebApplicationException;
  * @author acoburn
  */
 public class Version {
+
+    private static final Logger LOGGER = getLogger(Version.class);
 
     private final Instant time;
 
@@ -61,6 +66,7 @@ public class Version {
             try {
                 return of(ofEpochMilli(parseLong(version.trim())));
             } catch (final NumberFormatException ex) {
+                LOGGER.error("Unable to parse version string '{}': {}", version, ex.getMessage());
             }
         }
         return empty();

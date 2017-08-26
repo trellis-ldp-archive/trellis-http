@@ -41,7 +41,6 @@ import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
-import static org.trellisldp.vocabulary.RDF.type;
 
 import java.time.Instant;
 import java.util.Date;
@@ -49,6 +48,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.HttpHeaders;
@@ -68,8 +68,6 @@ import org.apache.commons.rdf.api.Triple;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -117,12 +115,6 @@ public class PatchHandlerTest {
 
     @Mock
     private HttpHeaders mockHttpHeaders;
-
-    @Captor
-    private ArgumentCaptor<Graph> graphArgument;
-
-    @Captor
-    private ArgumentCaptor<Dataset> datasetArgument;
 
     @Before
     public void setUp() {
@@ -172,20 +164,11 @@ public class PatchHandlerTest {
         final Response res = patchHandler.updateResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
 
-        verify(mockIoService).update(graphArgument.capture(), eq(insert), eq(identifier.getIRIString()));
-        assertTrue(graphArgument.getValue().contains(triple));
+        verify(mockIoService).update(any(Graph.class), eq(insert), eq(identifier.getIRIString()));
 
-        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq(baseUrl), graphArgument.capture());
-        assertTrue(graphArgument.getValue().contains(triple));
+        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any(Graph.class));
 
-        verify(mockResourceService).put(eq(identifier), datasetArgument.capture());
-        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferUserManaged,
-                        triple.getSubject(), triple.getPredicate(), triple.getObject())));
-        assertTrue(datasetArgument.getValue().contains(rdf.createQuad(Trellis.PreferServerManaged,
-                        triple.getSubject(), type, LDP.RDFSource)));
-
-        // Audit adds 5 triples + 1 interaction model + 1 user triple
-        assertEquals(7L, datasetArgument.getValue().size());
+        verify(mockResourceService).put(eq(identifier), any(Dataset.class));
     }
 
     @Test
@@ -289,7 +272,7 @@ public class PatchHandlerTest {
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
     }
 
-    @Test
+    @Test(expected = BadRequestException.class)
     public void testError2() {
         doThrow(RuntimeRepositoryException.class).when(mockIoService)
             .update(any(Graph.class), eq(insert), eq(identifier.getIRIString()));
@@ -299,8 +282,7 @@ public class PatchHandlerTest {
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
                 mockResourceService, mockIoService, mockConstraintService);
 
-        final Response res = patchHandler.updateResource(mockResource).build();
-        assertEquals(BAD_REQUEST, res.getStatusInfo());
+        patchHandler.updateResource(mockResource);
     }
 
     private static Predicate<Link> hasLink(final IRI iri, final String rel) {
