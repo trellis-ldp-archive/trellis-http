@@ -17,6 +17,8 @@ import static java.net.URI.create;
 import static java.util.stream.Collectors.toMap;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.Response.created;
+import static javax.ws.rs.core.Response.serverError;
+import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOAD_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
@@ -47,6 +49,7 @@ import javax.ws.rs.core.Response;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
+import org.slf4j.Logger;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.DC;
@@ -60,11 +63,13 @@ import org.trellisldp.vocabulary.XSD;
 @Path(UPLOAD_PREFIX + "{partition}/{id}")
 public class MultipartUploader {
 
+    private static final RDF rdf = getInstance();
+
+    private static final Logger LOGGER = getLogger(MultipartUploader.class);
+
     private final BinaryService binaryService;
 
     private final ResourceService resourceService;
-
-    private static final RDF rdf = getInstance();
 
     /**
      * Create a multipart uploader object
@@ -137,23 +142,30 @@ public class MultipartUploader {
             .filter(svc -> svc.uploadSessionExists(id))
             .map(svc -> svc.completeUpload(id, partDigests))
             .map(upload -> {
-                final Dataset dataset = rdf.createDataset();
-                final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + upload.getPath());
+                try (final Dataset dataset = rdf.createDataset()) {
+                    final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + upload.getPath());
 
-                // Add Audit quads
-                auditCreation(identifier, upload.getSession()).stream()
-                    .map(skolemizeQuads(resourceService, upload.getBaseUrl())).forEach(dataset::add);
-                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.NonRDFSource));
-                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.hasPart,
-                            upload.getBinary().getIdentifier()));
-                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, upload.getBinary().getIdentifier(), DC.format,
-                            rdf.createLiteral(upload.getBinary().getMimeType().orElse(APPLICATION_OCTET_STREAM))));
-                upload.getBinary().getSize().ifPresent(size -> dataset.add(rdf.createQuad(Trellis.PreferServerManaged,
-                                upload.getBinary().getIdentifier(), DC.extent, rdf.createLiteral(size.toString(),
-                                    XSD.long_))));
+                    // Add Audit quads
+                    auditCreation(identifier, upload.getSession()).stream()
+                        .map(skolemizeQuads(resourceService, upload.getBaseUrl())).forEach(dataset::add);
+                    dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.NonRDFSource));
+                    dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.hasPart,
+                                upload.getBinary().getIdentifier()));
+                    dataset.add(rdf.createQuad(Trellis.PreferServerManaged, upload.getBinary().getIdentifier(),
+                                DC.format,
+                                rdf.createLiteral(upload.getBinary().getMimeType().orElse(APPLICATION_OCTET_STREAM))));
+                    upload.getBinary().getSize().ifPresent(size -> dataset.add(rdf.createQuad(
+                                    Trellis.PreferServerManaged, upload.getBinary().getIdentifier(), DC.extent,
+                                    rdf.createLiteral(size.toString(), XSD.long_))));
 
-                resourceService.put(identifier, dataset);
-                return created(create(upload.getBaseUrl() + upload.getPath())).build();
+                    if (resourceService.put(identifier, dataset)) {
+                        return created(create(upload.getBaseUrl() + upload.getPath())).build();
+                    }
+                } catch (final Exception ex) {
+                    LOGGER.error("Error handling dataset: {}", ex.getMessage());
+                }
+                LOGGER.error("Could not persist data");
+                return serverError().entity("Could not persist data internally").build();
             })
             .orElseThrow(NotFoundException::new);
     }

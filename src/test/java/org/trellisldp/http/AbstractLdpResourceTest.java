@@ -1951,6 +1951,21 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testMultipartPostError() {
+        when(mockResourceService.put(any(IRI.class), any(Dataset.class))).thenReturn(false);
+        final BinaryService.MultipartUpload upload = new BinaryService.MultipartUpload(BASE_URL, BINARY_PATH,
+                new HttpSession(), mockBinary);
+
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.uploadSessionExists(eq(UPLOAD_SESSION_ID))).thenReturn(true);
+        when(mockBinaryResolver.completeUpload(eq(UPLOAD_SESSION_ID), any())).thenReturn(upload);
+
+        final Response res = target("upload/" + REPO1 + "/" + UPLOAD_SESSION_ID).request()
+            .post(entity("{\"20\": \"value\"}", APPLICATION_JSON_TYPE));
+        assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
+    }
+
+    @Test
     public void testMultipartDelete() {
         when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
         when(mockBinaryResolver.uploadSessionExists(eq(UPLOAD_SESSION_ID))).thenReturn(true);
