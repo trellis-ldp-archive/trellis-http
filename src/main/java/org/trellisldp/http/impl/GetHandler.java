@@ -17,7 +17,6 @@ import static java.lang.String.join;
 import static java.util.Date.from;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static javax.ws.rs.HttpMethod.DELETE;
@@ -30,10 +29,8 @@ import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.ok;
-import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
@@ -62,6 +59,7 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -71,8 +69,10 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.Variant;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
@@ -231,8 +231,10 @@ public class GetHandler extends BaseLdpHandler {
 
         final IRI dsid = res.getBinary().map(Binary::getIdentifier).orElseThrow(() ->
                 new WebApplicationException("Could not access binary metadata for " + res.getIdentifier()));
+
         try (final InputStream binary = binaryService.getContent(req.getPartition(), dsid).orElseThrow(() ->
                 new WebApplicationException("Could not load binary resolver for " + dsid))) {
+
             builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes").tag(etag);
 
             if (res.isMemento()) {
@@ -250,37 +252,49 @@ public class GetHandler extends BaseLdpHandler {
                     algs.stream().filter(binaryService.supportedAlgorithms()::contains).findFirst().ifPresent(alg ->
                         getBinaryDigest(dsid, alg).ifPresent(digest -> builder.header(DIGEST, digest))));
 
-            if (isNull(req.getRange())) {
-                return builder.entity(binary);
-            }
+            // Stream the binary content
+            final StreamingOutput stream = new StreamingOutput() {
+                @Override
+                public void write(final OutputStream out) throws IOException {
+                    // TODO -- with JDK 9 use InputStream::transferTo instead of IOUtils
+                    try {
+                        if (isNull(req.getRange())) {
+                            IOUtils.copy(binary, out);
+                        } else {
+                            // Range Requests
+                            final long skipped = binary.skip(req.getRange().getFrom());
+                            if (skipped < req.getRange().getFrom()) {
+                                LOGGER.warn("Trying to skip more data available in the input stream! {}, {}",
+                                        skipped, req.getRange().getFrom());
+                            }
+                            try (final InputStream sliced = new BoundedInputStream(binary,
+                                        req.getRange().getTo() - req.getRange().getFrom())) {
+                                IOUtils.copy(sliced, out);
+                            }
+                        }
+                    } catch (final IOException ex) {
+                        throw new WebApplicationException("Error processing binary content: " +
+                                ex.getMessage());
+                    }
+                }
+            };
 
-            // Range Requests
-            final long skipped = binary.skip(req.getRange().getFrom());
-            if (skipped < req.getRange().getFrom()) {
-                LOGGER.warn("Trying to skip more data available in the input stream! {}, {}",
-                        skipped, req.getRange().getFrom());
-            }
-            return builder.entity(new BoundedInputStream(binary, req.getRange().getTo() - req.getRange().getFrom()));
-        } catch (final IOException ex) {
-            LOGGER.error("Error seeking through binary: {}", ex.getMessage());
-            return status(BAD_REQUEST).entity(ex.getMessage());
+            return builder.entity(stream);
         } catch (final WebApplicationException ex) {
             throw ex;
-        } catch (final Exception ex) {
+        } catch (final IOException ex) {
             throw new WebApplicationException(ex);
         }
     }
 
     private Optional<String> getBinaryDigest(final IRI dsid, final String algorithm) {
-        final Optional<InputStream> content = binaryService.getContent(req.getPartition(), dsid);
-        if (content.isPresent()) {
-            try (final InputStream is = content.get()) {
-                return binaryService.digest(algorithm, is);
-            } catch (final IOException ex) {
-                LOGGER.error("Error computing digest on content: {}", ex.getMessage());
-            }
+        final Optional<InputStream> b = binaryService.getContent(req.getPartition(), dsid);
+        try (final InputStream is = b.orElseThrow(() -> new WebApplicationException("Couldn't fetch binary content"))) {
+            return binaryService.digest(algorithm, is);
+        } catch (final IOException ex) {
+            LOGGER.error("Error computing digest on content: {}", ex.getMessage());
+            throw new WebApplicationException("Error handling binary content: " + ex.getMessage());
         }
-        return empty();
     }
 
     private static ResponseBuilder basicGetResponseBuilder(final Resource res, final Optional<RDFSyntax> syntax) {

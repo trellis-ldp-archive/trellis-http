@@ -32,6 +32,7 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.GONE;
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
@@ -44,8 +45,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
@@ -209,6 +213,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Mock
     private Binary mockBinary;
+
+    @Mock
+    private InputStream mockInputStream;
 
     @Before
     public void setUpMocks() {
@@ -527,6 +534,22 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testGetBinaryMetadataError1() {
+        when(mockBinary.getModified()).thenReturn(null);
+        final Response res = target(BINARY_PATH).request().get();
+
+        assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
+    }
+
+    @Test
+    public void testGetBinaryMetadataError2() {
+        when(mockBinary.getIdentifier()).thenReturn(null);
+        final Response res = target(BINARY_PATH).request().get();
+
+        assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
+    }
+
+    @Test
     public void testGetBinaryDigestMd5() throws IOException {
         final Response res = target(BINARY_PATH).request().header(WANT_DIGEST, "MD5").get();
 
@@ -619,6 +642,66 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
         assertEquals("e input", entity);
+    }
+
+    @Test
+    public void testGetBinaryRangeExceed() throws IOException {
+        final Response res = target(BINARY_PATH).request().header(RANGE, "bytes=300-400").get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertFalse(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+
+        assertTrue(res.getMediaType().isCompatible(TEXT_PLAIN_TYPE));
+        assertNotNull(res.getHeaderString(ACCEPT_RANGES));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+
+        final List<String> varies = res.getStringHeaders().get(VARY);
+        assertTrue(varies.contains(RANGE));
+        assertTrue(varies.contains(WANT_DIGEST));
+        assertTrue(varies.contains(ACCEPT_DATETIME));
+        assertFalse(varies.contains(PREFER));
+
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        assertEquals("", entity);
+    }
+
+    @Test
+    public void testGetBinaryErrorSkip() throws IOException {
+        when(mockBinaryService.getContent(eq(REPO1), eq(binaryInternalIdentifier)))
+            .thenReturn(Optional.of(mockInputStream));
+        when(mockInputStream.skip(anyLong())).thenThrow(new IOException());
+        final Response res = target(BINARY_PATH).request().header(RANGE, "bytes=300-400").get();
+        assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
+    }
+
+    @Test
+    public void testGetBinaryDigestError() throws IOException {
+        when(mockBinaryService.getContent(eq(REPO1), eq(binaryInternalIdentifier)))
+            .thenReturn(Optional.of(mockInputStream));
+        doThrow(new IOException()).when(mockInputStream).close();
+        final Response res = target(BINARY_PATH).request().header(WANT_DIGEST, "MD5").get();
+        assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
+    }
+
+    @Test
+    public void testGetBinaryError() throws IOException {
+        when(mockBinaryService.getContent(eq(REPO1), eq(binaryInternalIdentifier)))
+            .thenReturn(Optional.of(mockInputStream));
+        when(mockInputStream.available()).thenReturn(0);
+        when(mockInputStream.read(any(byte[].class), anyInt(), anyInt())).thenReturn(-1);
+        doThrow(new IOException()).when(mockInputStream).close();
+        final Response res = target(BINARY_PATH).request().get();
+        assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
     }
 
     @Test

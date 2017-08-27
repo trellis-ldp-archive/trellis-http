@@ -32,6 +32,8 @@ import static org.trellisldp.spi.RDFUtils.auditUpdate;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
 import java.util.HashMap;
@@ -168,7 +170,10 @@ public class PutHandler extends ContentBearingHandler {
                 final Map<String, String> metadata = new HashMap<>();
                 metadata.put(CONTENT_TYPE, ofNullable(contentType).orElse(APPLICATION_OCTET_STREAM));
                 final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(req.getPartition()).get());
-                binaryService.setContent(req.getPartition(), binaryLocation, new FileInputStream(entity));
+
+                // Persist the content
+                persistContent(binaryLocation);
+
                 dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalId, DC.hasPart, binaryLocation));
                 dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.format,
                             rdf.createLiteral(ofNullable(req.getContentType()).orElse(APPLICATION_OCTET_STREAM))));
@@ -192,5 +197,14 @@ public class PutHandler extends ContentBearingHandler {
         LOGGER.error("Unable to persist data to location at {}", internalId.getIRIString());
         return serverError().type(TEXT_PLAIN)
             .entity("Unable to persist data. Please consult the logs for more information");
+    }
+
+    private void persistContent(final IRI contentLocation) {
+        try (final InputStream input = new FileInputStream(entity)) {
+            binaryService.setContent(req.getPartition(), contentLocation, input);
+        } catch (final IOException ex) {
+            LOGGER.error("Error persisting binary data", ex);
+            throw new WebApplicationException("Could not persist binary data: " + ex.getMessage());
+        }
     }
 }
