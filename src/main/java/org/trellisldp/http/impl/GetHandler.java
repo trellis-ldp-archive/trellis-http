@@ -15,7 +15,9 @@ package org.trellisldp.http.impl;
 
 import static java.lang.String.join;
 import static java.util.Date.from;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static javax.ws.rs.HttpMethod.DELETE;
@@ -63,6 +65,7 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
@@ -72,6 +75,7 @@ import javax.ws.rs.core.Variant;
 
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
 
@@ -201,12 +205,15 @@ public class GetHandler extends BaseLdpHandler {
 
         if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
             return builder.status(NO_CONTENT);
-        } else {
-            return builder.entity(ResourceStreamer.quadStreamer(ioService,
-                        res.stream().filter(filterWithPrefer(prefer))
-                        .map(unskolemizeQuads(resourceService, req.getBaseUrl(partitions))),
-                        syntax, ofNullable(profile).orElseGet(() ->
-                            RDFA_HTML.equals(syntax) ? getInstance().createIRI(identifier) : JSONLD.expanded)));
+        }
+
+        try (final Stream<Quad> stream = res.stream().filter(filterWithPrefer(prefer))
+                .map(unskolemizeQuads(resourceService, req.getBaseUrl(partitions)))) {
+            return builder.entity(ResourceStreamer.quadStreamer(ioService, stream,
+                    syntax, ofNullable(profile).orElseGet(() ->
+                        RDFA_HTML.equals(syntax) ? getInstance().createIRI(identifier) : JSONLD.expanded)));
+        } catch (final Exception ex) {
+            throw new WebApplicationException("Unable to process graph data: " + ex.getMessage());
         }
     }
 
@@ -224,42 +231,56 @@ public class GetHandler extends BaseLdpHandler {
 
         final IRI dsid = res.getBinary().map(Binary::getIdentifier).orElseThrow(() ->
                 new WebApplicationException("Could not access binary metadata for " + res.getIdentifier()));
-        final InputStream binary = binaryService.getContent(req.getPartition(), dsid).orElseThrow(() ->
-                new WebApplicationException("Could not load binary resolver for " + dsid));
-        builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes").tag(etag);
+        try (final InputStream binary = binaryService.getContent(req.getPartition(), dsid).orElseThrow(() ->
+                new WebApplicationException("Could not load binary resolver for " + dsid))) {
+            builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes").tag(etag);
 
-        if (res.isMemento()) {
-            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
-        } else {
-            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE));
-        }
+            if (res.isMemento()) {
+                builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
+            } else {
+                builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE));
+            }
 
-        // Add upload service headers, if relevant
-        binaryService.getResolver(dsid).filter(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
-                builder.link(identifier + "?ext=" + UPLOADS, Trellis.multipartUploadService.getIRIString()));
+            // Add upload service headers, if relevant
+            binaryService.getResolver(dsid).filter(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
+                    builder.link(identifier + "?ext=" + UPLOADS, Trellis.multipartUploadService.getIRIString()));
 
-        // Add instance digests, if Requested and supported
-        ofNullable(req.getWantDigest()).map(WantDigest::getAlgorithms).ifPresent(algs ->
-                algs.stream().filter(binaryService.supportedAlgorithms()::contains).findFirst()
-                .ifPresent(alg -> binaryService.getContent(req.getPartition(), dsid)
-                    .flatMap(is -> binaryService.digest(alg, is))
-                    .ifPresent(d -> builder.header(DIGEST, d))));
+            // Add instance digests, if Requested and supported
+            ofNullable(req.getWantDigest()).map(WantDigest::getAlgorithms).ifPresent(algs ->
+                    algs.stream().filter(binaryService.supportedAlgorithms()::contains).findFirst().ifPresent(alg ->
+                        getBinaryDigest(dsid, alg).ifPresent(digest -> builder.header(DIGEST, digest))));
 
-        // Range Requests
-        if (nonNull(req.getRange())) {
-            try {
-                final long skipped = binary.skip(req.getRange().getFrom());
-                if (skipped < req.getRange().getFrom()) {
-                    LOGGER.warn("Trying to skip more data available in the input stream! {}, {}",
-                            skipped, req.getRange().getFrom());
-                }
-            } catch (final IOException ex) {
-                LOGGER.error("Error seeking through binary: {}", ex.getMessage());
-                return status(BAD_REQUEST).entity(ex.getMessage());
+            if (isNull(req.getRange())) {
+                return builder.entity(binary);
+            }
+
+            // Range Requests
+            final long skipped = binary.skip(req.getRange().getFrom());
+            if (skipped < req.getRange().getFrom()) {
+                LOGGER.warn("Trying to skip more data available in the input stream! {}, {}",
+                        skipped, req.getRange().getFrom());
             }
             return builder.entity(new BoundedInputStream(binary, req.getRange().getTo() - req.getRange().getFrom()));
+        } catch (final IOException ex) {
+            LOGGER.error("Error seeking through binary: {}", ex.getMessage());
+            return status(BAD_REQUEST).entity(ex.getMessage());
+        } catch (final WebApplicationException ex) {
+            throw ex;
+        } catch (final Exception ex) {
+            throw new WebApplicationException(ex);
         }
-        return builder.entity(binary);
+    }
+
+    private Optional<String> getBinaryDigest(final IRI dsid, final String algorithm) {
+        final Optional<InputStream> content = binaryService.getContent(req.getPartition(), dsid);
+        if (content.isPresent()) {
+            try (final InputStream is = content.get()) {
+                return binaryService.digest(algorithm, is);
+            } catch (final IOException ex) {
+                LOGGER.error("Error computing digest on content: {}", ex.getMessage());
+            }
+        }
+        return empty();
     }
 
     private static ResponseBuilder basicGetResponseBuilder(final Resource res, final Optional<RDFSyntax> syntax) {

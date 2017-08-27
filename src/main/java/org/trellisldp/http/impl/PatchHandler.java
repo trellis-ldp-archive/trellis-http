@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAcceptableException;
@@ -104,10 +105,11 @@ public class PatchHandler extends BaseLdpHandler {
         final List<Triple> triples = new ArrayList<>();
         // Update existing graph
         try (final Graph graph = rdf.createGraph()) {
-            res.stream(graphName).forEach(graph::add);
-            ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath());
-            graph.stream().forEach(triples::add);
-
+            try (final Stream<Triple> stream = res.stream(graphName)) {
+                stream.forEach(graph::add);
+                ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath());
+                graph.stream().forEach(triples::add);
+            }
         } catch (final RuntimeRepositoryException ex) {
             LOGGER.warn(ex.getMessage());
             throw new BadRequestException("Invalid RDF: " + ex.getMessage());
