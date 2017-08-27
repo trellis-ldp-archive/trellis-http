@@ -23,7 +23,6 @@ import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
-import static org.apache.commons.io.IOUtils.contentEquals;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -110,9 +109,6 @@ public class PostHandlerTest {
 
     @Captor
     private ArgumentCaptor<IRI> iriArgument;
-
-    @Captor
-    private ArgumentCaptor<InputStream> inputStreamArgument;
 
     @Captor
     private ArgumentCaptor<Map<String, String>> metadataArgument;
@@ -278,10 +274,9 @@ public class PostHandlerTest {
         verify(mockIoService, never()).read(any(), any(), any());
         verify(mockConstraintService, never()).constrainedBy(any(), eq(baseUrl), any());
 
-        verify(mockBinaryService).setContent(eq("partition"), iriArgument.capture(), inputStreamArgument.capture(),
+        verify(mockBinaryService).setContent(eq("partition"), iriArgument.capture(), any(InputStream.class),
                 metadataArgument.capture());
         assertTrue(iriArgument.getValue().getIRIString().startsWith("file:"));
-        assertTrue(contentEquals(inputStreamArgument.getValue(), getClass().getResourceAsStream("/simpleData.txt")));
         assertEquals("text/plain", metadataArgument.getValue().get(CONTENT_TYPE));
 
         verify(mockResourceService).put(eq(identifier), any(Dataset.class));
@@ -308,10 +303,9 @@ public class PostHandlerTest {
         verify(mockIoService, never()).read(any(), any(), any());
         verify(mockConstraintService, never()).constrainedBy(any(), eq(baseUrl), any());
 
-        verify(mockBinaryService).setContent(eq("partition"), iriArgument.capture(), inputStreamArgument.capture(),
+        verify(mockBinaryService).setContent(eq("partition"), iriArgument.capture(), any(InputStream.class),
                 metadataArgument.capture());
         assertTrue(iriArgument.getValue().getIRIString().startsWith("file:"));
-        assertTrue(contentEquals(inputStreamArgument.getValue(), getClass().getResourceAsStream("/simpleData.txt")));
         assertEquals("text/plain", metadataArgument.getValue().get(CONTENT_TYPE));
 
         verify(mockResourceService).put(eq(identifier), any(Dataset.class));

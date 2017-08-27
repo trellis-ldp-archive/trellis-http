@@ -197,7 +197,7 @@ public class PutHandlerTest {
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
 
-        verify(mockBinaryService).setContent(eq("partition"), any(IRI.class), any(InputStream.class));
+        verify(mockBinaryService).setContent(eq("partition"), any(IRI.class), any(InputStream.class), any());
         verify(mockIoService, never()).read(any(InputStream.class), anyString(), any(RDFSyntax.class));
         verify(mockConstraintService, never()).constrainedBy(any(IRI.class), anyString(), any(Graph.class));
     }
@@ -219,7 +219,7 @@ public class PutHandlerTest {
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
 
-        verify(mockBinaryService).setContent(eq("partition"), any(IRI.class), any(InputStream.class));
+        verify(mockBinaryService).setContent(eq("partition"), any(IRI.class), any(InputStream.class), any());
         verify(mockIoService, never()).read(any(InputStream.class), anyString(), any(RDFSyntax.class));
         verify(mockConstraintService, never()).constrainedBy(any(IRI.class), anyString(), any(Graph.class));
     }

@@ -30,7 +30,6 @@ import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -142,12 +141,14 @@ public class PostHandler extends ContentBearingHandler {
                 final Map<String, String> metadata = new HashMap<>();
                 metadata.put(CONTENT_TYPE, ofNullable(contentType).orElse(APPLICATION_OCTET_STREAM));
                 final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(req.getPartition()).get());
-                binaryService.setContent(req.getPartition(), binaryLocation, new FileInputStream(entity), metadata);
                 dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalId, DC.hasPart, binaryLocation));
                 dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.format,
                             rdf.createLiteral(ofNullable(contentType).orElse(APPLICATION_OCTET_STREAM))));
                 dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.extent,
                             rdf.createLiteral(Long.toString(entity.length()), XSD.long_)));
+
+                // Persist the content
+                persistContent(binaryLocation, metadata);
             }
 
             if (resourceService.put(internalId, dataset)) {

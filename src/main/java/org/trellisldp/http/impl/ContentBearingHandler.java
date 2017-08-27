@@ -98,4 +98,10 @@ class ContentBearingHandler extends BaseLdpHandler {
             throw new WebApplicationException("Error computing checksum on input", ex);
         }
     }
+
+    protected void persistContent(final IRI contentLocation, final Map<String, String> metadata) throws IOException {
+        try (final InputStream input = new FileInputStream(entity)) {
+            binaryService.setContent(req.getPartition(), contentLocation, input, metadata);
+        }
+    }
 }
