@@ -206,7 +206,7 @@ public class PatchHandler extends BaseLdpHandler {
             LOGGER.error("Error handling dataset: {}", ex.getMessage());
         }
 
-        LOGGER.error("Unable to persist data to location at {}", res.getIdentifier().getIRIString());
+        LOGGER.error("Unable to persist data to location at {}", res.getIdentifier());
         return serverError().type(TEXT_PLAIN)
             .entity("Unable to persist data. Please consult the logs for more information");
     }

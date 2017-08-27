@@ -17,6 +17,7 @@ import static java.time.Instant.ofEpochSecond;
 import static java.util.Collections.emptyMap;
 import static java.util.Date.from;
 import static javax.ws.rs.core.Response.Status.GONE;
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.PRECONDITION_FAILED;
 import static javax.ws.rs.core.Response.status;
@@ -35,6 +36,7 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.BlankNode;
+import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
@@ -93,6 +95,7 @@ public class DeleteHandlerTest {
         when(mockResourceService.skolemize(eq(PROV.Activity))).thenReturn(PROV.Activity);
         when(mockResourceService.skolemize(eq(Trellis.AnonymousUser))).thenReturn(Trellis.AnonymousUser);
         when(mockResourceService.skolemize(eq(date))).thenReturn(date);
+        when(mockResourceService.put(eq(iri), any(Dataset.class))).thenReturn(true);
 
         when(mockLdpRequest.getSession()).thenReturn(mockSession);
         when(mockLdpRequest.getBaseUrl(any())).thenReturn(baseUrl);
@@ -111,6 +114,15 @@ public class DeleteHandlerTest {
 
         final Response res = handler.deleteResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
+    }
+
+    @Test
+    public void testDeleteError() {
+        when(mockResourceService.put(any(IRI.class), any(Dataset.class))).thenReturn(false);
+        final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
+
+        final Response res = handler.deleteResource(mockResource).build();
+        assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
     }
 
     @Test

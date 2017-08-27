@@ -16,6 +16,7 @@ package org.trellisldp.http.impl;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -80,15 +81,20 @@ public class DeleteHandler extends BaseLdpHandler {
 
         LOGGER.debug("Deleting {}", identifier);
 
-        final Dataset dataset = rdf.createDataset();
+        try (final Dataset dataset = rdf.createDataset()) {
+            // Add the audit quads
+            auditDeletion(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
+                .forEach(dataset::add);
 
-        // Add the audit quads
-        auditDeletion(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
-            .forEach(dataset::add);
+            // delete the resource
+            if (resourceService.put(res.getIdentifier(), dataset)) {
+                return status(NO_CONTENT);
+            }
+        } catch (final Exception ex) {
+            LOGGER.error("Error handling dataset: {}", ex.getMessage());
+        }
 
-        // delete the resource
-        resourceService.put(res.getIdentifier(), dataset);
-
-        return status(NO_CONTENT);
+        LOGGER.error("Unable to delete resource at {}", res.getIdentifier());
+        return serverError().entity("Unable to delete resource. Please consult the logs for more information");
     }
 }
