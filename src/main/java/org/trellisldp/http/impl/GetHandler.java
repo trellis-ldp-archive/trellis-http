@@ -324,7 +324,7 @@ public class GetHandler extends BaseLdpHandler {
         });
 
         // Link headers from User data
-        res.getTypes().map(IRI::getIRIString).forEach(type -> builder.link(type, "type"));
+        res.getTypes().forEach(type -> builder.link(type.getIRIString(), "type"));
         res.getInbox().map(IRI::getIRIString).ifPresent(inbox -> builder.link(inbox, "inbox"));
         res.getAnnotationService().map(IRI::getIRIString).ifPresent(svc ->
                 builder.link(svc, OA.annotationService.getIRIString()));

@@ -76,7 +76,7 @@ public class BaseLdpHandler {
      * @return if the resource has been deleted, return an HTTP response builder, otherwise null
      */
     protected ResponseBuilder checkDeleted(final Resource res, final String identifier) {
-       if (LDP.Resource.equals(res.getInteractionModel()) && res.getTypes().anyMatch(Trellis.DeletedResource::equals)) {
+       if (LDP.Resource.equals(res.getInteractionModel()) && res.getTypes().contains(Trellis.DeletedResource)) {
             return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
                     .toArray(Link[]::new));
         }

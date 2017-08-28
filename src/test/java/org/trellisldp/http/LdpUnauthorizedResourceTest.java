@@ -134,7 +134,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
         when(mockAccessControlService.anyMatch(any(Session.class), any(IRI.class), any()))
             .thenReturn(false);
 
-        when(mockVersionedResource.getMementos()).thenReturn(Stream.empty());
+        when(mockVersionedResource.getMementos()).thenReturn(emptyList());
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockVersionedResource.getModified()).thenReturn(time);
         when(mockVersionedResource.getBinary()).thenReturn(Optional.empty());
@@ -142,9 +142,9 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
         when(mockVersionedResource.getIdentifier()).thenReturn(identifier);
         when(mockVersionedResource.getInbox()).thenReturn(Optional.empty());
         when(mockVersionedResource.getAnnotationService()).thenReturn(Optional.empty());
-        when(mockVersionedResource.getTypes()).thenAnswer(x -> Stream.empty());
+        when(mockVersionedResource.getTypes()).thenReturn(emptyList());
 
-        when(mockResource.getMementos()).thenReturn(Stream.empty());
+        when(mockResource.getMementos()).thenReturn(emptyList());
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockResource.getModified()).thenReturn(time);
         when(mockResource.getBinary()).thenReturn(Optional.empty());
@@ -152,7 +152,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
         when(mockResource.getIdentifier()).thenReturn(identifier);
         when(mockResource.getInbox()).thenReturn(Optional.empty());
         when(mockResource.getAnnotationService()).thenReturn(Optional.empty());
-        when(mockResource.getTypes()).thenAnswer(x -> Stream.empty());
+        when(mockResource.getTypes()).thenReturn(emptyList());
 
         when(mockResourceService.unskolemize(any(IRI.class)))
             .thenAnswer(inv -> {

@@ -18,6 +18,7 @@ import static java.time.Instant.ofEpochSecond;
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Date.from;
@@ -143,14 +144,14 @@ public class GetHandlerTest {
 
     @Before
     public void setUp() {
-        when(mockResource.getMementos()).thenReturn(Stream.empty());
+        when(mockResource.getMementos()).thenReturn(emptyList());
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockResource.getModified()).thenReturn(time);
         when(mockResource.getBinary()).thenReturn(Optional.empty());
         when(mockResource.isMemento()).thenReturn(false);
         when(mockResource.getInbox()).thenReturn(Optional.empty());
         when(mockResource.getAnnotationService()).thenReturn(Optional.empty());
-        when(mockResource.getTypes()).thenAnswer(x -> Stream.empty());
+        when(mockResource.getTypes()).thenReturn(emptyList());
         when(mockResource.stream()).thenReturn(Stream.empty());
         when(mockBinaryService.getContent(any(), any()))
             .thenReturn(Optional.of(new ByteArrayInputStream("Some data".getBytes(UTF_8))));
@@ -315,7 +316,7 @@ public class GetHandlerTest {
 
         when(mockResource.getAnnotationService()).thenReturn(Optional.of(rdf.createIRI(annService)));
         when(mockResource.getInbox()).thenReturn(Optional.of(rdf.createIRI(inbox)));
-        when(mockResource.getTypes()).thenAnswer(x -> Stream.of(SKOS.Concept));
+        when(mockResource.getTypes()).thenReturn(singletonList(SKOS.Concept));
         when(mockHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(TEXT_TURTLE_TYPE));
 
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
@@ -532,7 +533,7 @@ public class GetHandlerTest {
     @Test
     public void testGetDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
-        when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
+        when(mockResource.getTypes()).thenReturn(singletonList(Trellis.DeletedResource));
 
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
                 mockIoService, mockBinaryService);

@@ -21,6 +21,7 @@ import static java.time.ZonedDateTime.parse;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
+import static java.util.Collections.emptyList;
 import static java.util.Date.from;
 import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.client.Entity.entity;
@@ -245,7 +246,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockAccessControlService.canWrite(any(Session.class), any(IRI.class))).thenReturn(true);
         when(mockAccessControlService.canControl(any(Session.class), any(IRI.class))).thenReturn(true);
 
-        when(mockVersionedResource.getMementos()).thenAnswer(x -> Stream.of(
+        when(mockVersionedResource.getMementos()).thenReturn(asList(
                 new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),
                 new VersionRange(ofEpochSecond(timestamp - 1000), time),
                 new VersionRange(time, ofEpochSecond(timestamp + 1000))));
@@ -256,9 +257,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockVersionedResource.getIdentifier()).thenReturn(identifier);
         when(mockVersionedResource.getInbox()).thenReturn(Optional.empty());
         when(mockVersionedResource.getAnnotationService()).thenReturn(Optional.empty());
-        when(mockVersionedResource.getTypes()).thenAnswer(x -> Stream.empty());
+        when(mockVersionedResource.getTypes()).thenReturn(emptyList());
 
-        when(mockBinaryVersionedResource.getMementos()).thenAnswer(x -> Stream.of(
+        when(mockBinaryVersionedResource.getMementos()).thenReturn(asList(
                 new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),
                 new VersionRange(ofEpochSecond(timestamp - 1000), time),
                 new VersionRange(time, ofEpochSecond(timestamp + 1000))));
@@ -269,9 +270,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockBinaryVersionedResource.getIdentifier()).thenReturn(binaryIdentifier);
         when(mockBinaryVersionedResource.getInbox()).thenReturn(Optional.empty());
         when(mockBinaryVersionedResource.getAnnotationService()).thenReturn(Optional.empty());
-        when(mockBinaryVersionedResource.getTypes()).thenAnswer(x -> Stream.empty());
+        when(mockBinaryVersionedResource.getTypes()).thenReturn(emptyList());
 
-        when(mockBinaryResource.getMementos()).thenAnswer(x -> Stream.empty());
+        when(mockBinaryResource.getMementos()).thenReturn(emptyList());
         when(mockBinaryResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
         when(mockBinaryResource.getModified()).thenReturn(time);
         when(mockBinaryResource.getBinary()).thenReturn(Optional.of(mockBinary));
@@ -279,7 +280,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockBinaryResource.getIdentifier()).thenReturn(binaryIdentifier);
         when(mockBinaryResource.getInbox()).thenReturn(Optional.empty());
         when(mockBinaryResource.getAnnotationService()).thenReturn(Optional.empty());
-        when(mockBinaryResource.getTypes()).thenAnswer(x -> Stream.empty());
+        when(mockBinaryResource.getTypes()).thenReturn(emptyList());
 
         when(mockBinary.getModified()).thenReturn(time);
         when(mockBinary.getIdentifier()).thenReturn(binaryInternalIdentifier);
@@ -295,7 +296,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockBinaryService.getResolverForPartition(eq(REPO1))).thenReturn(Optional.of(mockBinaryResolver));
         when(mockBinaryService.getIdentifierSupplier(eq(REPO1))).thenReturn(() -> RANDOM_VALUE);
 
-        when(mockResource.getMementos()).thenAnswer(x -> Stream.empty());
+        when(mockResource.getMementos()).thenReturn(emptyList());
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockResource.getModified()).thenReturn(time);
         when(mockResource.getBinary()).thenReturn(Optional.empty());
@@ -303,9 +304,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockResource.getIdentifier()).thenReturn(identifier);
         when(mockResource.getInbox()).thenReturn(Optional.empty());
         when(mockResource.getAnnotationService()).thenReturn(Optional.empty());
-        when(mockResource.getTypes()).thenAnswer(x -> Stream.empty());
+        when(mockResource.getTypes()).thenReturn(emptyList());
 
-        when(mockDeletedResource.getMementos()).thenAnswer(x -> Stream.empty());
+        when(mockDeletedResource.getMementos()).thenReturn(emptyList());
         when(mockDeletedResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockDeletedResource.getModified()).thenReturn(time);
         when(mockDeletedResource.getBinary()).thenReturn(Optional.empty());
@@ -313,9 +314,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockDeletedResource.getIdentifier()).thenReturn(identifier);
         when(mockDeletedResource.getInbox()).thenReturn(Optional.empty());
         when(mockDeletedResource.getAnnotationService()).thenReturn(Optional.empty());
-        when(mockDeletedResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
+        when(mockDeletedResource.getTypes()).thenReturn(asList(Trellis.DeletedResource));
 
-        when(mockUserDeletedResource.getMementos()).thenAnswer(x -> Stream.empty());
+        when(mockUserDeletedResource.getMementos()).thenReturn(emptyList());
         when(mockUserDeletedResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockUserDeletedResource.getModified()).thenReturn(time);
         when(mockUserDeletedResource.getBinary()).thenReturn(Optional.empty());
@@ -323,7 +324,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockUserDeletedResource.getIdentifier()).thenReturn(identifier);
         when(mockUserDeletedResource.getInbox()).thenReturn(Optional.empty());
         when(mockUserDeletedResource.getAnnotationService()).thenReturn(Optional.empty());
-        when(mockUserDeletedResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
+        when(mockUserDeletedResource.getTypes()).thenReturn(asList(Trellis.DeletedResource));
 
         when(mockResourceService.unskolemize(any(IRI.class)))
             .thenAnswer(inv -> {
@@ -809,7 +810,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testGetTimeMapLink() throws IOException {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
-        when(mockResource.getMementos()).thenAnswer(x -> Stream.of(
+        when(mockResource.getMementos()).thenReturn(asList(
                 new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),
                 new VersionRange(ofEpochSecond(timestamp - 1000), time),
                 new VersionRange(time, ofEpochSecond(timestamp + 1000))));
@@ -870,7 +871,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testGetTimeMapJsonCompact() throws IOException {
-        when(mockResource.getMementos()).thenAnswer(x -> Stream.of(
+        when(mockResource.getMementos()).thenReturn(asList(
                 new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),
                 new VersionRange(ofEpochSecond(timestamp - 1000), time),
                 new VersionRange(time, ofEpochSecond(timestamp + 1000))));
@@ -949,7 +950,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testGetTimeMapJson() throws IOException {
-        when(mockResource.getMementos()).thenAnswer(x -> Stream.of(
+        when(mockResource.getMementos()).thenReturn(asList(
                 new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),
                 new VersionRange(ofEpochSecond(timestamp - 1000), time),
                 new VersionRange(time, ofEpochSecond(timestamp + 1000))));
@@ -1331,7 +1332,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testOptionsTimemap() {
-        when(mockResource.getMementos()).thenAnswer(x -> Stream.of(
+        when(mockResource.getMementos()).thenReturn(asList(
                 new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),
                 new VersionRange(ofEpochSecond(timestamp - 1000), time),
                 new VersionRange(time, ofEpochSecond(timestamp + 1000))));

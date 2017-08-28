@@ -233,7 +233,7 @@ public class PatchHandlerTest {
     @Test
     public void testDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
-        when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
+        when(mockResource.getTypes()).thenReturn(singletonList(Trellis.DeletedResource));
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 

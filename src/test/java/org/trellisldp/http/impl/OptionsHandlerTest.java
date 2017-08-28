@@ -14,6 +14,8 @@
 package org.trellisldp.http.impl;
 
 import static java.time.Instant.ofEpochSecond;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
@@ -41,7 +43,6 @@ import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.time.Instant;
-import java.util.stream.Stream;
 
 import javax.ws.rs.core.Response;
 
@@ -83,9 +84,9 @@ public class OptionsHandlerTest {
 
     @Before
     public void setUp() {
-        when(mockResource.getMementos()).thenReturn(Stream.empty());
+        when(mockResource.getMementos()).thenReturn(emptyList());
         when(mockResource.isMemento()).thenReturn(false);
-        when(mockResource.getTypes()).thenAnswer(x -> Stream.empty());
+        when(mockResource.getTypes()).thenReturn(emptyList());
         when(mockRequest.getBaseUrl(any())).thenReturn(baseUrl);
         when(mockRequest.getPath()).thenReturn("/");
     }
@@ -203,7 +204,7 @@ public class OptionsHandlerTest {
     @Test
     public void testOptionsDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
-        when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
+        when(mockResource.getTypes()).thenReturn(asList(Trellis.DeletedResource));
 
         final OptionsHandler optionsHandler = new OptionsHandler(emptyMap(), mockRequest, mockResourceService);
 

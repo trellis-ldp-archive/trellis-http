@@ -14,7 +14,9 @@
 package org.trellisldp.http.impl;
 
 import static java.time.Instant.ofEpochSecond;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
 import static java.util.Date.from;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
@@ -29,7 +31,6 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.time.Instant;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Request;
@@ -86,8 +87,8 @@ public class DeleteHandlerTest {
         final IRI iri = rdf.createIRI("trellis:repo");
         when(mockResource.getModified()).thenReturn(time);
         when(mockResource.getIdentifier()).thenReturn(iri);
-        when(mockResource.getTypes()).thenAnswer(x -> Stream.empty());
-        when(mockResource.getMementos()).thenReturn(Stream.empty());
+        when(mockResource.getTypes()).thenReturn(emptyList());
+        when(mockResource.getMementos()).thenReturn(emptyList());
 
         when(mockResourceService.skolemize(any(BlankNode.class))).thenReturn(rdf.createIRI("trellis:bnode/foo"));
         when(mockResourceService.skolemize(eq(iri))).thenReturn(iri);
@@ -138,7 +139,7 @@ public class DeleteHandlerTest {
     @Test
     public void testGetDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
-        when(mockResource.getTypes()).thenAnswer(x -> Stream.of(Trellis.DeletedResource));
+        when(mockResource.getTypes()).thenReturn(singletonList(Trellis.DeletedResource));
 
         final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
 

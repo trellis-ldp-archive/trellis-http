@@ -251,7 +251,7 @@ public class LdpResource extends BaseLdpResource {
                 return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path + identifier), MAX)
                     .map(x -> status(CONFLICT)).orElseGet(postHandler::createResource).build();
            } else if (ixModel.filter(LDP.Resource::equals).isPresent() &&
-                    parent.get().getTypes().anyMatch(Trellis.DeletedResource::equals)) {
+                    parent.get().getTypes().contains(Trellis.DeletedResource)) {
                 return status(GONE).build();
             }
             return status(METHOD_NOT_ALLOWED).build();

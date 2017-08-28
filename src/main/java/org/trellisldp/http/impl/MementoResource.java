@@ -146,9 +146,8 @@ public final class MementoResource {
      * @param mementos a stream of memento values
      * @return a stream of link headers
      */
-    public static Stream<Link> getMementoLinks(final String identifier, final Stream<VersionRange> mementos) {
-        final List<VersionRange> ranges = mementos.collect(toList());
-        return concat(getTimeMap(identifier, ranges.stream()), ranges.stream().map(mementoToLink(identifier)));
+    public static Stream<Link> getMementoLinks(final String identifier, final List<VersionRange> mementos) {
+        return concat(getTimeMap(identifier, mementos.stream()), mementos.stream().map(mementoToLink(identifier)));
     }
 
     private static final Function<Link, Stream<Quad>> linkToQuads = link -> {
