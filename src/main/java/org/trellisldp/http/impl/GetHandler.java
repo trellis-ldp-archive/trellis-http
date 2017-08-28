@@ -256,7 +256,7 @@ public class GetHandler extends BaseLdpHandler {
             final StreamingOutput stream = new StreamingOutput() {
                 @Override
                 public void write(final OutputStream out) throws IOException {
-                    // TODO -- with JDK 9 use InputStream::transferTo instead of IOUtils
+                    // TODO -- with JDK 9 use InputStream::transferTo instead of IOUtils::copy
                     try {
                         if (isNull(req.getRange())) {
                             IOUtils.copy(binary, out);
