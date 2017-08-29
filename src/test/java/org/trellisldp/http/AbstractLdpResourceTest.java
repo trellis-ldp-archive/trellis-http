@@ -120,6 +120,7 @@ import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.ACL;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.XSD;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
@@ -345,6 +346,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
             .thenAnswer(inv -> rdf.createIRI(BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
         when(mockResource.stream()).thenReturn(Stream.of(
                 rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title, rdf.createLiteral("A title")),
+                rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.created,
+                    rdf.createLiteral("2017-04-01T10:15:00Z", XSD.dateTime)),
                 rdf.createQuad(Trellis.PreferAccessControl, identifier, type, ACL.Authorization),
                 rdf.createQuad(Trellis.PreferAccessControl, identifier, ACL.mode, ACL.Control)));
     }
@@ -766,6 +769,25 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPrefer() throws IOException {
+        final Response res = target(RESOURCE_PATH).request()
+            .header("Prefer", "return=representation; include=\"" + Trellis.PreferServerManaged.getIRIString() + "\"")
+            .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
+
+        assertEquals(OK, res.getStatusInfo());
+
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        final Map<String, Object> obj = MAPPER.readValue(entity, new TypeReference<Map<String, Object>>(){});
+
+        assertTrue(obj.containsKey("@context"));
+        assertTrue(obj.containsKey("title"));
+        assertFalse(obj.containsKey("mode"));
+        assertTrue(obj.containsKey("created"));
+
+        assertEquals("A title", (String) obj.get("title"));
+    }
+
+    @Test
     public void testGetJsonCompact() throws IOException {
         final Response res = target(RESOURCE_PATH).request()
             .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
@@ -806,6 +828,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(obj.containsKey("@context"));
         assertTrue(obj.containsKey("title"));
         assertFalse(obj.containsKey("mode"));
+        assertFalse(obj.containsKey("created"));
 
         assertEquals("A title", (String) obj.get("title"));
     }
