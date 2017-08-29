@@ -175,7 +175,7 @@ public class OptionsHandlerTest {
         assertTrue(allow.contains(HEAD));
         assertTrue(allow.contains(OPTIONS));
         assertTrue(allow.contains(PUT));
-        assertFalse(allow.contains(DELETE));
+        assertTrue(allow.contains(DELETE));
         assertTrue(allow.contains(PATCH));
         assertFalse(allow.contains(POST));
     }

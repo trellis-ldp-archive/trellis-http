@@ -197,7 +197,7 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response deleteResource(@BeanParam final LdpRequest req) {
 
-        if (nonNull(req.getExt()) || nonNull(req.getVersion())) {
+        if (nonNull(req.getVersion()) || UPLOADS.equals(req.getExt())) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
@@ -282,6 +282,6 @@ public class LdpResource extends BaseLdpResource {
                 constraintService, binaryService);
 
         return resourceService.get(identifier, MAX).map(putHandler::setResource)
-            .orElseGet(putHandler::setResource).build();
+            .orElseGet(() -> status(NOT_FOUND)).build();
     }
 }

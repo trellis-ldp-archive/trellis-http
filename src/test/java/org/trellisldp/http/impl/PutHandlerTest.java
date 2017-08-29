@@ -24,8 +24,8 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
-import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
-import static javax.ws.rs.core.Response.notModified;
+import static javax.ws.rs.core.Response.Status.PRECONDITION_FAILED;
+import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -312,7 +312,7 @@ public class PutHandlerTest {
     @Test
     public void testCache() {
         when(mockRequest.evaluatePreconditions(eq(from(binaryTime)), any(EntityTag.class)))
-                .thenReturn(notModified());
+                .thenReturn(status(PRECONDITION_FAILED));
         when(mockResource.getBinary()).thenReturn(of(testBinary));
 
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
@@ -320,7 +320,8 @@ public class PutHandlerTest {
                 mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
-        assertEquals(NOT_MODIFIED, res.getStatusInfo());
+
+        assertEquals(PRECONDITION_FAILED, res.getStatusInfo());
     }
 
     @Test
@@ -334,7 +335,7 @@ public class PutHandlerTest {
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
                 mockIoService, mockConstraintService, mockBinaryService);
 
-        final Response res = putHandler.setResource().build();
+        final Response res = putHandler.setResource(mockResource).build();
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
     }
 

@@ -36,6 +36,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
@@ -46,6 +47,7 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
+import org.apache.commons.rdf.api.Triple;
 
 import org.slf4j.Logger;
 import org.trellisldp.api.Binary;
@@ -88,17 +90,11 @@ public class PutHandler extends ContentBearingHandler {
         super(partitions, req, entity, resourceService, ioService, constraintService, binaryService);
     }
 
-    /**
-     * Set the data for a resource
-     * @param res the resource
-     * @return the response builder
-     */
-    public ResponseBuilder setResource(final Resource res) {
-        final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
+    private ResponseBuilder checkResourceCache(final String identifier, final Resource res) {
         final EntityTag etag;
         final Instant modified;
-
         final Optional<Instant> binaryModification = res.getBinary().map(Binary::getModified);
+
         if (binaryModification.isPresent() &&
                 !ofNullable(req.getContentType()).flatMap(RDFSyntax::byMediaType).isPresent()) {
             modified = binaryModification.get();
@@ -107,38 +103,44 @@ public class PutHandler extends ContentBearingHandler {
             modified = res.getModified();
             etag = new EntityTag(md5Hex(modified + identifier), true);
         }
-
         // Check the cache
-        final ResponseBuilder cache = checkCache(req.getRequest(), modified, etag);
-        if (nonNull(cache)) {
-            return cache;
-        }
-        return setResource();
+        return checkCache(req.getRequest(), modified, etag);
+    }
+
+    private IRI getDefaultType(final Optional<RDFSyntax> syntax) {
+        return nonNull(req.getContentType()) && !syntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
     }
 
     /**
      * Set the data for a resource
+     * @param res the resource
      * @return the response builder
      */
-    public ResponseBuilder setResource() {
+    public ResponseBuilder setResource(final Resource res) {
         final String baseUrl = req.getBaseUrl(partitions);
         final String identifier = baseUrl + req.getPartition() + req.getPath();
-        final String contentType = req.getContentType();
+
+        // Check the cache
+        final ResponseBuilder cache = checkResourceCache(identifier, res);
+        if (nonNull(cache)) {
+            return cache;
+        }
+
         final Session session = ofNullable(req.getSession()).orElse(new HttpSession());
-        final Optional<RDFSyntax> rdfSyntax = ofNullable(contentType).flatMap(RDFSyntax::byMediaType)
+        final Optional<RDFSyntax> rdfSyntax = ofNullable(req.getContentType()).flatMap(RDFSyntax::byMediaType)
             .filter(SUPPORTED_RDF_TYPES::contains);
 
         LOGGER.info("Setting resource as {}", identifier);
 
-        final IRI defaultType = nonNull(contentType) && !rdfSyntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
         final IRI ldpType = ofNullable(req.getLink()).filter(l -> "type".equals(l.getRel()))
                     .map(Link::getUri).map(URI::toString).map(rdf::createIRI)
-                    .filter(l -> !LDP.Resource.equals(l)).orElse(defaultType);
+                    .filter(l -> !LDP.Resource.equals(l)).orElseGet(() -> getDefaultType(rdfSyntax));
 
         final IRI internalId = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 
         try (final Dataset dataset = rdf.createDataset()) {
             final IRI graphName = ACL.equals(req.getExt()) ? Trellis.PreferAccessControl : Trellis.PreferUserManaged;
+            final IRI otherGraph = ACL.equals(req.getExt()) ? Trellis.PreferUserManaged : Trellis.PreferAccessControl;
 
             // Add audit quads
             auditUpdate(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
@@ -165,7 +167,7 @@ public class PutHandler extends ContentBearingHandler {
 
                 // TODO JDK9, use map literal
                 final Map<String, String> metadata = new HashMap<>();
-                metadata.put(CONTENT_TYPE, ofNullable(contentType).orElse(APPLICATION_OCTET_STREAM));
+                metadata.put(CONTENT_TYPE, ofNullable(req.getContentType()).orElse(APPLICATION_OCTET_STREAM));
                 final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(req.getPartition()).get());
 
                 // Persist the content
@@ -176,6 +178,11 @@ public class PutHandler extends ContentBearingHandler {
                             rdf.createLiteral(ofNullable(req.getContentType()).orElse(APPLICATION_OCTET_STREAM))));
                 dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.extent,
                             rdf.createLiteral(Long.toString(entity.length()), XSD.long_)));
+            }
+
+            try (final Stream<Triple> remaining = res.stream(otherGraph)) {
+                remaining.map(t -> rdf.createQuad(otherGraph, t.getSubject(), t.getPredicate(), t.getObject()))
+                    .forEach(dataset::add);
             }
 
             if (resourceService.put(internalId, dataset)) {

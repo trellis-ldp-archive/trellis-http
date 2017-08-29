@@ -38,6 +38,7 @@ import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
+import static javax.ws.rs.core.Response.Status.PRECONDITION_FAILED;
 import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -1286,7 +1287,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         assertTrue(res.getAllowedMethods().contains("PATCH"));
         assertTrue(res.getAllowedMethods().contains("PUT"));
-        assertFalse(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
         assertTrue(res.getAllowedMethods().contains("GET"));
         assertTrue(res.getAllowedMethods().contains("HEAD"));
         assertTrue(res.getAllowedMethods().contains("OPTIONS"));
@@ -1554,11 +1555,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         final Response res = target(RESOURCE_PATH + "/test").request()
             .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
-        assertEquals(NO_CONTENT, res.getStatusInfo());
-        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
-        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
-        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+        assertEquals(NOT_FOUND, res.getStatusInfo());
     }
 
     @Test
@@ -1637,6 +1634,40 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPutIfMatch() {
+        final Response res = target(BINARY_PATH).request().header("If-Match", "\"0ccfe1dcf1d081e016ceaada4c6f00ef\"")
+            .put(entity("some different data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutIfUnmodified() {
+        final Response res = target(BINARY_PATH).request()
+            .header("If-Unmodified-Since", "Tue, 29 Aug 2017 07:14:52 GMT")
+            .put(entity("some different data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutPreconditionFailed() {
+        final Response res = target(BINARY_PATH).request().header("If-Match", "\"blahblahblah\"")
+            .put(entity("some different data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(PRECONDITION_FAILED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutPreconditionFailed2() {
+        final Response res = target(BINARY_PATH).request()
+            .header("If-Unmodified-Since", "Wed, 19 Oct 2016 10:15:00 GMT")
+            .put(entity("some different data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(PRECONDITION_FAILED, res.getStatusInfo());
+    }
+
+    @Test
     public void testPutBinaryWithSha256Digest() {
         final Response res = target(BINARY_PATH).request()
             .header("Digest", "sha-256=voCCIRTNXosNlEgQ/7IuX5dFNvFQx5MfG/jy1AKiLMU=")
@@ -1702,10 +1733,17 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testDeleteUploads() {
+        final Response res = target(RESOURCE_PATH).queryParam("ext", UPLOADS).request().delete();
+
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+    }
+
+    @Test
     public void testDeleteAcl() {
         final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request().delete();
 
-        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+        assertEquals(NO_CONTENT, res.getStatusInfo());
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 

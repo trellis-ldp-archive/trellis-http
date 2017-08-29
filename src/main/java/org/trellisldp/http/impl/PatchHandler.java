@@ -114,7 +114,6 @@ public class PatchHandler extends BaseLdpHandler {
             LOGGER.warn(ex.getMessage());
             throw new BadRequestException("Invalid RDF: " + ex.getMessage());
         } catch (final Exception ex) {
-            LOGGER.warn("Error handling graph: {}", ex.getMessage());
             throw new WebApplicationException("Error handling graph: " + ex.getMessage());
         }
 
@@ -151,6 +150,7 @@ public class PatchHandler extends BaseLdpHandler {
         LOGGER.debug("Updating {} via PATCH", identifier);
 
         final IRI graphName = ACL.equals(req.getExt()) ? Trellis.PreferAccessControl : Trellis.PreferUserManaged;
+        final IRI otherGraph = ACL.equals(req.getExt()) ? Trellis.PreferUserManaged : Trellis.PreferAccessControl;
 
         // Put triples in buffer
         final List<Triple> triples = updateGraph(res, graphName);
@@ -175,6 +175,11 @@ public class PatchHandler extends BaseLdpHandler {
                 .map(IRI::getIRIString);
             if (constraint.isPresent()) {
                 return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
+            }
+
+            try (final Stream<Triple> remaining = res.stream(otherGraph)) {
+                remaining.map(t -> rdf.createQuad(otherGraph, t.getSubject(), t.getPredicate(), t.getObject()))
+                    .forEach(dataset::add);
             }
 
             // Save new dataset
