@@ -124,25 +124,26 @@ public class LdpResource extends BaseLdpResource {
         if (nonNull(req.getVersion())) {
             LOGGER.info("Getting versioned resource: {}", req.getVersion());
             return resourceService.get(identifier, req.getVersion().getInstant())
-                .map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
+                .map(getHandler::getRepresentation).orElseGet(() -> status(NOT_FOUND)).build();
 
         // Fetch a timemap
         } else if (TIMEMAP.equals(req.getExt())) {
             LOGGER.info("Getting timemap resource");
             return resourceService.get(identifier).map(MementoResource::new)
                 .map(res -> res.getTimeMapBuilder(partitions, req, ioService))
-                .orElse(status(NOT_FOUND)).build();
+                .orElseGet(() -> status(NOT_FOUND)).build();
 
         // Fetch a timegate
         } else if (nonNull(req.getDatetime())) {
             LOGGER.info("Getting timegate resource: {}", req.getDatetime().getInstant());
             return resourceService.get(identifier, req.getDatetime().getInstant())
                 .map(MementoResource::new).map(res -> res.getTimeGateBuilder(partitions, req))
-                .orElse(status(NOT_FOUND)).build();
+                .orElseGet(() -> status(NOT_FOUND)).build();
         }
 
         // Fetch the current state of the resource
-        return resourceService.get(identifier).map(getHandler::getRepresentation).orElse(status(NOT_FOUND)).build();
+        return resourceService.get(identifier).map(getHandler::getRepresentation)
+            .orElseGet(() -> status(NOT_FOUND)).build();
     }
 
     /**
@@ -159,10 +160,11 @@ public class LdpResource extends BaseLdpResource {
 
         if (nonNull(req.getVersion())) {
             return resourceService.get(identifier, req.getVersion().getInstant()).map(optionsHandler::ldpOptions)
-                .orElse(status(NOT_FOUND)).build();
+                .orElseGet(() -> status(NOT_FOUND)).build();
         }
 
-        return resourceService.get(identifier).map(optionsHandler::ldpOptions).orElse(status(NOT_FOUND)).build();
+        return resourceService.get(identifier).map(optionsHandler::ldpOptions)
+            .orElseGet(() -> status(NOT_FOUND)).build();
     }
 
 
@@ -185,7 +187,8 @@ public class LdpResource extends BaseLdpResource {
         final PatchHandler patchHandler = new PatchHandler(partitions, req, body, resourceService, ioService,
                 constraintService);
 
-        return resourceService.get(identifier, MAX).map(patchHandler::updateResource).orElse(status(NOT_FOUND)).build();
+        return resourceService.get(identifier, MAX).map(patchHandler::updateResource)
+            .orElseGet(() -> status(NOT_FOUND)).build();
     }
 
     /**
@@ -205,7 +208,7 @@ public class LdpResource extends BaseLdpResource {
         final DeleteHandler deleteHandler = new DeleteHandler(partitions, req, resourceService);
 
         return resourceService.get(identifier, MAX).map(deleteHandler::deleteResource)
-            .orElse(status(NOT_FOUND)).build();
+            .orElseGet(() -> status(NOT_FOUND)).build();
     }
 
     /**
