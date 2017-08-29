@@ -511,6 +511,7 @@ public class GetHandlerTest {
     @Test
     public void testGetAcl() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.hasAcl()).thenReturn(true);
         when(mockHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(TEXT_TURTLE_TYPE));
         when(mockLdpRequest.getExt()).thenReturn("acl");
 

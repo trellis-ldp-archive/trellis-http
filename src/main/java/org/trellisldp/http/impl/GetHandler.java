@@ -65,6 +65,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
@@ -136,6 +137,10 @@ public class GetHandler extends BaseLdpHandler {
 
         final Optional<RDFSyntax> syntax = getSyntax(req.getHeaders().getAcceptableMediaTypes(), res.getBinary()
                 .map(b -> b.getMimeType().orElse(APPLICATION_OCTET_STREAM)));
+
+        if (ACL.equals(req.getExt()) && !res.hasAcl()) {
+            throw new NotFoundException();
+        }
 
         final ResponseBuilder builder = basicGetResponseBuilder(res, syntax);
 

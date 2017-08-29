@@ -107,9 +107,9 @@ public class PatchHandler extends BaseLdpHandler {
         try (final Graph graph = rdf.createGraph()) {
             try (final Stream<Triple> stream = res.stream(graphName)) {
                 stream.forEach(graph::add);
-                ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath());
-                graph.stream().forEach(triples::add);
             }
+            ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath());
+            graph.stream().forEach(triples::add);
         } catch (final RuntimeRepositoryException ex) {
             LOGGER.warn(ex.getMessage());
             throw new BadRequestException("Invalid RDF: " + ex.getMessage());

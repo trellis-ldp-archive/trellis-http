@@ -72,6 +72,7 @@ import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.vocabulary.RDF.type;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -344,6 +345,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
             .thenAnswer(inv -> rdf.createIRI(BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
         when(mockResource.stream()).thenReturn(Stream.of(
                 rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title, rdf.createLiteral("A title")),
+                rdf.createQuad(Trellis.PreferAccessControl, identifier, type, ACL.Authorization),
                 rdf.createQuad(Trellis.PreferAccessControl, identifier, ACL.mode, ACL.Control)));
     }
 
@@ -1131,7 +1133,15 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testGetNoAcl() {
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request().get();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+    @Test
     public void testGetAclJsonCompact() throws IOException {
+        when(mockResource.hasAcl()).thenReturn(true);
         final Response res = target(RESOURCE_PATH).queryParam("ext", "acl").request()
             .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
 
