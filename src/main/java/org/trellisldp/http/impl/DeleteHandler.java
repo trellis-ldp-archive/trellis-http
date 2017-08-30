@@ -15,6 +15,7 @@ package org.trellisldp.http.impl;
 
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
@@ -22,8 +23,13 @@ import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
+import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditDeletion;
+import static org.trellisldp.vocabulary.LDP.Container;
+import static org.trellisldp.vocabulary.LDP.PreferContainment;
+import static org.trellisldp.vocabulary.LDP.constrainedBy;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
+import static org.trellisldp.vocabulary.Trellis.UnsupportedRecursiveDelete;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -81,6 +87,16 @@ public class DeleteHandler extends BaseLdpHandler {
         final ResponseBuilder cache = checkCache(req.getRequest(), res.getModified(), etag);
         if (nonNull(cache)) {
             return cache;
+        }
+
+        // If this is a container, are there contained resources?
+        if (ldpResourceTypes(res.getInteractionModel()).anyMatch(Container::equals)) {
+            try (final Stream<Triple> contains = res.stream(PreferContainment)) {
+                if (contains.findAny().isPresent()) {
+                    return status(CONFLICT).link(UnsupportedRecursiveDelete.getIRIString(),
+                            constrainedBy.getIRIString());
+                }
+            }
         }
 
         LOGGER.debug("Deleting {}", identifier);

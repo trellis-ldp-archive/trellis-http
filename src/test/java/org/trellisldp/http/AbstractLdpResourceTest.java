@@ -33,6 +33,7 @@ import static javax.ws.rs.core.HttpHeaders.VARY;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
@@ -1764,6 +1765,37 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         assertEquals(NOT_FOUND, res.getStatusInfo());
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testDeleteRecursive() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockVersionedResource.stream(eq(LDP.PreferContainment))).thenAnswer(inv -> Stream.of(
+                    rdf.createTriple(identifier, LDP.contains, rdf.createIRI(identifier.getIRIString() + "/child"))));
+
+        final Response res = target(RESOURCE_PATH).request().delete();
+
+        assertEquals(CONFLICT, res.getStatusInfo());
+    }
+
+    @Test
+    public void testDeleteNoChildren1() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.BasicContainer);
+        when(mockVersionedResource.stream(eq(LDP.PreferContainment))).thenAnswer(inv -> Stream.empty());
+
+        final Response res = target(RESOURCE_PATH).request().delete();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+    }
+
+    @Test
+    public void testDeleteNoChildren2() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockVersionedResource.stream(eq(LDP.PreferContainment))).thenAnswer(inv -> Stream.empty());
+
+        final Response res = target(RESOURCE_PATH).request().delete();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
     }
 
     @Test
