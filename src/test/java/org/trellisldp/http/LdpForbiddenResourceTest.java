@@ -16,6 +16,7 @@ package org.trellisldp.http;
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static java.util.stream.Collectors.toSet;
 import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
@@ -32,7 +33,6 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.ws.rs.core.Application;
@@ -127,16 +127,12 @@ public class LdpForbiddenResourceTest extends JerseyTest {
 
     @Before
     public void setUpMocks() {
-        when(mockResourceService.get(any(IRI.class), any(Instant.class)))
-            .thenReturn(Optional.of(mockVersionedResource));
-        when(mockResourceService.get(any(IRI.class))).thenReturn(Optional.of(mockResource));
+        when(mockResourceService.get(any(IRI.class), any(Instant.class))).thenReturn(of(mockVersionedResource));
+        when(mockResourceService.get(any(IRI.class))).thenReturn(of(mockResource));
 
-        when(mockAccessControlService.canRead(any(Session.class), any(IRI.class)))
-            .thenReturn(false);
-        when(mockAccessControlService.canControl(any(Session.class), any(IRI.class)))
-            .thenReturn(false);
-        when(mockAccessControlService.anyMatch(any(Session.class), any(IRI.class), any()))
-            .thenReturn(false);
+        when(mockAccessControlService.canRead(any(Session.class), any(IRI.class))).thenReturn(false);
+        when(mockAccessControlService.canControl(any(Session.class), any(IRI.class))).thenReturn(false);
+        when(mockAccessControlService.anyMatch(any(Session.class), any(IRI.class), any())).thenReturn(false);
 
         when(mockAgentService.asAgent("testUser")).thenReturn(agent);
 
@@ -284,8 +280,7 @@ public class LdpForbiddenResourceTest extends JerseyTest {
     @Test
     public void testPost1() {
         final Response res = target("repo1/resource").queryParam("ext", "acl").request()
-            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" . ",
-                    APPLICATION_N_TRIPLES_TYPE));
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" . ", APPLICATION_N_TRIPLES_TYPE));
 
         assertEquals(FORBIDDEN, res.getStatusInfo());
     }
@@ -293,8 +288,7 @@ public class LdpForbiddenResourceTest extends JerseyTest {
     @Test
     public void testPost2() {
         final Response res = target("repo1/resource").request()
-            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" . ",
-                    APPLICATION_N_TRIPLES_TYPE));
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" . ", APPLICATION_N_TRIPLES_TYPE));
 
         assertEquals(FORBIDDEN, res.getStatusInfo());
     }
@@ -302,8 +296,7 @@ public class LdpForbiddenResourceTest extends JerseyTest {
     @Test
     public void testPut1() {
         final Response res = target("repo1/resource").queryParam("ext", "acl").request()
-            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" . ",
-                    APPLICATION_N_TRIPLES_TYPE));
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" . ", APPLICATION_N_TRIPLES_TYPE));
 
         assertEquals(FORBIDDEN, res.getStatusInfo());
     }
@@ -311,8 +304,7 @@ public class LdpForbiddenResourceTest extends JerseyTest {
     @Test
     public void testPut2() {
         final Response res = target("repo1/resource").request()
-            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" . ",
-                    APPLICATION_N_TRIPLES_TYPE));
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" . ", APPLICATION_N_TRIPLES_TYPE));
 
         assertEquals(FORBIDDEN, res.getStatusInfo());
     }
