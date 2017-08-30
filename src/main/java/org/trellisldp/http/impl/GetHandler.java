@@ -56,6 +56,10 @@ import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeQuads;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.vocabulary.OA.annotationService;
+import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
+import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
+import static org.trellisldp.vocabulary.Trellis.multipartUploadService;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -90,8 +94,6 @@ import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
-import org.trellisldp.vocabulary.OA;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * The GET response builder
@@ -193,8 +195,8 @@ public class GetHandler extends BaseLdpHandler {
         }
 
         final Prefer prefer = ACL.equals(req.getExt()) ?
-            new Prefer("return=representation; include=\"" + Trellis.PreferAccessControl.getIRIString() + "\"; " +
-                    "omit=\"" + Trellis.PreferUserManaged.getIRIString() + " " +
+            new Prefer("return=representation; include=\"" + PreferAccessControl.getIRIString() + "\"; " +
+                    "omit=\"" + PreferUserManaged.getIRIString() + " " +
                         LDP.PreferContainment.getIRIString() + " " +
                         LDP.PreferMembership.getIRIString() + "\"") : req.getPrefer();
 
@@ -205,7 +207,7 @@ public class GetHandler extends BaseLdpHandler {
         if (!LDP.RDFSource.equals(res.getInteractionModel())) {
             binaryService.getResolverForPartition(req.getPartition())
                 .map(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
-                    builder.link(identifier + "?ext=" + UPLOADS, Trellis.multipartUploadService.getIRIString()));
+                    builder.link(identifier + "?ext=" + UPLOADS, multipartUploadService.getIRIString()));
         }
 
         if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
@@ -250,7 +252,7 @@ public class GetHandler extends BaseLdpHandler {
 
             // Add upload service headers, if relevant
             binaryService.getResolver(dsid).filter(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
-                    builder.link(identifier + "?ext=" + UPLOADS, Trellis.multipartUploadService.getIRIString()));
+                    builder.link(identifier + "?ext=" + UPLOADS, multipartUploadService.getIRIString()));
 
             // Add instance digests, if Requested and supported
             ofNullable(req.getWantDigest()).map(WantDigest::getAlgorithms).ifPresent(algs ->
@@ -332,7 +334,7 @@ public class GetHandler extends BaseLdpHandler {
         res.getTypes().forEach(type -> builder.link(type.getIRIString(), "type"));
         res.getInbox().map(IRI::getIRIString).ifPresent(inbox -> builder.link(inbox, "inbox"));
         res.getAnnotationService().map(IRI::getIRIString).ifPresent(svc ->
-                builder.link(svc, OA.annotationService.getIRIString()));
+                builder.link(svc, annotationService.getIRIString()));
 
         // Memento-related headers
         if (res.isMemento()) {

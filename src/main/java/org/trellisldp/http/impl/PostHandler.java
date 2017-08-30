@@ -28,6 +28,8 @@ import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
+import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
+import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.io.File;
 import java.net.URI;
@@ -55,7 +57,6 @@ import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
-import org.trellisldp.vocabulary.Trellis;
 import org.trellisldp.vocabulary.XSD;
 
 /**
@@ -117,14 +118,14 @@ public class PostHandler extends ContentBearingHandler {
             auditCreation(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
                 .forEach(dataset::add);
 
-            dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalId, RDF.type, ldpType));
+            dataset.add(rdf.createQuad(PreferServerManaged, internalId, RDF.type, ldpType));
 
             // Add user-supplied data
             if (nonNull(entity) && rdfSyntax.isPresent()) {
-                readEntityIntoDataset(identifier, baseUrl, Trellis.PreferUserManaged, rdfSyntax.get(), dataset);
+                readEntityIntoDataset(identifier, baseUrl, PreferUserManaged, rdfSyntax.get(), dataset);
 
                 // Check for any constraints
-                final Optional<String> constraint = checkConstraint(dataset, Trellis.PreferUserManaged, ldpType,
+                final Optional<String> constraint = checkConstraint(dataset, PreferUserManaged, ldpType,
                         baseUrl);
                 if (constraint.isPresent()) {
                     return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
@@ -141,10 +142,10 @@ public class PostHandler extends ContentBearingHandler {
                 final Map<String, String> metadata = new HashMap<>();
                 metadata.put(CONTENT_TYPE, ofNullable(contentType).orElse(APPLICATION_OCTET_STREAM));
                 final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(req.getPartition()).get());
-                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalId, DC.hasPart, binaryLocation));
-                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.format,
+                dataset.add(rdf.createQuad(PreferServerManaged, internalId, DC.hasPart, binaryLocation));
+                dataset.add(rdf.createQuad(PreferServerManaged, binaryLocation, DC.format,
                             rdf.createLiteral(ofNullable(contentType).orElse(APPLICATION_OCTET_STREAM))));
-                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.extent,
+                dataset.add(rdf.createQuad(PreferServerManaged, binaryLocation, DC.extent,
                             rdf.createLiteral(Long.toString(entity.length()), XSD.long_)));
 
                 // Persist the content

@@ -35,6 +35,7 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.http.impl.RdfUtils.getSyntax;
+import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +61,6 @@ import org.trellisldp.spi.IOService;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.PROV;
-import org.trellisldp.vocabulary.Trellis;
 import org.trellisldp.vocabulary.XSD;
 
 /**
@@ -154,17 +154,17 @@ public final class MementoResource {
         final IRI iri = rdf.createIRI(link.getUri().toString());
         final List<Quad> buffer = new ArrayList<>();
         if (link.getParams().containsKey(FROM)) {
-            buffer.add(rdf.createQuad(Trellis.PreferUserManaged, iri, PROV.startedAtTime,
+            buffer.add(rdf.createQuad(PreferUserManaged, iri, PROV.startedAtTime,
                         rdf.createLiteral(parse(link.getParams().get(FROM),
                                 RFC_1123_DATE_TIME).toString(), XSD.dateTime)));
         }
         if (link.getParams().containsKey(UNTIL)) {
-            buffer.add(rdf.createQuad(Trellis.PreferUserManaged, iri, PROV.endedAtTime,
+            buffer.add(rdf.createQuad(PreferUserManaged, iri, PROV.endedAtTime,
                         rdf.createLiteral(parse(link.getParams().get(UNTIL),
                                 RFC_1123_DATE_TIME).toString(), XSD.dateTime)));
         }
         if (MEMENTO.equals(link.getRel()) && link.getParams().containsKey(DATETIME)) {
-            buffer.add(rdf.createQuad(Trellis.PreferUserManaged, iri, PROV.atTime,
+            buffer.add(rdf.createQuad(PreferUserManaged, iri, PROV.atTime,
                         rdf.createLiteral(parse(link.getParams().get(DATETIME),
                                 RFC_1123_DATE_TIME).toString(), XSD.dateTime)));
         }

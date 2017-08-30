@@ -35,6 +35,8 @@ import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
+import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
+import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.util.Map;
 
@@ -48,7 +50,6 @@ import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * The OPTIONS response builder
@@ -80,7 +81,7 @@ public class OptionsHandler extends BaseLdpHandler {
 
         LOGGER.debug("OPTIONS request for {}", identifier);
 
-        final IRI graphName = ACL.equals(req.getExt()) ? Trellis.PreferAccessControl : Trellis.PreferUserManaged;
+        final IRI graphName = ACL.equals(req.getExt()) ? PreferAccessControl : PreferUserManaged;
 
         // Check if this is already deleted
         final ResponseBuilder deleted = checkDeleted(res, identifier);
@@ -100,7 +101,7 @@ public class OptionsHandler extends BaseLdpHandler {
             builder.header(ACCEPT_PATCH, APPLICATION_SPARQL_UPDATE);
             // ACL resources allow a limited set of methods (no DELETE or POST)
             // If it's not a container, POST isn't allowed
-            if (Trellis.PreferAccessControl.equals(graphName) || res.getInteractionModel().equals(LDP.RDFSource) ||
+            if (PreferAccessControl.equals(graphName) || res.getInteractionModel().equals(LDP.RDFSource) ||
                     res.getInteractionModel().equals(LDP.NonRDFSource)) {
                 builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH, PUT, DELETE));
             } else {

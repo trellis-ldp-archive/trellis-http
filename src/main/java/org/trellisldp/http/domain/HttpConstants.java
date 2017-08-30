@@ -16,12 +16,13 @@ package org.trellisldp.http.domain;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.stream.Collectors.toSet;
+import static org.trellisldp.vocabulary.LDP.PreferContainment;
+import static org.trellisldp.vocabulary.LDP.PreferMembership;
+import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.util.Set;
 
 import org.apache.commons.rdf.api.IRI;
-import org.trellisldp.vocabulary.LDP;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * A collection of constant values used by the Trellis HTTP layer
@@ -66,9 +67,8 @@ public final class HttpConstants {
 
     public static final String WANT_DIGEST = "Want-Digest";
 
-    public static final Set<String> DEFAULT_REPRESENTATION = unmodifiableSet(asList(
-            LDP.PreferContainment, LDP.PreferMembership, Trellis.PreferUserManaged).stream()
-        .map(IRI::getIRIString).collect(toSet()));
+    public static final Set<String> DEFAULT_REPRESENTATION = unmodifiableSet(asList(PreferContainment, PreferMembership,
+                PreferUserManaged).stream().map(IRI::getIRIString).collect(toSet()));
 
     private HttpConstants() {
         // prevent instantiation

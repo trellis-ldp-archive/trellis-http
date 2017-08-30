@@ -25,6 +25,7 @@ import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.RDF.type;
+import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 
 import com.codahale.metrics.annotation.Timed;
 
@@ -54,7 +55,6 @@ import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
-import org.trellisldp.vocabulary.Trellis;
 import org.trellisldp.vocabulary.XSD;
 
 /**
@@ -148,14 +148,13 @@ public class MultipartUploader {
                     // Add Audit quads
                     auditCreation(identifier, upload.getSession()).stream()
                         .map(skolemizeQuads(resourceService, upload.getBaseUrl())).forEach(dataset::add);
-                    dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, type, LDP.NonRDFSource));
-                    dataset.add(rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.hasPart,
+                    dataset.add(rdf.createQuad(PreferServerManaged, identifier, type, LDP.NonRDFSource));
+                    dataset.add(rdf.createQuad(PreferServerManaged, identifier, DC.hasPart,
                                 upload.getBinary().getIdentifier()));
-                    dataset.add(rdf.createQuad(Trellis.PreferServerManaged, upload.getBinary().getIdentifier(),
-                                DC.format,
+                    dataset.add(rdf.createQuad(PreferServerManaged, upload.getBinary().getIdentifier(), DC.format,
                                 rdf.createLiteral(upload.getBinary().getMimeType().orElse(APPLICATION_OCTET_STREAM))));
-                    upload.getBinary().getSize().ifPresent(size -> dataset.add(rdf.createQuad(
-                                    Trellis.PreferServerManaged, upload.getBinary().getIdentifier(), DC.extent,
+                    upload.getBinary().getSize().ifPresent(size -> dataset.add(rdf.createQuad(PreferServerManaged,
+                                    upload.getBinary().getIdentifier(), DC.extent,
                                     rdf.createLiteral(size.toString(), XSD.long_))));
 
                     if (resourceService.put(identifier, dataset)) {

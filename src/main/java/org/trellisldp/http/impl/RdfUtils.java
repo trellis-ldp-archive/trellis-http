@@ -20,6 +20,7 @@ import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.spi.RDFUtils.toExternalTerm;
 import static org.trellisldp.spi.RDFUtils.toInternalTerm;
+import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.util.HashSet;
 import java.util.List;
@@ -41,7 +42,6 @@ import org.apache.commons.rdf.api.Triple;
 
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * RDF Utility functions
@@ -96,7 +96,7 @@ public final class RdfUtils {
      * @return a mapping function
      */
     public static Function<Quad, Quad> unskolemizeQuads(final ResourceService svc, final String baseUrl) {
-        return quad -> rdf.createQuad(quad.getGraphName().orElse(Trellis.PreferUserManaged),
+        return quad -> rdf.createQuad(quad.getGraphName().orElse(PreferUserManaged),
                     (BlankNodeOrIRI) toExternalTerm(svc.unskolemize(quad.getSubject()), baseUrl),
                     quad.getPredicate(), toExternalTerm(svc.unskolemize(quad.getObject()), baseUrl));
     }
@@ -108,7 +108,7 @@ public final class RdfUtils {
      * @return a mapping function
      */
     public static Function<Quad, Quad> skolemizeQuads(final ResourceService svc, final String baseUrl) {
-        return quad -> rdf.createQuad(quad.getGraphName().orElse(Trellis.PreferUserManaged),
+        return quad -> rdf.createQuad(quad.getGraphName().orElse(PreferUserManaged),
                 (BlankNodeOrIRI) toInternalTerm(svc.skolemize(quad.getSubject()), baseUrl), quad.getPredicate(),
                 toInternalTerm(svc.skolemize(quad.getObject()), baseUrl));
     }

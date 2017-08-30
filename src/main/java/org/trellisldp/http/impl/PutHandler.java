@@ -29,6 +29,9 @@ import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
+import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
+import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
+import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.io.File;
 import java.net.URI;
@@ -62,7 +65,6 @@ import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
-import org.trellisldp.vocabulary.Trellis;
 import org.trellisldp.vocabulary.XSD;
 
 /**
@@ -139,15 +141,15 @@ public class PutHandler extends ContentBearingHandler {
         final IRI internalId = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 
         try (final Dataset dataset = rdf.createDataset()) {
-            final IRI graphName = ACL.equals(req.getExt()) ? Trellis.PreferAccessControl : Trellis.PreferUserManaged;
-            final IRI otherGraph = ACL.equals(req.getExt()) ? Trellis.PreferUserManaged : Trellis.PreferAccessControl;
+            final IRI graphName = ACL.equals(req.getExt()) ? PreferAccessControl : PreferUserManaged;
+            final IRI otherGraph = ACL.equals(req.getExt()) ? PreferUserManaged : PreferAccessControl;
 
             // Add audit quads
             auditUpdate(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
                 .forEach(dataset::add);
 
             // Add LDP type
-            dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalId, RDF.type, ldpType));
+            dataset.add(rdf.createQuad(PreferServerManaged, internalId, RDF.type, ldpType));
 
             // Add user-supplied data
             if (nonNull(entity) && rdfSyntax.isPresent()) {
@@ -173,10 +175,10 @@ public class PutHandler extends ContentBearingHandler {
                 // Persist the content
                 persistContent(binaryLocation, metadata);
 
-                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, internalId, DC.hasPart, binaryLocation));
-                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.format,
+                dataset.add(rdf.createQuad(PreferServerManaged, internalId, DC.hasPart, binaryLocation));
+                dataset.add(rdf.createQuad(PreferServerManaged, binaryLocation, DC.format,
                             rdf.createLiteral(ofNullable(req.getContentType()).orElse(APPLICATION_OCTET_STREAM))));
-                dataset.add(rdf.createQuad(Trellis.PreferServerManaged, binaryLocation, DC.extent,
+                dataset.add(rdf.createQuad(PreferServerManaged, binaryLocation, DC.extent,
                             rdf.createLiteral(Long.toString(entity.length()), XSD.long_)));
             }
 
