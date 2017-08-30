@@ -32,7 +32,6 @@ import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.ok;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
-import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
@@ -56,11 +55,11 @@ import static org.trellisldp.http.domain.Prefer.PREFER_RETURN;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 import static org.trellisldp.http.impl.RdfUtils.filterWithPrefer;
+import static org.trellisldp.http.impl.RdfUtils.getDefaultProfile;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeQuads;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
-import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.OA.annotationService;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
@@ -97,7 +96,6 @@ import org.trellisldp.http.domain.WantDigest;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 
 /**
@@ -222,8 +220,7 @@ public class GetHandler extends BaseLdpHandler {
         try (final Stream<Quad> stream = res.stream().filter(filterWithPrefer(prefer))
                 .map(unskolemizeQuads(resourceService, req.getBaseUrl(partitions)))) {
             return builder.entity(ResourceStreamer.quadStreamer(ioService, stream,
-                    syntax, ofNullable(profile).orElseGet(() ->
-                        RDFA_HTML.equals(syntax) ? getInstance().createIRI(identifier) : JSONLD.expanded)));
+                    syntax, ofNullable(profile).orElseGet(() -> getDefaultProfile(syntax, identifier))));
         } catch (final Exception ex) {
             throw new WebApplicationException("Unable to process graph data: " + ex.getMessage());
         }

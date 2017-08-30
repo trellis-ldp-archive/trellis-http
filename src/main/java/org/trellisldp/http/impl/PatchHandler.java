@@ -24,11 +24,12 @@ import static javax.ws.rs.core.Response.ok;
 import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
-import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.http.domain.Prefer.PREFER_REPRESENTATION;
+import static org.trellisldp.http.impl.RdfUtils.getDefaultProfile;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
@@ -67,7 +68,6 @@ import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.RuntimeRepositoryException;
 import org.trellisldp.spi.Session;
-import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
 
@@ -194,22 +194,16 @@ public class PatchHandler extends BaseLdpHandler {
                 ldpResourceTypes(res.getInteractionModel()).map(IRI::getIRIString)
                     .forEach(type -> builder.link(type, "type"));
 
-                if (ofNullable(req.getPrefer()).flatMap(Prefer::getPreference).filter("representation"::equals)
-                        .isPresent()) {
-                    final RDFSyntax syntax = getSyntax(req.getHeaders().getAcceptableMediaTypes(), empty())
-                        .orElseThrow(NotAcceptableException::new);
-                    final IRI profile = getProfile(req.getHeaders().getAcceptableMediaTypes(), syntax);
-                    builder.header(PREFERENCE_APPLIED, "return=representation")
-                           .type(syntax.mediaType)
-                           .entity(ResourceStreamer.tripleStreamer(ioService,
-                                triples.stream().map(unskolemizeTriples(resourceService, baseUrl)),
-                                syntax, ofNullable(profile).orElseGet(() ->
-                                    RDFA_HTML.equals(syntax) ? rdf.createIRI(identifier) : JSONLD.expanded)));
-                } else {
-                    return builder.status(NO_CONTENT);
-                }
-
-                return builder;
+                return ofNullable(req.getPrefer()).flatMap(Prefer::getPreference).filter(PREFER_REPRESENTATION::equals)
+                    .map(prefer -> {
+                        final RDFSyntax syntax = getSyntax(req.getHeaders().getAcceptableMediaTypes(), empty())
+                            .orElseThrow(NotAcceptableException::new);
+                        return builder.header(PREFERENCE_APPLIED, "return=representation").type(syntax.mediaType)
+                               .entity(ResourceStreamer.tripleStreamer(ioService, triples.stream()
+                                       .map(unskolemizeTriples(resourceService, baseUrl)), syntax,
+                                           ofNullable(getProfile(req.getHeaders().getAcceptableMediaTypes(), syntax))
+                                               .orElseGet(() -> getDefaultProfile(syntax, identifier))));
+                    }).orElseGet(() -> builder.status(NO_CONTENT));
             }
         } catch (final Exception ex) {
             LOGGER.error("Error handling dataset: {}", ex.getMessage());

@@ -16,6 +16,7 @@ package org.trellisldp.http.impl;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
+import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.trellisldp.http.domain.HttpConstants.DEFAULT_REPRESENTATION;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
@@ -23,6 +24,7 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.spi.RDFUtils.toExternalTerm;
 import static org.trellisldp.spi.RDFUtils.toInternalTerm;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
+import static org.trellisldp.vocabulary.JSONLD.expanded;
 
 import java.util.HashSet;
 import java.util.List;
@@ -159,6 +161,26 @@ public final class RdfUtils {
             }
         }
         return null;
+    }
+
+    /**
+     * Get a default profile IRI from the syntax and/or identifier
+     * @param syntax the RDF syntax
+     * @param identifier the resource identifier
+     * @return a profile IRI usable by the output streamer
+     */
+    public static IRI getDefaultProfile(final RDFSyntax syntax, final String identifier) {
+        return getDefaultProfile(syntax, rdf.createIRI(identifier));
+    }
+
+    /**
+     * Get a default profile IRI from the syntax and/or identifier
+     * @param syntax the RDF syntax
+     * @param identifier the resource identifier
+     * @return a profile IRI usable by the output streamer
+     */
+    public static IRI getDefaultProfile(final RDFSyntax syntax, final IRI identifier) {
+        return RDFA_HTML.equals(syntax) ? identifier : expanded;
     }
 
     private RdfUtils() {

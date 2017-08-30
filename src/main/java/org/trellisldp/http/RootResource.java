@@ -21,12 +21,12 @@ import static javax.ws.rs.HttpMethod.OPTIONS;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static javax.ws.rs.core.Response.ok;
-import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
+import static org.trellisldp.http.impl.RdfUtils.getDefaultProfile;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 
@@ -56,7 +56,6 @@ import org.slf4j.Logger;
 import org.trellisldp.http.impl.ResourceStreamer;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.vocabulary.DC;
-import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
 import org.trellisldp.vocabulary.RDFS;
@@ -122,7 +121,7 @@ public class RootResource extends BaseLdpResource {
                     .type(syntax.mediaType)
                     .entity(ResourceStreamer.tripleStreamer(ioService, graph.stream().map(x -> (Triple) x),
                         syntax, ofNullable(getProfile(headers.getAcceptableMediaTypes(), syntax)).orElseGet(() ->
-                            RDFA_HTML.equals(syntax) ? identifier : JSONLD.expanded)))
+                            getDefaultProfile(syntax, identifier))))
                     .build();
     }
 
