@@ -23,6 +23,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.RDFUtils.auditDeletion;
+import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -31,14 +32,12 @@ import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Triple;
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.Session;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * The DELETE response builder
@@ -87,15 +86,17 @@ public class DeleteHandler extends BaseLdpHandler {
         LOGGER.debug("Deleting {}", identifier);
 
         try (final Dataset dataset = rdf.createDataset()) {
-            final IRI otherGraph = ACL.equals(req.getExt()) ? Trellis.PreferUserManaged : Trellis.PreferAccessControl;
 
             // Add the audit quads
             auditDeletion(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
                 .forEach(dataset::add);
 
-            try (final Stream<Triple> remaining = res.stream(otherGraph)) {
-                remaining.map(t -> rdf.createQuad(otherGraph, t.getSubject(), t.getPredicate(), t.getObject()))
-                    .forEach(dataset::add);
+            // When deleting just the ACL graph, keep the user managed triples in tact
+            if (ACL.equals(req.getExt())) {
+                try (final Stream<Triple> triples = res.stream(PreferUserManaged)) {
+                    triples.map(t -> rdf.createQuad(PreferUserManaged, t.getSubject(), t.getPredicate(), t.getObject()))
+                        .forEach(dataset::add);
+                }
             }
 
             // delete the resource

@@ -36,6 +36,9 @@ import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeTriples;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
+import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
+import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
+import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +70,6 @@ import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.JSONLD;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * The PATCH response builder
@@ -149,8 +151,8 @@ public class PatchHandler extends BaseLdpHandler {
 
         LOGGER.debug("Updating {} via PATCH", identifier);
 
-        final IRI graphName = ACL.equals(req.getExt()) ? Trellis.PreferAccessControl : Trellis.PreferUserManaged;
-        final IRI otherGraph = ACL.equals(req.getExt()) ? Trellis.PreferUserManaged : Trellis.PreferAccessControl;
+        final IRI graphName = ACL.equals(req.getExt()) ? PreferAccessControl : PreferUserManaged;
+        final IRI otherGraph = ACL.equals(req.getExt()) ? PreferUserManaged : PreferAccessControl;
 
         // Put triples in buffer
         final List<Triple> triples = updateGraph(res, graphName);
@@ -166,8 +168,7 @@ public class PatchHandler extends BaseLdpHandler {
                 .forEach(dataset::add);
 
             // Add existing LDP type
-            dataset.add(rdf.createQuad(Trellis.PreferServerManaged, res.getIdentifier(), RDF.type,
-                        res.getInteractionModel()));
+            dataset.add(rdf.createQuad(PreferServerManaged, res.getIdentifier(), RDF.type, res.getInteractionModel()));
 
             // Check any constraints
             final Optional<String> constraint = dataset.getGraph(graphName)
@@ -177,6 +178,7 @@ public class PatchHandler extends BaseLdpHandler {
                 return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
             }
 
+            // When updating User or ACL triples, be sure to add the other category to the dataset
             try (final Stream<Triple> remaining = res.stream(otherGraph)) {
                 remaining.map(t -> rdf.createQuad(otherGraph, t.getSubject(), t.getPredicate(), t.getObject()))
                     .forEach(dataset::add);
