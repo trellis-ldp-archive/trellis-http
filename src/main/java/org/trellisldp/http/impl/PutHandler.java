@@ -161,6 +161,7 @@ public class PutHandler extends ContentBearingHandler {
                 if (constraint.isPresent()) {
                     return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
                 }
+
             } else if (nonNull(entity)) {
                 // Check the expected digest value
                 final Digest digest = req.getDigest();

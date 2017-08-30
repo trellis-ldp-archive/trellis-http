@@ -20,7 +20,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Instant;
-import java.util.Optional;
 
 import org.junit.Test;
 import org.trellisldp.spi.Session;
@@ -36,7 +35,7 @@ public class HttpSessionTest {
         final Instant time = now();
         final Session session = new HttpSession();
         assertEquals(Trellis.AnonymousUser, session.getAgent());
-        assertEquals(Optional.empty(), session.getDelegatedBy());
+        assertFalse(session.getDelegatedBy().isPresent());
         assertTrue(session.getIdentifier().getIRIString().startsWith("trellis:session/"));
         final Session session2 = new HttpSession();
         assertNotEquals(session.getIdentifier(), session2.getIdentifier());

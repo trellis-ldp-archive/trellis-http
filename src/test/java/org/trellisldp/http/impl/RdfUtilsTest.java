@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
@@ -74,7 +75,7 @@ public class RdfUtilsTest {
 
     @Test
     public void testGetSyntaxEmpty() {
-        assertEquals(empty(), RdfUtils.getSyntax(emptyList(), of("some/type")));
+        assertFalse(RdfUtils.getSyntax(emptyList(), of("some/type")).isPresent());
         assertEquals(of(TURTLE), RdfUtils.getSyntax(emptyList(), empty()));
     }
 
@@ -85,7 +86,7 @@ public class RdfUtilsTest {
                 new MediaType("text", "xml"),
                 new MediaType("text", "turtle"));
 
-        assertEquals(empty(), RdfUtils.getSyntax(types, of("application/json")));
+        assertFalse(RdfUtils.getSyntax(types, of("application/json")).isPresent());
     }
 
     @Test(expected = NotAcceptableException.class)
