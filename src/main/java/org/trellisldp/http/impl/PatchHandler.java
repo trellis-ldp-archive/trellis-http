@@ -134,7 +134,7 @@ public class PatchHandler extends BaseLdpHandler {
         if (isNull(sparqlUpdate)) {
             throw new WebApplicationException("Missing Sparql-Update body", BAD_REQUEST);
         }
-        final Session session = ofNullable(req.getSession()).orElse(new HttpSession());
+        final Session session = ofNullable(req.getSession()).orElseGet(HttpSession::new);
 
         // Check if this is already deleted
         final ResponseBuilder deleted = checkDeleted(res, identifier);

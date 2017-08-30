@@ -35,6 +35,8 @@ import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
+import static org.trellisldp.vocabulary.LDP.NonRDFSource;
+import static org.trellisldp.vocabulary.LDP.RDFSource;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
@@ -49,7 +51,6 @@ import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.vocabulary.LDP;
 
 /**
  * The OPTIONS response builder
@@ -101,8 +102,8 @@ public class OptionsHandler extends BaseLdpHandler {
             builder.header(ACCEPT_PATCH, APPLICATION_SPARQL_UPDATE);
             // ACL resources allow a limited set of methods (no DELETE or POST)
             // If it's not a container, POST isn't allowed
-            if (PreferAccessControl.equals(graphName) || res.getInteractionModel().equals(LDP.RDFSource) ||
-                    res.getInteractionModel().equals(LDP.NonRDFSource)) {
+            if (PreferAccessControl.equals(graphName) || res.getInteractionModel().equals(RDFSource) ||
+                    res.getInteractionModel().equals(NonRDFSource)) {
                 builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH, PUT, DELETE));
             } else {
                 // Containers and binaries support POST

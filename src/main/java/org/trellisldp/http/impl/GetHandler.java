@@ -48,6 +48,11 @@ import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.RANGE;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.HttpConstants.WANT_DIGEST;
+import static org.trellisldp.http.domain.Prefer.PREFER_INCLUDE;
+import static org.trellisldp.http.domain.Prefer.PREFER_MINIMAL;
+import static org.trellisldp.http.domain.Prefer.PREFER_OMIT;
+import static org.trellisldp.http.domain.Prefer.PREFER_REPRESENTATION;
+import static org.trellisldp.http.domain.Prefer.PREFER_RETURN;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 import static org.trellisldp.http.impl.RdfUtils.filterWithPrefer;
@@ -195,13 +200,13 @@ public class GetHandler extends BaseLdpHandler {
         }
 
         final Prefer prefer = ACL.equals(req.getExt()) ?
-            new Prefer("return=representation; include=\"" + PreferAccessControl.getIRIString() + "\"; " +
-                    "omit=\"" + PreferUserManaged.getIRIString() + " " +
-                        LDP.PreferContainment.getIRIString() + " " +
-                        LDP.PreferMembership.getIRIString() + "\"") : req.getPrefer();
+            new Prefer(join("=", PREFER_RETURN, PREFER_REPRESENTATION) + "; " + PREFER_INCLUDE + "=\"" +
+                    PreferAccessControl.getIRIString() + "\"; " + PREFER_OMIT + "=\"" +
+                    PreferUserManaged.getIRIString() + " " + LDP.PreferContainment.getIRIString() + " " +
+                    LDP.PreferMembership.getIRIString() + "\"") : req.getPrefer();
 
-        ofNullable(prefer).ifPresent(p ->
-                builder.header(PREFERENCE_APPLIED, "return=" + p.getPreference().orElse("representation")));
+        ofNullable(prefer).ifPresent(p -> builder.header(PREFERENCE_APPLIED, PREFER_RETURN + "=" + p.getPreference()
+                    .orElse(PREFER_REPRESENTATION)));
 
         // Add upload service headers, if relevant
         if (!LDP.RDFSource.equals(res.getInteractionModel())) {
@@ -210,7 +215,7 @@ public class GetHandler extends BaseLdpHandler {
                     builder.link(identifier + "?ext=" + UPLOADS, multipartUploadService.getIRIString()));
         }
 
-        if (ofNullable(prefer).flatMap(Prefer::getPreference).filter("minimal"::equals).isPresent()) {
+        if (ofNullable(prefer).flatMap(Prefer::getPreference).filter(PREFER_MINIMAL::equals).isPresent()) {
             return builder.status(NO_CONTENT);
         }
 

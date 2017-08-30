@@ -24,6 +24,7 @@ import static org.trellisldp.http.domain.HttpConstants.UPLOAD_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.vocabulary.LDP.NonRDFSource;
 import static org.trellisldp.vocabulary.RDF.type;
 import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 
@@ -54,7 +55,6 @@ import org.slf4j.Logger;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.DC;
-import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.XSD;
 
 /**
@@ -148,7 +148,7 @@ public class MultipartUploader {
                     // Add Audit quads
                     auditCreation(identifier, upload.getSession()).stream()
                         .map(skolemizeQuads(resourceService, upload.getBaseUrl())).forEach(dataset::add);
-                    dataset.add(rdf.createQuad(PreferServerManaged, identifier, type, LDP.NonRDFSource));
+                    dataset.add(rdf.createQuad(PreferServerManaged, identifier, type, NonRDFSource));
                     dataset.add(rdf.createQuad(PreferServerManaged, identifier, DC.hasPart,
                                 upload.getBinary().getIdentifier()));
                     dataset.add(rdf.createQuad(PreferServerManaged, upload.getBinary().getIdentifier(), DC.format,

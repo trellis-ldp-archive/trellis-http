@@ -16,6 +16,7 @@ package org.trellisldp.http;
 import static java.util.Objects.isNull;
 import static javax.ws.rs.Priorities.AUTHENTICATION;
 import static org.trellisldp.http.domain.HttpConstants.SESSION_PROPERTY;
+import static org.trellisldp.vocabulary.Trellis.RepositoryAdministrator;
 
 import java.io.IOException;
 
@@ -27,7 +28,6 @@ import javax.ws.rs.core.SecurityContext;
 
 import org.trellisldp.http.impl.HttpSession;
 import org.trellisldp.spi.AgentService;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -55,7 +55,7 @@ public class AgentAuthorizationFilter implements ContainerRequestFilter {
         if (isNull(sec.getUserPrincipal())) {
             ctx.setProperty(SESSION_PROPERTY, new HttpSession());
         } else if (sec.isUserInRole(adminRole)) {
-            ctx.setProperty(SESSION_PROPERTY, new HttpSession(Trellis.RepositoryAdministrator));
+            ctx.setProperty(SESSION_PROPERTY, new HttpSession(RepositoryAdministrator));
         } else {
             ctx.setProperty(SESSION_PROPERTY, new HttpSession(agentService.asAgent(sec.getUserPrincipal().getName())));
         }

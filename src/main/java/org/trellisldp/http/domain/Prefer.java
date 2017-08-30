@@ -13,15 +13,16 @@
  */
 package org.trellisldp.http.domain;
 
+import static java.lang.String.join;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +42,24 @@ import javax.ws.rs.WebApplicationException;
  * <a href="https://www.iana.org/assignments/http-parameters/http-parameters.xhtml#preferences">IANA values</a>
  */
 public class Prefer {
+
+    public static final String PREFER_REPRESENTATION = "representation";
+
+    public static final String PREFER_MINIMAL = "minimal";
+
+    public static final String PREFER_STRICT = "strict";
+
+    public static final String PREFER_LENIENT = "lenient";
+
+    public static final String PREFER_RETURN = "return";
+
+    public static final String PREFER_INCLUDE = "include";
+
+    public static final String PREFER_OMIT = "omit";
+
+    public static final String PREFER_HANDLING = "handling";
+
+    public static final String PREFER_WAIT = "wait";
 
     private final Optional<String> preference;
 
@@ -73,11 +92,13 @@ public class Prefer {
             throw new WebApplicationException(BAD_REQUEST);
         }
 
-        this.preference = ofNullable(data.get("return")).filter(x -> x.equals("minimal") || x.equals("representation"));
-        this.handling = ofNullable(data.get("handling")).filter(x -> x.equals("lenient") || x.equals("strict"));
-        this.wait = ofNullable(data.get("wait")).map(Integer::parseInt);
-        this.omit = parseParameter(data.get("omit"));
-        this.include = parseParameter(data.get("include"));
+        this.preference = ofNullable(data.get(PREFER_RETURN))
+            .filter(x -> x.equals(PREFER_MINIMAL) || x.equals(PREFER_REPRESENTATION));
+        this.handling = ofNullable(data.get(PREFER_HANDLING))
+            .filter(x -> x.equals(PREFER_LENIENT) || x.equals(PREFER_STRICT));
+        this.wait = ofNullable(data.get(PREFER_WAIT)).map(Integer::parseInt);
+        this.omit = parseParameter(data.get(PREFER_OMIT));
+        this.include = parseParameter(data.get(PREFER_INCLUDE));
     }
 
     /**
@@ -137,7 +158,7 @@ public class Prefer {
     }
 
     private static List<String> parseParameter(final String param) {
-        return ofNullable(param).map(trimQuotes).map(val -> asList(val.split("\\s+"))).orElse(emptyList());
+        return ofNullable(param).map(trimQuotes).map(x -> asList(x.split("\\s+"))).orElseGet(Collections::emptyList);
     }
 
     private static Function<String, String> trimQuotes = param ->
@@ -152,9 +173,9 @@ public class Prefer {
     public static Prefer ofInclude(final String... includes) {
         final List<String> iris = asList(includes);
         if (iris.isEmpty()) {
-            return new Prefer("return=representation");
+            return new Prefer(join("=", PREFER_RETURN, PREFER_REPRESENTATION));
         }
-        return new Prefer("return=representation; include=\"" +
+        return new Prefer(join("=", PREFER_RETURN, PREFER_REPRESENTATION) + "; " + PREFER_INCLUDE + "=\"" +
                 iris.stream().collect(joining(" ")) + "\"");
     }
 
@@ -166,9 +187,9 @@ public class Prefer {
     public static Prefer ofOmit(final String... omits) {
         final List<String> iris = asList(omits);
         if (iris.isEmpty()) {
-            return new Prefer("return=representation");
+            return new Prefer(join("=", PREFER_RETURN, PREFER_REPRESENTATION));
         }
-        return new Prefer("return=representation; omit=\"" +
+        return new Prefer(join("=", PREFER_RETURN, PREFER_REPRESENTATION) + "; " + PREFER_OMIT + "=\"" +
                 iris.stream().collect(joining(" ")) + "\"");
     }
 }

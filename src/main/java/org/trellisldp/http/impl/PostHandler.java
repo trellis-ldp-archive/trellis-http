@@ -97,7 +97,7 @@ public class PostHandler extends ContentBearingHandler {
         final String baseUrl = req.getBaseUrl(partitions);
         final String identifier = baseUrl + req.getPartition() + req.getPath() + id;
         final String contentType = req.getContentType();
-        final Session session = ofNullable(req.getSession()).orElse(new HttpSession());
+        final Session session = ofNullable(req.getSession()).orElseGet(HttpSession::new);
 
         LOGGER.info("Creating resource as {}", identifier);
 

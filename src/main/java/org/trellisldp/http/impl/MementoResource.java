@@ -23,7 +23,6 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
-import static java.util.stream.Stream.empty;
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.HEAD;
 import static javax.ws.rs.HttpMethod.OPTIONS;
@@ -35,7 +34,14 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.http.impl.RdfUtils.getSyntax;
+import static org.trellisldp.vocabulary.JSONLD.expanded;
+import static org.trellisldp.vocabulary.LDP.RDFSource;
+import static org.trellisldp.vocabulary.LDP.Resource;
+import static org.trellisldp.vocabulary.PROV.atTime;
+import static org.trellisldp.vocabulary.PROV.endedAtTime;
+import static org.trellisldp.vocabulary.PROV.startedAtTime;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
+import static org.trellisldp.vocabulary.XSD.dateTime;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,10 +64,6 @@ import org.trellisldp.api.Resource;
 import org.trellisldp.api.VersionRange;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.IOService;
-import org.trellisldp.vocabulary.JSONLD;
-import org.trellisldp.vocabulary.LDP;
-import org.trellisldp.vocabulary.PROV;
-import org.trellisldp.vocabulary.XSD;
 
 /**
  * @author acoburn
@@ -110,14 +112,14 @@ public final class MementoResource {
         final List<Link> links = getMementoLinks(identifier, resource.getMementos()).collect(toList());
         builder.links(links.toArray(new Link[0]))
                .header(ALLOW, join(",", GET, HEAD, OPTIONS));
-        builder.link(LDP.Resource.getIRIString(), "type");
-        builder.link(LDP.RDFSource.getIRIString(), "type");
+        builder.link(Resource.getIRIString(), "type");
+        builder.link(RDFSource.getIRIString(), "type");
         final Optional<RDFSyntax> syntax = getSyntax(acceptableTypes, of(APPLICATION_LINK_FORMAT));
         if (syntax.isPresent()) {
             final IRI profile = getProfile(acceptableTypes, syntax.get());
             builder.type(syntax.get().mediaType);
             builder.entity(ResourceStreamer.quadStreamer(serializer, links.stream().flatMap(linkToQuads),
-                        syntax.get(), ofNullable(profile).orElse(JSONLD.expanded)));
+                        syntax.get(), ofNullable(profile).orElse(expanded)));
         } else {
             builder.type(APPLICATION_LINK_FORMAT);
             builder.entity(links.stream().map(Link::toString).collect(joining(",\n")) + "\n");
@@ -154,19 +156,16 @@ public final class MementoResource {
         final IRI iri = rdf.createIRI(link.getUri().toString());
         final List<Quad> buffer = new ArrayList<>();
         if (link.getParams().containsKey(FROM)) {
-            buffer.add(rdf.createQuad(PreferUserManaged, iri, PROV.startedAtTime,
-                        rdf.createLiteral(parse(link.getParams().get(FROM),
-                                RFC_1123_DATE_TIME).toString(), XSD.dateTime)));
+            buffer.add(rdf.createQuad(PreferUserManaged, iri, startedAtTime, rdf.createLiteral(parse(
+                                link.getParams().get(FROM), RFC_1123_DATE_TIME).toString(), dateTime)));
         }
         if (link.getParams().containsKey(UNTIL)) {
-            buffer.add(rdf.createQuad(PreferUserManaged, iri, PROV.endedAtTime,
-                        rdf.createLiteral(parse(link.getParams().get(UNTIL),
-                                RFC_1123_DATE_TIME).toString(), XSD.dateTime)));
+            buffer.add(rdf.createQuad(PreferUserManaged, iri, endedAtTime, rdf.createLiteral(parse(
+                                link.getParams().get(UNTIL), RFC_1123_DATE_TIME).toString(), dateTime)));
         }
         if (MEMENTO.equals(link.getRel()) && link.getParams().containsKey(DATETIME)) {
-            buffer.add(rdf.createQuad(PreferUserManaged, iri, PROV.atTime,
-                        rdf.createLiteral(parse(link.getParams().get(DATETIME),
-                                RFC_1123_DATE_TIME).toString(), XSD.dateTime)));
+            buffer.add(rdf.createQuad(PreferUserManaged, iri, atTime, rdf.createLiteral(parse(
+                                link.getParams().get(DATETIME), RFC_1123_DATE_TIME).toString(), dateTime)));
         }
         return buffer.stream();
     };
@@ -178,7 +177,7 @@ public final class MementoResource {
                         .param(FROM, ofInstant(x.getFrom(), UTC).format(RFC_1123_DATE_TIME))
                         .param(UNTIL, ofInstant(x.getUntil(), UTC).format(RFC_1123_DATE_TIME)).build())
                 // TODO use Optional::stream with JDK9
-                .map(Stream::of).orElse(empty());
+                .map(Stream::of).orElseGet(Stream::empty);
     }
 
     private static Function<VersionRange, Link> mementoToLink(final String identifier) {

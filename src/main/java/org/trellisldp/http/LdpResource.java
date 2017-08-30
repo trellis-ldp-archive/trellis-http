@@ -31,6 +31,7 @@ import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.HttpConstants.UPLOAD_PREFIX;
 import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
+import static org.trellisldp.vocabulary.Trellis.DeletedResource;
 
 import com.codahale.metrics.annotation.Timed;
 
@@ -68,7 +69,6 @@ import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -254,7 +254,7 @@ public class LdpResource extends BaseLdpResource {
                 return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path + identifier), MAX)
                     .map(x -> status(CONFLICT)).orElseGet(postHandler::createResource).build();
            } else if (ixModel.filter(LDP.Resource::equals).isPresent() &&
-                    parent.get().getTypes().contains(Trellis.DeletedResource)) {
+                    parent.get().getTypes().contains(DeletedResource)) {
                 return status(GONE).build();
             }
             return status(METHOD_NOT_ALLOWED).build();

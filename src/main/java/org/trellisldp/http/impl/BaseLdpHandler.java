@@ -22,6 +22,8 @@ import static org.apache.commons.rdf.api.RDFSyntax.NTRIPLES;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.vocabulary.LDP.Resource;
+import static org.trellisldp.vocabulary.Trellis.DeletedResource;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,8 +40,6 @@ import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.ResourceService;
-import org.trellisldp.vocabulary.LDP;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -76,7 +76,7 @@ public class BaseLdpHandler {
      * @return if the resource has been deleted, return an HTTP response builder, otherwise null
      */
     protected ResponseBuilder checkDeleted(final Resource res, final String identifier) {
-       if (LDP.Resource.equals(res.getInteractionModel()) && res.getTypes().contains(Trellis.DeletedResource)) {
+       if (Resource.equals(res.getInteractionModel()) && res.getTypes().contains(DeletedResource)) {
             return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
                     .toArray(Link[]::new));
         }

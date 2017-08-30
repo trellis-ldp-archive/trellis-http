@@ -68,7 +68,7 @@ public class DeleteHandler extends BaseLdpHandler {
         final String baseUrl = req.getBaseUrl(partitions);
         final String identifier = baseUrl + req.getPartition() + req.getPath();
 
-        final Session session = ofNullable(req.getSession()).orElse(new HttpSession());
+        final Session session = ofNullable(req.getSession()).orElseGet(HttpSession::new);
 
         // Check if this is already deleted
         final ResponseBuilder deleted = checkDeleted(res, identifier);

@@ -128,7 +128,7 @@ public class PutHandler extends ContentBearingHandler {
             return cache;
         }
 
-        final Session session = ofNullable(req.getSession()).orElse(new HttpSession());
+        final Session session = ofNullable(req.getSession()).orElseGet(HttpSession::new);
         final Optional<RDFSyntax> rdfSyntax = ofNullable(req.getContentType()).flatMap(RDFSyntax::byMediaType)
             .filter(SUPPORTED_RDF_TYPES::contains);
 

@@ -17,6 +17,7 @@ import static java.time.Instant.now;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.vocabulary.Trellis.AnonymousUser;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -24,7 +25,6 @@ import java.util.Optional;
 import org.apache.commons.rdf.api.IRI;
 
 import org.trellisldp.spi.Session;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -59,7 +59,7 @@ public class HttpSession implements Session {
      * Create an HTTP-based session
      */
     public HttpSession() {
-        this(Trellis.AnonymousUser);
+        this(AnonymousUser);
     }
 
     @Override
