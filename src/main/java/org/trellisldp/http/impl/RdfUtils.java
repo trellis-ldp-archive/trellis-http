@@ -13,6 +13,8 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.trellisldp.http.domain.HttpConstants.DEFAULT_REPRESENTATION;
@@ -123,15 +125,15 @@ public final class RdfUtils {
             final Optional<String> mimeType) {
         if (acceptableTypes.isEmpty()) {
             if (mimeType.isPresent()) {
-                return Optional.empty();
+                return empty();
             }
-            return Optional.of(TURTLE);
+            return of(TURTLE);
         }
 
         final Optional<MediaType> mt = mimeType.map(MediaType::valueOf);
         for (final MediaType type : acceptableTypes) {
             if (mt.filter(type::isCompatible).isPresent()) {
-                return Optional.empty();
+                return empty();
             }
             final Optional<RDFSyntax> syntax = VARIANTS.stream().map(Variant::getMediaType).filter(type::isCompatible)
                 .findFirst().map(MediaType::toString).flatMap(RDFSyntax::byMediaType);

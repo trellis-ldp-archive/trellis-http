@@ -17,6 +17,7 @@ import static java.lang.String.join;
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toSet;
 import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.HttpHeaders.WWW_AUTHENTICATE;
@@ -137,21 +138,21 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
         when(mockVersionedResource.getMementos()).thenReturn(emptyList());
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockVersionedResource.getModified()).thenReturn(time);
-        when(mockVersionedResource.getBinary()).thenReturn(Optional.empty());
+        when(mockVersionedResource.getBinary()).thenReturn(empty());
         when(mockVersionedResource.isMemento()).thenReturn(true);
         when(mockVersionedResource.getIdentifier()).thenReturn(identifier);
-        when(mockVersionedResource.getInbox()).thenReturn(Optional.empty());
-        when(mockVersionedResource.getAnnotationService()).thenReturn(Optional.empty());
+        when(mockVersionedResource.getInbox()).thenReturn(empty());
+        when(mockVersionedResource.getAnnotationService()).thenReturn(empty());
         when(mockVersionedResource.getTypes()).thenReturn(emptyList());
 
         when(mockResource.getMementos()).thenReturn(emptyList());
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockResource.getModified()).thenReturn(time);
-        when(mockResource.getBinary()).thenReturn(Optional.empty());
+        when(mockResource.getBinary()).thenReturn(empty());
         when(mockResource.isMemento()).thenReturn(false);
         when(mockResource.getIdentifier()).thenReturn(identifier);
-        when(mockResource.getInbox()).thenReturn(Optional.empty());
-        when(mockResource.getAnnotationService()).thenReturn(Optional.empty());
+        when(mockResource.getInbox()).thenReturn(empty());
+        when(mockResource.getAnnotationService()).thenReturn(empty());
         when(mockResource.getTypes()).thenReturn(emptyList());
 
         when(mockResourceService.unskolemize(any(IRI.class)))

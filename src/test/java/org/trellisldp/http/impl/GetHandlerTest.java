@@ -22,6 +22,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Date.from;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.HEAD;
@@ -72,7 +74,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -147,14 +148,14 @@ public class GetHandlerTest {
         when(mockResource.getMementos()).thenReturn(emptyList());
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockResource.getModified()).thenReturn(time);
-        when(mockResource.getBinary()).thenReturn(Optional.empty());
+        when(mockResource.getBinary()).thenReturn(empty());
         when(mockResource.isMemento()).thenReturn(false);
-        when(mockResource.getInbox()).thenReturn(Optional.empty());
-        when(mockResource.getAnnotationService()).thenReturn(Optional.empty());
+        when(mockResource.getInbox()).thenReturn(empty());
+        when(mockResource.getAnnotationService()).thenReturn(empty());
         when(mockResource.getTypes()).thenReturn(emptyList());
         when(mockResource.stream()).thenReturn(Stream.empty());
         when(mockBinaryService.getContent(any(), any()))
-            .thenReturn(Optional.of(new ByteArrayInputStream("Some data".getBytes(UTF_8))));
+            .thenReturn(of(new ByteArrayInputStream("Some data".getBytes(UTF_8))));
 
         when(mockLdpRequest.getRequest()).thenReturn(mockRequest);
         when(mockLdpRequest.getPath()).thenReturn("");
@@ -283,7 +284,7 @@ public class GetHandlerTest {
 
     @Test
     public void testCacheLdpNr() {
-        when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
+        when(mockResource.getBinary()).thenReturn(of(testBinary));
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
         when(mockRequest.evaluatePreconditions(eq(from(binaryTime)), any(EntityTag.class)))
                 .thenReturn(notModified());
@@ -314,8 +315,8 @@ public class GetHandlerTest {
         final String inbox = "http://ldn.example.com/inbox";
         final String annService = "http://annotation.example.com/resource";
 
-        when(mockResource.getAnnotationService()).thenReturn(Optional.of(rdf.createIRI(annService)));
-        when(mockResource.getInbox()).thenReturn(Optional.of(rdf.createIRI(inbox)));
+        when(mockResource.getAnnotationService()).thenReturn(of(rdf.createIRI(annService)));
+        when(mockResource.getInbox()).thenReturn(of(rdf.createIRI(inbox)));
         when(mockResource.getTypes()).thenReturn(singletonList(SKOS.Concept));
         when(mockHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(TEXT_TURTLE_TYPE));
 
@@ -453,7 +454,7 @@ public class GetHandlerTest {
 
     @Test
     public void testGetBinaryDescription() {
-        when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
+        when(mockResource.getBinary()).thenReturn(of(testBinary));
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
         when(mockHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(TEXT_TURTLE_TYPE));
 
@@ -476,7 +477,7 @@ public class GetHandlerTest {
 
     @Test
     public void testGetBinary() throws IOException {
-        when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
+        when(mockResource.getBinary()).thenReturn(of(testBinary));
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
 
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
@@ -498,9 +499,9 @@ public class GetHandlerTest {
 
     @Test(expected = WebApplicationException.class)
     public void testGetBinaryError() throws IOException {
-        when(mockResource.getBinary()).thenReturn(Optional.of(testBinary));
+        when(mockResource.getBinary()).thenReturn(of(testBinary));
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
-        when(mockBinaryService.getContent(any(), any())).thenReturn(Optional.empty());
+        when(mockBinaryService.getContent(any(), any())).thenReturn(empty());
 
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
                 mockIoService, mockBinaryService);

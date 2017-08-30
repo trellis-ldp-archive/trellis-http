@@ -18,6 +18,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Date.from;
+import static java.util.Optional.empty;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
@@ -30,7 +31,6 @@ import static org.mockito.Mockito.when;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.time.Instant;
-import java.util.Optional;
 
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Request;
@@ -106,7 +106,7 @@ public class DeleteHandlerTest {
 
         when(mockSession.getCreated()).thenReturn(time);
         when(mockSession.getAgent()).thenReturn(Trellis.AnonymousUser);
-        when(mockSession.getDelegatedBy()).thenReturn(Optional.empty());
+        when(mockSession.getDelegatedBy()).thenReturn(empty());
     }
 
     @Test

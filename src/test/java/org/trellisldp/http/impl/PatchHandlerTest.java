@@ -16,6 +16,7 @@ package org.trellisldp.http.impl;
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
+import static java.util.Optional.of;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
@@ -44,7 +45,6 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.time.Instant;
 import java.util.Date;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -220,7 +220,7 @@ public class PatchHandlerTest {
     @Test
     public void testConstraint() {
         when(mockConstraintService.constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any()))
-            .thenReturn(Optional.of(Trellis.InvalidRange));
+            .thenReturn(of(Trellis.InvalidRange));
 
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
                 mockResourceService, mockIoService, mockConstraintService);
