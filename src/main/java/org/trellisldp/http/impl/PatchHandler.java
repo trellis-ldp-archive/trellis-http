@@ -110,7 +110,8 @@ public class PatchHandler extends BaseLdpHandler {
             try (final Stream<Triple> stream = res.stream(graphName)) {
                 stream.forEach(graph::add);
             }
-            ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath());
+            ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath() +
+                    (ACL.equals(req.getExt()) ? "?ext=acl" : ""));
             graph.stream().forEach(triples::add);
         } catch (final RuntimeRepositoryException ex) {
             LOGGER.warn(ex.getMessage());
@@ -129,7 +130,8 @@ public class PatchHandler extends BaseLdpHandler {
      */
     public ResponseBuilder updateResource(final Resource res) {
         final String baseUrl = req.getBaseUrl(partitions);
-        final String identifier = baseUrl + req.getPartition() + req.getPath();
+        final String identifier = baseUrl + req.getPartition() + req.getPath() +
+            (ACL.equals(req.getExt()) ? "?ext=acl" : "");
 
         if (isNull(sparqlUpdate)) {
             throw new WebApplicationException("Missing Sparql-Update body", BAD_REQUEST);

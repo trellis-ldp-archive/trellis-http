@@ -120,7 +120,8 @@ public class PutHandler extends ContentBearingHandler {
      */
     public ResponseBuilder setResource(final Resource res) {
         final String baseUrl = req.getBaseUrl(partitions);
-        final String identifier = baseUrl + req.getPartition() + req.getPath();
+        final String identifier = baseUrl + req.getPartition() + req.getPath() +
+            (ACL.equals(req.getExt()) ? "?ext=acl" : "");
 
         // Check the cache
         final ResponseBuilder cache = checkResourceCache(identifier, res);
