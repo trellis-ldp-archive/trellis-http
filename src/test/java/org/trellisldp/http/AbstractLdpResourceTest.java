@@ -39,6 +39,7 @@ import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.Status.PRECONDITION_FAILED;
@@ -1666,6 +1667,14 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
+    }
+
+    @Test
+    public void testPutBinaryToACL() {
+        final Response res = target(BINARY_PATH).queryParam("ext", "acl").request()
+            .put(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(NOT_ACCEPTABLE, res.getStatusInfo());
     }
 
     @Test

@@ -29,6 +29,7 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Priority;
@@ -61,7 +62,7 @@ public class WebAcFilter implements ContainerRequestFilter {
     private static final Logger LOGGER = getLogger(WebAcFilter.class);
 
     private final AccessControlService accessService;
-    private final Set<String> partitions;
+    private final Map<String, String> partitions;
     private final List<String> challenges;
     private static final Set<String> readable = new HashSet<>(asList("GET", "HEAD", "OPTIONS"));
     private static final Set<String> writable = new HashSet<>(asList("PUT", "PATCH", "DELETE"));
@@ -73,10 +74,9 @@ public class WebAcFilter implements ContainerRequestFilter {
      * @param challenges the challenges
      * @param accessService the access service
      */
-    public WebAcFilter(final Set<String> partitions, final List<String> challenges,
+    public WebAcFilter(final Map<String, String> partitions, final List<String> challenges,
             final AccessControlService accessService) {
         this.accessService = accessService;
-        // TODO -- change this back to a map
         this.partitions = partitions;
         this.challenges = challenges.isEmpty() ? singletonList(BASIC_AUTH) : challenges;
     }
@@ -95,7 +95,7 @@ public class WebAcFilter implements ContainerRequestFilter {
         final String method = ctx.getMethod();
         final String partition = path.split("/")[0];
 
-        if (partitions.contains(partition)) {
+        if (partitions.containsKey(partition)) {
             if (ctx.getUriInfo().getQueryParameters().getOrDefault("ext", emptyList()).contains(HttpConstants.ACL)) {
                 verifyCanControl(s, path);
             } else if (readable.contains(method)) {

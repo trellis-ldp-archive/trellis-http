@@ -17,7 +17,6 @@ import static java.time.Instant.ofEpochSecond;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
-import static java.util.stream.Collectors.toSet;
 import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.junit.Assert.assertEquals;
@@ -118,8 +117,7 @@ public class LdpForbiddenResourceTest extends JerseyTest {
         final ResourceConfig config = new ResourceConfig();
         config.register(new TestAuthenticationFilter("testUser", "group"));
         config.register(new AgentAuthorizationFilter(mockAgentService, "admin"));
-        config.register(new WebAcFilter(partitions.entrySet().stream().map(Map.Entry::getKey).collect(toSet()),
-                    emptyList(), mockAccessControlService));
+        config.register(new WebAcFilter(partitions, emptyList(), mockAccessControlService));
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService, mockBinaryService,
                     partitions, emptyList()));
         return config;

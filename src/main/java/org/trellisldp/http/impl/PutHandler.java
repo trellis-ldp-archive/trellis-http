@@ -20,6 +20,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;
 import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
@@ -113,6 +114,18 @@ public class PutHandler extends ContentBearingHandler {
         return nonNull(req.getContentType()) && !syntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
     }
 
+    private IRI getActiveGraphName() {
+        return ACL.equals(req.getExt()) ? PreferAccessControl : PreferUserManaged;
+    }
+
+    private IRI getInactiveGraphName() {
+        return ACL.equals(req.getExt()) ? PreferUserManaged : PreferAccessControl;
+    }
+
+    private Boolean isAclAndNonRdfContent(final Optional<RDFSyntax> syntax) {
+        return ACL.equals(req.getExt()) && !syntax.isPresent();
+    }
+
     /**
      * Set the data for a resource
      * @param res the resource
@@ -133,6 +146,11 @@ public class PutHandler extends ContentBearingHandler {
         final Optional<RDFSyntax> rdfSyntax = ofNullable(req.getContentType()).flatMap(RDFSyntax::byMediaType)
             .filter(SUPPORTED_RDF_TYPES::contains);
 
+        // One cannot put binaries into the ACL graph
+        if (isAclAndNonRdfContent(rdfSyntax)) {
+            return status(NOT_ACCEPTABLE);
+        }
+
         LOGGER.info("Setting resource as {}", identifier);
 
         final IRI ldpType = ofNullable(req.getLink()).filter(l -> "type".equals(l.getRel()))
@@ -142,8 +160,8 @@ public class PutHandler extends ContentBearingHandler {
         final IRI internalId = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 
         try (final Dataset dataset = rdf.createDataset()) {
-            final IRI graphName = ACL.equals(req.getExt()) ? PreferAccessControl : PreferUserManaged;
-            final IRI otherGraph = ACL.equals(req.getExt()) ? PreferUserManaged : PreferAccessControl;
+            final IRI graphName = getActiveGraphName();
+            final IRI otherGraph = getInactiveGraphName();
 
             // Add audit quads
             auditUpdate(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
