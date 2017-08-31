@@ -30,7 +30,7 @@ import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.HttpConstants.UPLOAD_PREFIX;
-import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
+import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.vocabulary.Trellis.DeletedResource;
 
 import com.codahale.metrics.annotation.Timed;

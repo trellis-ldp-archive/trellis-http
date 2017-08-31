@@ -42,6 +42,7 @@ import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.vocabulary.RDF.type;
 
 import java.time.Instant;
 import java.util.Date;
@@ -75,6 +76,7 @@ import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ConstraintService;
+import org.trellisldp.spi.ConstraintViolation;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.RuntimeRepositoryException;
@@ -220,7 +222,8 @@ public class PatchHandlerTest {
     @Test
     public void testConstraint() {
         when(mockConstraintService.constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any()))
-            .thenReturn(of(Trellis.InvalidRange));
+            .thenReturn(of(new ConstraintViolation(Trellis.InvalidRange,
+                            rdf.createTriple(identifier, type, rdf.createLiteral("Some literal")))));
 
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
                 mockResourceService, mockIoService, mockConstraintService);

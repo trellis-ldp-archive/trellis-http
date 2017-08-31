@@ -36,6 +36,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.vocabulary.RDF.type;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,6 +72,7 @@ import org.trellisldp.http.domain.Digest;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
+import org.trellisldp.spi.ConstraintViolation;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.DC;
@@ -350,11 +352,13 @@ public class PostHandlerTest {
 
     @Test
     public void testConstraint() {
+        final IRI identifier = rdf.createIRI("trellis:partition/resource");
         when(mockIoService.read(any(), any(), eq(TURTLE))).thenAnswer(x -> Stream.of(
                     rdf.createTriple(rdf.createIRI("http://example.org/repository/newresource"), DC.title,
                         rdf.createLiteral("A title"))));
         when(mockConstraintService.constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any()))
-            .thenReturn(of(Trellis.InvalidRange));
+            .thenReturn(of(new ConstraintViolation(Trellis.InvalidRange,
+                            rdf.createTriple(identifier, type, rdf.createLiteral("Some literal")))));
         final File entity = new File(getClass().getResource("/simpleTriple.ttl").getFile());
 
         when(mockRequest.getContentType()).thenReturn("text/turtle");

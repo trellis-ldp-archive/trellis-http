@@ -59,7 +59,7 @@ import static org.trellisldp.http.impl.RdfUtils.getDefaultProfile;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeQuads;
-import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
+import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.vocabulary.OA.annotationService;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;

@@ -28,8 +28,8 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
-import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
+import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
@@ -175,9 +175,10 @@ public class PutHandler extends ContentBearingHandler {
                 readEntityIntoDataset(identifier, baseUrl, graphName, rdfSyntax.get(), dataset);
 
                 // Check for any constraints
-                final Optional<String> constraint = checkConstraint(dataset, graphName, ldpType, baseUrl);
-                if (constraint.isPresent()) {
-                    return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
+                final ResponseBuilder constraint = checkConstraint(dataset, PreferUserManaged, ldpType, baseUrl,
+                        rdfSyntax.get());
+                if (nonNull(constraint)) {
+                    return constraint;
                 }
 
             } else if (nonNull(entity)) {

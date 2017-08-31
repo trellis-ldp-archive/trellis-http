@@ -35,8 +35,8 @@ import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeTriples;
-import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
+import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
@@ -64,6 +64,7 @@ import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ConstraintService;
+import org.trellisldp.spi.ConstraintViolation;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.RuntimeRepositoryException;
@@ -173,11 +174,11 @@ public class PatchHandler extends BaseLdpHandler {
             dataset.add(rdf.createQuad(PreferServerManaged, res.getIdentifier(), RDF.type, res.getInteractionModel()));
 
             // Check any constraints
-            final Optional<String> constraint = dataset.getGraph(graphName)
-                .flatMap(g -> constraintService.constrainedBy(res.getInteractionModel(), baseUrl, g))
-                .map(IRI::getIRIString);
+            final Optional<ConstraintViolation> constraint = dataset.getGraph(graphName)
+                .flatMap(g -> constraintService.constrainedBy(res.getInteractionModel(), baseUrl, g));
             if (constraint.isPresent()) {
-                return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
+                return status(BAD_REQUEST).link(constraint.get().getConstraint().getIRIString(),
+                        LDP.constrainedBy.getIRIString());
             }
 
             // When updating User or ACL triples, be sure to add the other category to the dataset

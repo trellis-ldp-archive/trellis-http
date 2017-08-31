@@ -26,8 +26,8 @@ import static javax.ws.rs.core.Response.status;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
-import static org.trellisldp.spi.ConstraintService.ldpResourceTypes;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
+import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
@@ -125,10 +125,10 @@ public class PostHandler extends ContentBearingHandler {
                 readEntityIntoDataset(identifier, baseUrl, PreferUserManaged, rdfSyntax.get(), dataset);
 
                 // Check for any constraints
-                final Optional<String> constraint = checkConstraint(dataset, PreferUserManaged, ldpType,
-                        baseUrl);
-                if (constraint.isPresent()) {
-                    return status(BAD_REQUEST).link(constraint.get(), LDP.constrainedBy.getIRIString());
+                final ResponseBuilder constraint = checkConstraint(dataset, PreferUserManaged, ldpType, baseUrl,
+                        rdfSyntax.get());
+                if (nonNull(constraint)) {
+                    return constraint;
                 }
 
             } else if (nonNull(entity)) {

@@ -14,6 +14,7 @@
 package org.trellisldp.http.impl;
 
 import static java.time.Instant.ofEpochSecond;
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Date.from;
 import static java.util.Optional.empty;
@@ -71,9 +72,11 @@ import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
+import org.trellisldp.spi.ConstraintViolation;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.SKOS;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
@@ -286,8 +289,11 @@ public class PutHandlerTest {
 
     @Test
     public void testConstraint() {
+        final IRI identifier = rdf.createIRI("ex:subject");
         when(mockConstraintService.constrainedBy(eq(LDP.Container), eq(baseUrl), any(Graph.class)))
-                .thenReturn(of(Trellis.InvalidCardinality));
+            .thenReturn(of(new ConstraintViolation(Trellis.InvalidCardinality, asList(
+                            rdf.createTriple(identifier, SKOS.prefLabel, rdf.createLiteral("Some literal")),
+                            rdf.createTriple(identifier, SKOS.prefLabel, rdf.createLiteral("Some literal"))))));
         when(mockLdpRequest.getContentType()).thenReturn(TEXT_TURTLE);
         when(mockLdpRequest.getLink()).thenReturn(fromUri(LDP.Container.getIRIString()).rel("type").build());
 
