@@ -15,6 +15,7 @@ package org.trellisldp.http.impl;
 
 import static java.util.Arrays.asList;
 import static java.util.Date.from;
+import static java.util.Objects.nonNull;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
@@ -29,6 +30,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Request;
@@ -73,14 +75,14 @@ public class BaseLdpHandler {
      * Check if this is a deleted resource, and if so return an appropriate response
      * @param res the resource
      * @param identifier the identifier
-     * @return if the resource has been deleted, return an HTTP response builder, otherwise null
+     * @throws WebApplicationException a 410 Gone exception
      */
-    protected ResponseBuilder checkDeleted(final Resource res, final String identifier) {
+    protected static void checkDeleted(final Resource res, final String identifier) {
        if (Resource.equals(res.getInteractionModel()) && res.getTypes().contains(DeletedResource)) {
-            return status(GONE).links(MementoResource.getMementoLinks(identifier, res.getMementos())
-                    .toArray(Link[]::new));
+            throw new WebApplicationException(status(GONE)
+                    .links(MementoResource.getMementoLinks(identifier, res.getMementos())
+                    .toArray(Link[]::new)).build());
         }
-        return null;
     }
 
     /**
@@ -88,14 +90,16 @@ public class BaseLdpHandler {
      * @param request the request
      * @param modified the modified time
      * @param etag the etag
-     * @return the ResponseBuilder, which will be null if there is not a cache-hit
+     * @throws WebApplicationException either a 412 Precondition Failed or a 304 Not Modified, depending on the context.
      */
-    protected static ResponseBuilder checkCache(final Request request, final Instant modified, final EntityTag etag) {
+    protected static void checkCache(final Request request, final Instant modified, final EntityTag etag) {
         try {
-            return request.evaluatePreconditions(from(modified), etag);
+            final ResponseBuilder builder = request.evaluatePreconditions(from(modified), etag);
+            if (nonNull(builder)) {
+                throw new WebApplicationException(builder.build());
+            }
         } catch (final IllegalArgumentException ex) {
             LOGGER.warn("Ignoring cache-related headers: {}", ex.getMessage());
         }
-        return null;
     }
 }

@@ -19,6 +19,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;
 import static javax.ws.rs.core.Response.serverError;
@@ -93,7 +94,7 @@ public class PutHandler extends ContentBearingHandler {
         super(partitions, req, entity, resourceService, ioService, constraintService, binaryService);
     }
 
-    private ResponseBuilder checkResourceCache(final String identifier, final Resource res) {
+    private void checkResourceCache(final String identifier, final Resource res) {
         final EntityTag etag;
         final Instant modified;
         final Optional<Instant> binaryModification = res.getBinary().map(Binary::getModified);
@@ -107,11 +108,7 @@ public class PutHandler extends ContentBearingHandler {
             etag = new EntityTag(md5Hex(modified + identifier), true);
         }
         // Check the cache
-        return checkCache(req.getRequest(), modified, etag);
-    }
-
-    private IRI getDefaultType(final Optional<RDFSyntax> syntax) {
-        return nonNull(req.getContentType()) && !syntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
+        checkCache(req.getRequest(), modified, etag);
     }
 
     private IRI getActiveGraphName() {
@@ -136,11 +133,11 @@ public class PutHandler extends ContentBearingHandler {
         final String identifier = baseUrl + req.getPartition() + req.getPath() +
             (ACL.equals(req.getExt()) ? "?ext=acl" : "");
 
+        // Check if this is already deleted
+        checkDeleted(res, identifier);
+
         // Check the cache
-        final ResponseBuilder cache = checkResourceCache(identifier, res);
-        if (nonNull(cache)) {
-            return cache;
-        }
+        checkResourceCache(identifier, res);
 
         final Session session = ofNullable(req.getSession()).orElseGet(HttpSession::new);
         final Optional<RDFSyntax> rdfSyntax = ofNullable(req.getContentType()).flatMap(RDFSyntax::byMediaType)
@@ -155,7 +152,12 @@ public class PutHandler extends ContentBearingHandler {
 
         final IRI ldpType = ofNullable(req.getLink()).filter(l -> "type".equals(l.getRel()))
                     .map(Link::getUri).map(URI::toString).map(rdf::createIRI)
-                    .filter(l -> !LDP.Resource.equals(l)).orElseGet(() -> getDefaultType(rdfSyntax));
+                    .filter(l -> !LDP.Resource.equals(l)).orElseGet(res::getInteractionModel);
+
+        // It is not possible to change the LDP type to a type that is
+        if (!ldpResourceTypes(ldpType).anyMatch(res.getInteractionModel()::equals)) {
+            return status(CONFLICT);
+        }
 
         final IRI internalId = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 

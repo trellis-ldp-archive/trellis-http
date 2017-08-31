@@ -1595,6 +1595,14 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPutDeleted() {
+        final Response res = target(DELETED_PATH).request()
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(GONE, res.getStatusInfo());
+    }
+
+    @Test
     public void testPutVersion() {
         final Response res = target(RESOURCE_PATH).queryParam("version", timestamp).request()
             .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));

@@ -36,9 +36,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static javax.ws.rs.core.MediaType.WILDCARD_TYPE;
-import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
-import static javax.ws.rs.core.Response.Status.NOT_MODIFIED;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.notModified;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
@@ -269,7 +267,7 @@ public class GetHandlerTest {
         assertTrue(varies.contains(PREFER));
     }
 
-    @Test
+    @Test(expected = WebApplicationException.class)
     public void testCache() {
         when(mockRequest.evaluatePreconditions(eq(from(time)), any(EntityTag.class)))
                 .thenReturn(notModified());
@@ -278,11 +276,10 @@ public class GetHandlerTest {
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
                 mockIoService, mockBinaryService);
 
-        final Response res = getHandler.getRepresentation(mockResource).build();
-        assertEquals(NOT_MODIFIED, res.getStatusInfo());
+        getHandler.getRepresentation(mockResource);
     }
 
-    @Test
+    @Test(expected = WebApplicationException.class)
     public void testCacheLdpNr() {
         when(mockResource.getBinary()).thenReturn(of(testBinary));
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
@@ -293,8 +290,7 @@ public class GetHandlerTest {
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
                 mockIoService, mockBinaryService);
 
-        final Response res = getHandler.getRepresentation(mockResource).build();
-        assertEquals(NOT_MODIFIED, res.getStatusInfo());
+        getHandler.getRepresentation(mockResource);
     }
 
     @Test
@@ -532,7 +528,7 @@ public class GetHandlerTest {
         assertFalse(allow.contains(POST));
     }
 
-    @Test
+    @Test(expected = WebApplicationException.class)
     public void testGetDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenReturn(singletonList(Trellis.DeletedResource));
@@ -540,8 +536,7 @@ public class GetHandlerTest {
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
                 mockIoService, mockBinaryService);
 
-        final Response res = getHandler.getRepresentation(mockResource).build();
-        assertEquals(GONE, res.getStatusInfo());
+        getHandler.getRepresentation(mockResource);
     }
 
     private static Predicate<Link> hasLink(final IRI iri, final String rel) {

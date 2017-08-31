@@ -19,7 +19,6 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Date.from;
 import static java.util.Optional.empty;
-import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.PRECONDITION_FAILED;
@@ -32,6 +31,7 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.time.Instant;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
@@ -126,24 +126,22 @@ public class DeleteHandlerTest {
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
     }
 
-    @Test
+    @Test(expected = WebApplicationException.class)
     public void testCache() {
         when(mockRequest.evaluatePreconditions(eq(from(time)), any(EntityTag.class)))
                 .thenReturn(status(PRECONDITION_FAILED));
         final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
 
-        final Response res = handler.deleteResource(mockResource).build();
-        assertEquals(PRECONDITION_FAILED, res.getStatusInfo());
+        handler.deleteResource(mockResource);
     }
 
-    @Test
+    @Test(expected = WebApplicationException.class)
     public void testGetDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenReturn(singletonList(Trellis.DeletedResource));
 
         final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
 
-        final Response res = handler.deleteResource(mockResource).build();
-        assertEquals(GONE, res.getStatusInfo());
+        handler.deleteResource(mockResource);
     }
 }

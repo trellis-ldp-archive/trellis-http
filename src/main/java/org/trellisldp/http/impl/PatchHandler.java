@@ -14,7 +14,6 @@
 package org.trellisldp.http.impl;
 
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
@@ -140,17 +139,11 @@ public class PatchHandler extends BaseLdpHandler {
         final Session session = ofNullable(req.getSession()).orElseGet(HttpSession::new);
 
         // Check if this is already deleted
-        final ResponseBuilder deleted = checkDeleted(res, identifier);
-        if (nonNull(deleted)) {
-            return deleted;
-        }
+        checkDeleted(res, identifier);
 
         // Check the cache
         final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier));
-        final ResponseBuilder cache = checkCache(req.getRequest(), res.getModified(), etag);
-        if (nonNull(cache)) {
-            return cache;
-        }
+        checkCache(req.getRequest(), res.getModified(), etag);
 
         LOGGER.debug("Updating {} via PATCH", identifier);
 

@@ -13,7 +13,6 @@
  */
 package org.trellisldp.http.impl;
 
-import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
@@ -77,17 +76,11 @@ public class DeleteHandler extends BaseLdpHandler {
         final Session session = ofNullable(req.getSession()).orElseGet(HttpSession::new);
 
         // Check if this is already deleted
-        final ResponseBuilder deleted = checkDeleted(res, identifier);
-        if (nonNull(deleted)) {
-            return deleted;
-        }
+        checkDeleted(res, identifier);
 
         // Check the cache
         final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier));
-        final ResponseBuilder cache = checkCache(req.getRequest(), res.getModified(), etag);
-        if (nonNull(cache)) {
-            return cache;
-        }
+        checkCache(req.getRequest(), res.getModified(), etag);
 
         // If this is a container, are there contained resources?
         if (ldpResourceTypes(res.getInteractionModel()).anyMatch(Container::equals)) {

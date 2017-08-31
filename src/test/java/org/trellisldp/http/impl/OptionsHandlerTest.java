@@ -24,7 +24,6 @@ import static javax.ws.rs.HttpMethod.OPTIONS;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
-import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -44,6 +43,7 @@ import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.time.Instant;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.RDF;
@@ -201,14 +201,13 @@ public class OptionsHandlerTest {
         assertFalse(allow.contains(POST));
     }
 
-    @Test
+    @Test(expected = WebApplicationException.class)
     public void testOptionsDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenReturn(asList(Trellis.DeletedResource));
 
         final OptionsHandler optionsHandler = new OptionsHandler(emptyMap(), mockRequest, mockResourceService);
 
-        final Response res = optionsHandler.ldpOptions(mockResource).build();
-        assertEquals(GONE, res.getStatusInfo());
+        optionsHandler.ldpOptions(mockResource);
     }
 }

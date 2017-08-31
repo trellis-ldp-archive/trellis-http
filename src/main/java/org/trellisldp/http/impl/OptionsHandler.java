@@ -14,7 +14,6 @@
 package org.trellisldp.http.impl;
 
 import static java.lang.String.join;
-import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.joining;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
@@ -85,10 +84,7 @@ public class OptionsHandler extends BaseLdpHandler {
         final IRI graphName = ACL.equals(req.getExt()) ? PreferAccessControl : PreferUserManaged;
 
         // Check if this is already deleted
-        final ResponseBuilder deleted = checkDeleted(res, identifier);
-        if (nonNull(deleted)) {
-            return deleted;
-        }
+        checkDeleted(res, identifier);
 
         final ResponseBuilder builder = status(NO_CONTENT);
 

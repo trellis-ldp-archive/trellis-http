@@ -23,6 +23,7 @@ import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.PRECONDITION_FAILED;
@@ -116,6 +117,7 @@ public class PutHandlerTest {
 
     @Before
     public void setUp() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockResource.getBinary()).thenReturn(empty());
         when(mockResource.getModified()).thenReturn(time);
         when(mockBinaryService.getIdentifierSupplier(anyString())).thenReturn(() -> "file:" + randomUUID());
@@ -130,6 +132,20 @@ public class PutHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getBaseUrl(any())).thenReturn(baseUrl);
         when(mockLdpRequest.getSession()).thenReturn(new HttpSession());
+    }
+
+    @Test
+    public void testPutConflict() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.BasicContainer);
+        when(mockLdpRequest.getLink()).thenReturn(fromUri(LDP.DirectContainer.getIRIString()).rel("type").build());
+        when(mockLdpRequest.getContentType()).thenReturn(TEXT_TURTLE);
+
+        final File entity = new File(getClass().getResource("/simpleTriple.ttl").getFile());
+        final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
+                mockIoService, mockConstraintService, mockBinaryService);
+
+        final Response res = putHandler.setResource(mockResource).build();
+        assertEquals(CONFLICT, res.getStatusInfo());
     }
 
     @Test
@@ -186,6 +202,7 @@ public class PutHandlerTest {
 
     @Test
     public void testPutLdpBinaryResourceWithLdprLink() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
         when(mockLdpRequest.getLink()).thenReturn(fromUri(LDP.Resource.getIRIString()).rel("type").build());
         when(mockLdpRequest.getContentType()).thenReturn(TEXT_PLAIN);
 
@@ -207,6 +224,7 @@ public class PutHandlerTest {
 
     @Test
     public void testPutLdpBinaryResource() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
         when(mockResource.getBinary()).thenReturn(of(testBinary));
         when(mockLdpRequest.getContentType()).thenReturn(TEXT_PLAIN);
         when(mockLdpRequest.getLink()).thenReturn(fromUri(LDP.NonRDFSource.getIRIString()).rel("type").build());
@@ -315,7 +333,7 @@ public class PutHandlerTest {
         verify(mockIoService).read(any(InputStream.class), eq(baseUrl + "partition/resource"), eq(TURTLE));
     }
 
-    @Test
+    @Test(expected = WebApplicationException.class)
     public void testCache() {
         when(mockRequest.evaluatePreconditions(eq(from(binaryTime)), any(EntityTag.class)))
                 .thenReturn(status(PRECONDITION_FAILED));
@@ -325,13 +343,12 @@ public class PutHandlerTest {
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
                 mockIoService, mockConstraintService, mockBinaryService);
 
-        final Response res = putHandler.setResource(mockResource).build();
-
-        assertEquals(PRECONDITION_FAILED, res.getStatusInfo());
+        putHandler.setResource(mockResource);
     }
 
     @Test
     public void testError() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
         when(mockResourceService.put(eq(rdf.createIRI(TRELLIS_PREFIX + "partition/resource")), any(Dataset.class)))
             .thenReturn(false);
         when(mockLdpRequest.getContentType()).thenReturn(TEXT_TURTLE);

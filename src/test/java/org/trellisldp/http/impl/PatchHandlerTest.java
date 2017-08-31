@@ -20,7 +20,6 @@ import static java.util.Optional.of;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
-import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -233,7 +232,7 @@ public class PatchHandlerTest {
         assertTrue(res.getLinks().stream().anyMatch(hasLink(Trellis.InvalidRange, LDP.constrainedBy.getIRIString())));
     }
 
-    @Test
+    @Test(expected = WebApplicationException.class)
     public void testDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenReturn(singletonList(Trellis.DeletedResource));
@@ -243,11 +242,10 @@ public class PatchHandlerTest {
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
                 mockResourceService, mockIoService, mockConstraintService);
 
-        final Response res = patchHandler.updateResource(mockResource).build();
-        assertEquals(GONE, res.getStatusInfo());
+        patchHandler.updateResource(mockResource);
     }
 
-    @Test
+    @Test(expected = WebApplicationException.class)
     public void testConflict() {
         when(mockRequest.evaluatePreconditions(any(Date.class), any(EntityTag.class)))
             .thenReturn(status(CONFLICT));
@@ -257,8 +255,7 @@ public class PatchHandlerTest {
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
                 mockResourceService, mockIoService, mockConstraintService);
 
-        final Response res = patchHandler.updateResource(mockResource).build();
-        assertEquals(CONFLICT, res.getStatusInfo());
+        patchHandler.updateResource(mockResource);
     }
 
     @Test

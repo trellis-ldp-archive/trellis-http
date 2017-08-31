@@ -16,7 +16,6 @@ package org.trellisldp.http.impl;
 import static java.lang.String.join;
 import static java.util.Date.from;
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static javax.ws.rs.HttpMethod.DELETE;
@@ -135,10 +134,7 @@ public class GetHandler extends BaseLdpHandler {
         final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
 
         // Check if this is already deleted
-        final ResponseBuilder deleted = checkDeleted(res, identifier);
-        if (nonNull(deleted)) {
-            return deleted;
-        }
+        checkDeleted(res, identifier);
 
         final Optional<RDFSyntax> syntax = getSyntax(req.getHeaders().getAcceptableMediaTypes(), res.getBinary()
                 .map(b -> b.getMimeType().orElse(APPLICATION_OCTET_STREAM)));
@@ -181,10 +177,7 @@ public class GetHandler extends BaseLdpHandler {
 
         // Check for a cache hit
         final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier), true);
-        final ResponseBuilder cacheBuilder = checkCache(req.getRequest(), res.getModified(), etag);
-        if (nonNull(cacheBuilder)) {
-            return cacheBuilder;
-        }
+        checkCache(req.getRequest(), res.getModified(), etag);
 
         builder.tag(etag);
         if (res.isMemento()) {
@@ -230,10 +223,7 @@ public class GetHandler extends BaseLdpHandler {
         final Instant mod = res.getBinary().map(Binary::getModified).orElseThrow(() ->
                 new WebApplicationException("Could not access binary metadata for " + res.getIdentifier()));
         final EntityTag etag = new EntityTag(md5Hex(mod + identifier));
-        final ResponseBuilder cacheBuilder = checkCache(req.getRequest(), mod, etag);
-        if (nonNull(cacheBuilder)) {
-            return cacheBuilder;
-        }
+        checkCache(req.getRequest(), mod, etag);
 
         // Set last-modified to be the binary's last-modified value
         builder.lastModified(from(mod));
