@@ -46,7 +46,6 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
@@ -325,7 +324,7 @@ public class PostHandlerTest {
         assertEquals(BAD_REQUEST, postHandler.createResource().build().getStatusInfo());
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = WebApplicationException.class)
     public void testBadDigest2() {
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
         when(mockRequest.getContentType()).thenReturn("text/plain");
@@ -350,7 +349,7 @@ public class PostHandlerTest {
         postHandler.createResource();
     }
 
-    @Test
+    @Test(expected = WebApplicationException.class)
     public void testConstraint() {
         final IRI identifier = rdf.createIRI("trellis:partition/resource");
         when(mockIoService.read(any(), any(), eq(TURTLE))).thenAnswer(x -> Stream.of(
@@ -366,9 +365,7 @@ public class PostHandlerTest {
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
                 mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
-        final Response res = postHandler.createResource().build();
-        assertEquals(BAD_REQUEST, res.getStatusInfo());
-        assertTrue(res.getLinks().stream().anyMatch(hasLink(Trellis.InvalidRange, LDP.constrainedBy.getIRIString())));
+        postHandler.createResource();
     }
 
     @Test

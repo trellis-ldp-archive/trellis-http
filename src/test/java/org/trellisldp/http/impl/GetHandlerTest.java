@@ -294,19 +294,6 @@ public class GetHandlerTest {
     }
 
     @Test
-    public void testCacheError() {
-        when(mockRequest.evaluatePreconditions(eq(from(time)), any(EntityTag.class)))
-                .thenThrow(new IllegalArgumentException());
-        when(mockHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(TEXT_TURTLE_TYPE));
-
-        final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
-                mockIoService, mockBinaryService);
-
-        final Response res = getHandler.getRepresentation(mockResource).build();
-        assertEquals(OK, res.getStatusInfo());
-    }
-
-    @Test
     public void testExtraLinks() {
         final String inbox = "http://ldn.example.com/inbox";
         final String annService = "http://annotation.example.com/resource";

@@ -93,13 +93,9 @@ public class BaseLdpHandler {
      * @throws WebApplicationException either a 412 Precondition Failed or a 304 Not Modified, depending on the context.
      */
     protected static void checkCache(final Request request, final Instant modified, final EntityTag etag) {
-        try {
-            final ResponseBuilder builder = request.evaluatePreconditions(from(modified), etag);
-            if (nonNull(builder)) {
-                throw new WebApplicationException(builder.build());
-            }
-        } catch (final IllegalArgumentException ex) {
-            LOGGER.warn("Ignoring cache-related headers: {}", ex.getMessage());
+        final ResponseBuilder builder = request.evaluatePreconditions(from(modified), etag);
+        if (nonNull(builder)) {
+            throw new WebApplicationException(builder.build());
         }
     }
 }

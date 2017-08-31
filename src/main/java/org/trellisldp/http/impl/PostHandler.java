@@ -37,7 +37,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response.ResponseBuilder;
@@ -125,11 +124,7 @@ public class PostHandler extends ContentBearingHandler {
                 readEntityIntoDataset(identifier, baseUrl, PreferUserManaged, rdfSyntax.get(), dataset);
 
                 // Check for any constraints
-                final ResponseBuilder constraint = checkConstraint(dataset, PreferUserManaged, ldpType, baseUrl,
-                        rdfSyntax.get());
-                if (nonNull(constraint)) {
-                    return constraint;
-                }
+                checkConstraint(dataset, PreferUserManaged, ldpType, baseUrl, rdfSyntax.get());
 
             } else if (nonNull(entity)) {
                 // Check the expected digest value
@@ -160,8 +155,8 @@ public class PostHandler extends ContentBearingHandler {
 
                 return builder;
             }
-        } catch (final IllegalArgumentException ex) {
-            throw new BadRequestException(ex);
+        } catch (final WebApplicationException ex) {
+            throw ex;
         } catch (final Exception ex) {
             throw new WebApplicationException(ex);
         }

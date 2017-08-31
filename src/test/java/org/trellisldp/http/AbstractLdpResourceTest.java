@@ -117,6 +117,7 @@ import org.trellisldp.spi.AccessControlService;
 import org.trellisldp.spi.AgentService;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
+import org.trellisldp.spi.ConstraintViolation;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.Session;
@@ -1470,6 +1471,25 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPostConstraint() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
+            .thenReturn(empty());
+
+        when(mockConstraintService.constrainedBy(any(), any(), any()))
+            .thenReturn(of(new ConstraintViolation(Trellis.InvalidRange,
+                            rdf.createTriple(identifier, type, rdf.createLiteral("Some literal")))));
+
+        final Response res = target(RESOURCE_PATH).request()
+            .post(entity("<> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> \"Some literal\" .",
+                    TEXT_TURTLE_TYPE));
+
+        assertEquals(CONFLICT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream()
+                .anyMatch(hasLink(Trellis.InvalidRange, LDP.constrainedBy.getIRIString())));
+    }
+
+    @Test
     public void testPostNonexistent() {
         final Response res = target(NON_EXISTENT_PATH).request()
             .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
@@ -1584,6 +1604,21 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPutConstraint() {
+        when(mockConstraintService.constrainedBy(any(), any(), any()))
+            .thenReturn(of(new ConstraintViolation(Trellis.InvalidRange,
+                            rdf.createTriple(identifier, type, rdf.createLiteral("Some literal")))));
+
+        final Response res = target(RESOURCE_PATH).request()
+            .put(entity("<> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> \"Some literal\" .",
+                    TEXT_TURTLE_TYPE));
+
+        assertEquals(CONFLICT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream()
+                .anyMatch(hasLink(Trellis.InvalidRange, LDP.constrainedBy.getIRIString())));
+    }
+
+    @Test
     public void testPutNew() {
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/test")), eq(MAX)))
             .thenReturn(empty());
@@ -1691,6 +1726,14 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
             .put(entity("some different data.", TEXT_PLAIN_TYPE));
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
+    }
+
+    @Test
+    public void testPutBadIfMatch() {
+        final Response res = target(BINARY_PATH).request().header("If-Match", "0ccfe1dcf1d081e016ceaada4c6f00ef")
+            .put(entity("some different data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
     }
 
     @Test
@@ -1864,6 +1907,21 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testPatchConstraint() {
+        when(mockConstraintService.constrainedBy(any(), any(), any()))
+            .thenReturn(of(new ConstraintViolation(Trellis.InvalidRange,
+                            rdf.createTriple(identifier, type, rdf.createLiteral("Some literal")))));
+
+        final Response res = target(RESOURCE_PATH).request()
+            .method("PATCH", entity("INSERT { <> a \"Some literal\" } WHERE {}",
+                        APPLICATION_SPARQL_UPDATE));
+
+        assertEquals(CONFLICT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream()
+                .anyMatch(hasLink(Trellis.InvalidRange, LDP.constrainedBy.getIRIString())));
     }
 
     @Test

@@ -13,7 +13,7 @@
  */
 package org.trellisldp.http.impl;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.binary.Base64.encodeBase64String;
 import static org.apache.commons.codec.digest.DigestUtils.getDigest;
@@ -25,10 +25,8 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
@@ -38,7 +36,6 @@ import org.trellisldp.http.domain.Digest;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
-import org.trellisldp.spi.ConstraintViolation;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
@@ -89,16 +86,13 @@ class ContentBearingHandler extends BaseLdpHandler {
         }
     }
 
-    protected ResponseBuilder checkConstraint(final Dataset dataset, final IRI graphName, final IRI type,
+    protected void checkConstraint(final Dataset dataset, final IRI graphName, final IRI type,
             final String baseUrl, final RDFSyntax syntax) {
-        final Optional<ConstraintViolation> violation = dataset.getGraph(graphName).flatMap(g ->
-                constraintService.constrainedBy(type, baseUrl, g));
-        if (violation.isPresent()) {
-            return status(BAD_REQUEST)
-                .entity(ResourceStreamer.tripleStreamer(ioService, violation.get().getTriples().stream(), syntax))
-                .link(violation.get().getConstraint().getIRIString(), LDP.constrainedBy.getIRIString());
-        }
-        return null;
+        dataset.getGraph(graphName).flatMap(g -> constraintService.constrainedBy(type, baseUrl, g)).ifPresent(v -> {
+            throw new WebApplicationException(status(CONFLICT)
+                .entity(ResourceStreamer.tripleStreamer(ioService, v.getTriples().stream(), syntax))
+                .link(v.getConstraint().getIRIString(), LDP.constrainedBy.getIRIString()).build());
+        });
     }
 
     protected String getDigestForEntity(final Digest digest) {

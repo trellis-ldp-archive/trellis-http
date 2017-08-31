@@ -18,6 +18,7 @@ import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.ok;
 import static javax.ws.rs.core.Response.serverError;
@@ -43,7 +44,6 @@ import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.ws.rs.BadRequestException;
@@ -63,7 +63,6 @@ import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ConstraintService;
-import org.trellisldp.spi.ConstraintViolation;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.spi.RuntimeRepositoryException;
@@ -167,12 +166,12 @@ public class PatchHandler extends BaseLdpHandler {
             dataset.add(rdf.createQuad(PreferServerManaged, res.getIdentifier(), RDF.type, res.getInteractionModel()));
 
             // Check any constraints
-            final Optional<ConstraintViolation> constraint = dataset.getGraph(graphName)
-                .flatMap(g -> constraintService.constrainedBy(res.getInteractionModel(), baseUrl, g));
-            if (constraint.isPresent()) {
-                return status(BAD_REQUEST).link(constraint.get().getConstraint().getIRIString(),
-                        LDP.constrainedBy.getIRIString());
-            }
+            dataset.getGraph(graphName)
+                .flatMap(g -> constraintService.constrainedBy(res.getInteractionModel(), baseUrl, g))
+                .ifPresent(constraint -> {
+                        throw new WebApplicationException(status(CONFLICT)
+                            .link(constraint.getConstraint().getIRIString(), LDP.constrainedBy.getIRIString()).build());
+                });
 
             // When updating User or ACL triples, be sure to add the other category to the dataset
             try (final Stream<Triple> remaining = res.stream(otherGraph)) {
@@ -199,6 +198,8 @@ public class PatchHandler extends BaseLdpHandler {
                                                .orElseGet(() -> getDefaultProfile(syntax, identifier))));
                     }).orElseGet(() -> builder.status(NO_CONTENT));
             }
+        } catch (final WebApplicationException ex) {
+            throw ex;
         } catch (final Exception ex) {
             LOGGER.error("Error handling dataset: {}", ex.getMessage());
         }

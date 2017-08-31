@@ -22,7 +22,6 @@ import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
@@ -305,7 +304,7 @@ public class PutHandlerTest {
         verify(mockConstraintService, never()).constrainedBy(any(IRI.class), anyString(), any(Graph.class));
     }
 
-    @Test
+    @Test(expected = WebApplicationException.class)
     public void testConstraint() {
         final IRI identifier = rdf.createIRI("ex:subject");
         when(mockConstraintService.constrainedBy(eq(LDP.Container), eq(baseUrl), any(Graph.class)))
@@ -319,18 +318,7 @@ public class PutHandlerTest {
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
                 mockIoService, mockConstraintService, mockBinaryService);
 
-        final Response res = putHandler.setResource(mockResource).build();
-        assertEquals(BAD_REQUEST, res.getStatusInfo());
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
-        assertTrue(res.getLinks().stream().anyMatch(l ->
-                    l.getUri().toString().equals(Trellis.InvalidCardinality.getIRIString()) &&
-                    l.getRel().equals(LDP.constrainedBy.getIRIString())));
-
-        verify(mockBinaryService, never()).setContent(anyString(), any(IRI.class), any(InputStream.class));
-        verify(mockIoService).read(any(InputStream.class), eq(baseUrl + "partition/resource"), eq(TURTLE));
+        putHandler.setResource(mockResource);
     }
 
     @Test(expected = WebApplicationException.class)

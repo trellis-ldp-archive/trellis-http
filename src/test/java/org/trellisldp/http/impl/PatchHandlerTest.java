@@ -18,7 +18,6 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
@@ -218,7 +217,7 @@ public class PatchHandlerTest {
         assertTrue(res.getMediaType().isCompatible(TEXT_HTML_TYPE));
     }
 
-    @Test
+    @Test(expected = WebApplicationException.class)
     public void testConstraint() {
         when(mockConstraintService.constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any()))
             .thenReturn(of(new ConstraintViolation(Trellis.InvalidRange,
@@ -227,9 +226,7 @@ public class PatchHandlerTest {
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
                 mockResourceService, mockIoService, mockConstraintService);
 
-        final Response res = patchHandler.updateResource(mockResource).build();
-        assertEquals(BAD_REQUEST, res.getStatusInfo());
-        assertTrue(res.getLinks().stream().anyMatch(hasLink(Trellis.InvalidRange, LDP.constrainedBy.getIRIString())));
+        patchHandler.updateResource(mockResource);
     }
 
     @Test(expected = WebApplicationException.class)
