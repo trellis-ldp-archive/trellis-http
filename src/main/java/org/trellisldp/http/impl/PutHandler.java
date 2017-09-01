@@ -43,12 +43,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
-import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.Triple;
@@ -160,7 +158,7 @@ public class PutHandler extends ContentBearingHandler {
 
         final IRI internalId = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 
-        try (final Dataset dataset = rdf.createDataset()) {
+        try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
             final IRI graphName = getActiveGraphName();
             final IRI otherGraph = getInactiveGraphName();
 
@@ -205,17 +203,12 @@ public class PutHandler extends ContentBearingHandler {
                     .forEach(dataset::add);
             }
 
-            if (resourceService.put(internalId, dataset)) {
+            if (resourceService.put(internalId, dataset.asDataset())) {
                 final ResponseBuilder builder = status(NO_CONTENT);
 
                 ldpResourceTypes(ldpType).map(IRI::getIRIString).forEach(type -> builder.link(type, "type"));
                 return builder;
             }
-
-        } catch (final WebApplicationException ex) {
-            throw ex;
-        } catch (final Exception ex) {
-            throw new WebApplicationException(ex);
         }
 
         LOGGER.error("Unable to persist data to location at {}", internalId.getIRIString());

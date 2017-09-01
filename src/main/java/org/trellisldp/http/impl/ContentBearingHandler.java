@@ -26,9 +26,9 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.util.Map;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
 
-import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 
@@ -74,7 +74,7 @@ class ContentBearingHandler extends BaseLdpHandler {
     }
 
     protected void readEntityIntoDataset(final String identifier, final String baseUrl, final IRI graphName,
-            final RDFSyntax syntax, final Dataset dataset) {
+            final RDFSyntax syntax, final TrellisDataset dataset) {
         try (final InputStream input = new FileInputStream(entity)) {
             ioService.read(input, identifier, syntax)
                 .map(skolemizeTriples(resourceService, baseUrl))
@@ -86,7 +86,7 @@ class ContentBearingHandler extends BaseLdpHandler {
         }
     }
 
-    protected void checkConstraint(final Dataset dataset, final IRI graphName, final IRI type,
+    protected void checkConstraint(final TrellisDataset dataset, final IRI graphName, final IRI type,
             final String baseUrl, final RDFSyntax syntax) {
         dataset.getGraph(graphName).flatMap(g -> constraintService.constrainedBy(type, baseUrl, g)).ifPresent(v -> {
             throw new WebApplicationException(status(CONFLICT)
@@ -98,14 +98,19 @@ class ContentBearingHandler extends BaseLdpHandler {
     protected String getDigestForEntity(final Digest digest) {
         try (final InputStream input = new FileInputStream(entity)) {
             return encodeBase64String(updateDigest(getDigest(digest.getAlgorithm()), input).digest());
+        } catch (final IllegalArgumentException ex) {
+            throw new BadRequestException("Invalid algorithm provided for digest. " + digest.getAlgorithm() +
+                    " is not supported: " + ex.getMessage());
         } catch (final IOException ex) {
             throw new WebApplicationException("Error computing checksum on input", ex);
         }
     }
 
-    protected void persistContent(final IRI contentLocation, final Map<String, String> metadata) throws IOException {
+    protected void persistContent(final IRI contentLocation, final Map<String, String> metadata) {
         try (final InputStream input = new FileInputStream(entity)) {
             binaryService.setContent(req.getPartition(), contentLocation, input, metadata);
+        } catch (final IOException ex) {
+            throw new WebApplicationException(ex);
         }
     }
 }

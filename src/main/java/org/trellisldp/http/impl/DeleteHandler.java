@@ -36,7 +36,6 @@ import java.util.stream.Stream;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
-import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.Triple;
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
@@ -94,7 +93,7 @@ public class DeleteHandler extends BaseLdpHandler {
 
         LOGGER.debug("Deleting {}", identifier);
 
-        try (final Dataset dataset = rdf.createDataset()) {
+        try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
 
             // Add the audit quads
             auditDeletion(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
@@ -109,11 +108,9 @@ public class DeleteHandler extends BaseLdpHandler {
             }
 
             // delete the resource
-            if (resourceService.put(res.getIdentifier(), dataset)) {
+            if (resourceService.put(res.getIdentifier(), dataset.asDataset())) {
                 return status(NO_CONTENT);
             }
-        } catch (final Exception ex) {
-            LOGGER.error("Error handling dataset: {}", ex.getMessage());
         }
 
         LOGGER.error("Unable to delete resource at {}", res.getIdentifier());

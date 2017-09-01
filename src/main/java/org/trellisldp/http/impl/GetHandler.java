@@ -214,8 +214,6 @@ public class GetHandler extends BaseLdpHandler {
                 .map(unskolemizeQuads(resourceService, req.getBaseUrl(partitions)))) {
             return builder.entity(ResourceStreamer.quadStreamer(ioService, stream,
                     syntax, ofNullable(profile).orElseGet(() -> getDefaultProfile(syntax, identifier))));
-        } catch (final Exception ex) {
-            throw new WebApplicationException("Unable to process graph data: " + ex.getMessage());
         }
     }
 
@@ -279,10 +277,8 @@ public class GetHandler extends BaseLdpHandler {
             };
 
             return builder.entity(stream);
-        } catch (final WebApplicationException ex) {
-            throw ex;
         } catch (final IOException ex) {
-            throw new WebApplicationException(ex);
+            throw new WebApplicationException("Error processing binary content: " + ex);
         }
     }
 

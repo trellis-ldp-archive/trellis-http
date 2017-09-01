@@ -1531,6 +1531,17 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPostBinaryWithInvalidDigestType() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
+                    any(Instant.class))).thenReturn(empty());
+        final Response res = target(RESOURCE_PATH).request().header("Slug", "newresource")
+            .header("Digest", "foo=blahblah").post(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+    }
+
+    @Test
     public void testPostBinaryWithMd5Digest() {
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),

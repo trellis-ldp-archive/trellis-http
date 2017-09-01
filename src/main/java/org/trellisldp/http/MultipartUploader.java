@@ -48,10 +48,10 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
-import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
 import org.slf4j.Logger;
+import org.trellisldp.http.impl.TrellisDataset;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.DC;
@@ -142,7 +142,7 @@ public class MultipartUploader {
             .filter(svc -> svc.uploadSessionExists(id))
             .map(svc -> svc.completeUpload(id, partDigests))
             .map(upload -> {
-                try (final Dataset dataset = rdf.createDataset()) {
+                try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
                     final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + upload.getPath());
 
                     // Add Audit quads
@@ -157,11 +157,9 @@ public class MultipartUploader {
                                     upload.getBinary().getIdentifier(), DC.extent,
                                     rdf.createLiteral(size.toString(), XSD.long_))));
 
-                    if (resourceService.put(identifier, dataset)) {
+                    if (resourceService.put(identifier, dataset.asDataset())) {
                         return created(create(upload.getBaseUrl() + upload.getPath())).build();
                     }
-                } catch (final Exception ex) {
-                    LOGGER.error("Error handling dataset: {}", ex.getMessage());
                 }
                 LOGGER.error("Could not persist data");
                 return serverError().entity("Could not persist data internally").build();

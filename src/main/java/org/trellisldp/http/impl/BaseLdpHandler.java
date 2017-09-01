@@ -21,7 +21,6 @@ import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
 import static org.apache.commons.rdf.api.RDFSyntax.NTRIPLES;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
-import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.LDP.Resource;
 import static org.trellisldp.vocabulary.Trellis.DeletedResource;
@@ -38,7 +37,6 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
-import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.spi.ResourceService;
@@ -47,8 +45,6 @@ import org.trellisldp.spi.ResourceService;
  * @author acoburn
  */
 public class BaseLdpHandler {
-
-    private static final Logger LOGGER = getLogger(BaseLdpHandler.class);
 
     protected static final RDF rdf = getInstance();
 

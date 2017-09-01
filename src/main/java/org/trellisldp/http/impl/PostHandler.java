@@ -37,11 +37,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
-import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 
@@ -111,7 +109,7 @@ public class PostHandler extends ContentBearingHandler {
             .filter(l -> "type".equals(l.getRel())).map(Link::getUri).map(URI::toString).map(rdf::createIRI)
             .filter(l -> !LDP.Resource.equals(l)).orElse(defaultType);
 
-        try (final Dataset dataset = rdf.createDataset()) {
+        try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
 
             // Add Audit quads
             auditCreation(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
@@ -147,7 +145,7 @@ public class PostHandler extends ContentBearingHandler {
                 persistContent(binaryLocation, metadata);
             }
 
-            if (resourceService.put(internalId, dataset)) {
+            if (resourceService.put(internalId, dataset.asDataset())) {
                 final ResponseBuilder builder = status(CREATED).location(create(identifier));
 
                 // Add LDP types
@@ -155,10 +153,6 @@ public class PostHandler extends ContentBearingHandler {
 
                 return builder;
             }
-        } catch (final WebApplicationException ex) {
-            throw ex;
-        } catch (final Exception ex) {
-            throw new WebApplicationException(ex);
         }
 
         LOGGER.error("Unable to persist data to location at {}", internalId.getIRIString());

@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
@@ -324,7 +325,7 @@ public class PostHandlerTest {
         assertEquals(BAD_REQUEST, postHandler.createResource().build().getStatusInfo());
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test(expected = BadRequestException.class)
     public void testBadDigest2() {
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
         when(mockRequest.getContentType()).thenReturn("text/plain");
@@ -336,6 +337,17 @@ public class PostHandlerTest {
         postHandler.createResource();
     }
 
+    @Test(expected = WebApplicationException.class)
+    public void testBadEntityDigest() {
+        when(mockRequest.getContentType()).thenReturn("text/plain");
+        when(mockRequest.getDigest()).thenReturn(new Digest("md5", "blahblah"));
+        final File entity = new File(new File(getClass().getResource("/simpleData.txt").getFile()).getParent());
+
+        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
+                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+
+        postHandler.createResource();
+    }
 
     @Test(expected = WebApplicationException.class)
     public void testEntityError() {

@@ -52,8 +52,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.Triple;
@@ -105,18 +103,16 @@ public class PatchHandler extends BaseLdpHandler {
     private List<Triple> updateGraph(final Resource res, final IRI graphName) {
         final List<Triple> triples = new ArrayList<>();
         // Update existing graph
-        try (final Graph graph = rdf.createGraph()) {
+        try (final TrellisGraph graph = TrellisGraph.createGraph()) {
             try (final Stream<Triple> stream = res.stream(graphName)) {
                 stream.forEach(graph::add);
             }
-            ioService.update(graph, sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath() +
+            ioService.update(graph.asGraph(), sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath() +
                     (ACL.equals(req.getExt()) ? "?ext=acl" : ""));
             graph.stream().forEach(triples::add);
         } catch (final RuntimeRepositoryException ex) {
             LOGGER.warn(ex.getMessage());
             throw new BadRequestException("Invalid RDF: " + ex.getMessage());
-        } catch (final Exception ex) {
-            throw new WebApplicationException("Error handling graph: " + ex.getMessage());
         }
 
         return triples;
@@ -152,7 +148,7 @@ public class PatchHandler extends BaseLdpHandler {
         // Put triples in buffer
         final List<Triple> triples = updateGraph(res, graphName);
 
-        try (final Dataset dataset = rdf.createDataset()) {
+        try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
 
             triples.stream().map(skolemizeTriples(resourceService, baseUrl))
                 .map(t -> rdf.createQuad(graphName, t.getSubject(), t.getPredicate(), t.getObject()))
@@ -180,7 +176,7 @@ public class PatchHandler extends BaseLdpHandler {
             }
 
             // Save new dataset
-            if (resourceService.put(res.getIdentifier(), dataset)) {
+            if (resourceService.put(res.getIdentifier(), dataset.asDataset())) {
 
                 final ResponseBuilder builder = ok();
 
@@ -198,10 +194,6 @@ public class PatchHandler extends BaseLdpHandler {
                                                .orElseGet(() -> getDefaultProfile(syntax, identifier))));
                     }).orElseGet(() -> builder.status(NO_CONTENT));
             }
-        } catch (final WebApplicationException ex) {
-            throw ex;
-        } catch (final Exception ex) {
-            LOGGER.error("Error handling dataset: {}", ex.getMessage());
         }
 
         LOGGER.error("Unable to persist data to location at {}", res.getIdentifier());
