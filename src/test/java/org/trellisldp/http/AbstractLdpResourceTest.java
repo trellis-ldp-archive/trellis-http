@@ -150,44 +150,33 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     private final static BlankNode bnode = rdf.createBlankNode();
 
+    private final static String BINARY_MIME_TYPE = "text/plain";
+
+    private final static Long BINARY_SIZE = 100L;
+
     private final static String REPO1 = "repo1";
     private final static String REPO2 = "repo2";
     private final static String REPO3 = "repo3";
     private final static String REPO4 = "repo4";
+
     private final static String BASE_URL = "http://example.org/";
 
     private final static String RANDOM_VALUE = "randomValue";
 
     private final static String RESOURCE_PATH = REPO1 + "/resource";
-
     private final static String CHILD_PATH = RESOURCE_PATH + "/child";
-
     private final static String BINARY_PATH = REPO1 + "/binary";
-
     private final static String NON_EXISTENT_PATH = REPO1 + "/nonexistent";
-
     private final static String DELETED_PATH = REPO1 + "/deleted";
-
     private final static String USER_DELETED_PATH = REPO1 + "/userdeleted";
 
-    private final static String BINARY_MIME_TYPE = "text/plain";
-
-    private final static Long BINARY_SIZE = 100L;
-
     private final static IRI identifier = rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH);
-
     private final static IRI root = rdf.createIRI(TRELLIS_PREFIX + REPO1);
-
     private final static IRI binaryIdentifier = rdf.createIRI(TRELLIS_PREFIX + BINARY_PATH);
-
     private final static IRI binaryInternalIdentifier = rdf.createIRI("file:some/file");
-
     private final static IRI nonexistentIdentifier = rdf.createIRI(TRELLIS_PREFIX + NON_EXISTENT_PATH);
-
     private final static IRI childIdentifier = rdf.createIRI(TRELLIS_PREFIX + CHILD_PATH);
-
     private final static IRI deletedIdentifier = rdf.createIRI(TRELLIS_PREFIX + DELETED_PATH);
-
     private final static IRI userDeletedIdentifier = rdf.createIRI(TRELLIS_PREFIX + USER_DELETED_PATH);
 
     protected final static Map<String, String> partitions = new HashMap<String, String>() { {
@@ -1624,6 +1613,14 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testPutExistingMalformed() {
+        final Response res = target(RESOURCE_PATH).request()
+            .put(entity("<> <http://purl.org/dc/terms/title \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
     }
 
     @Test
