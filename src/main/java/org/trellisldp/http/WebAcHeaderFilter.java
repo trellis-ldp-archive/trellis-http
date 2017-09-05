@@ -30,7 +30,10 @@ public class WebAcHeaderFilter implements ContainerResponseFilter {
 
     @Override
     public void filter(final ContainerRequestContext req, final ContainerResponseContext res) throws IOException {
-        res.getHeaders().add(LINK, fromUri(req.getUriInfo().getAbsolutePathBuilder()
+        if (!req.getUriInfo().getQueryParameters().containsKey("ext") ||
+                !req.getUriInfo().getQueryParameters().get("ext").contains("acl")) {
+            res.getHeaders().add(LINK, fromUri(req.getUriInfo().getAbsolutePathBuilder()
                     .queryParam("ext", "acl").build()).rel(ACL).build());
+        }
     }
 }
