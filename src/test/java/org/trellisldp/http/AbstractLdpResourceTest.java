@@ -1418,6 +1418,23 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPostUnknownLinkType() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
+            .thenReturn(empty());
+
+        final Response res = target(RESOURCE_PATH).request()
+            .header("Link", "<http://example.com/types/Foo>; rel=\"type\"")
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(CREATED, res.getStatusInfo());
+        assertEquals(BASE_URL + RESOURCE_PATH + "/" + RANDOM_VALUE, res.getLocation().toString());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+    }
+
+    @Test
     public void testPostBadContent() {
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
@@ -1611,6 +1628,32 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testPutExistingUnknownLink() {
+        final Response res = target(RESOURCE_PATH).request()
+            .header("Link", "<http://example.com/types/Foo>; rel=\"type\"")
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testPutExistingSubclassLink() {
+        final Response res = target(RESOURCE_PATH).request()
+            .header("Link", LDP.Container + "; rel=\"type\"")
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 

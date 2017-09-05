@@ -148,7 +148,7 @@ public class PutHandler extends ContentBearingHandler {
         LOGGER.info("Setting resource as {}", identifier);
 
         final IRI ldpType = ofNullable(req.getLink()).filter(l -> "type".equals(l.getRel()))
-                    .map(Link::getUri).map(URI::toString).map(rdf::createIRI)
+                    .map(Link::getUri).map(URI::toString).filter(l -> l.startsWith(LDP.URI)).map(rdf::createIRI)
                     .filter(l -> !LDP.Resource.equals(l)).orElseGet(res::getInteractionModel);
 
         // It is not possible to change the LDP type to a type that is
