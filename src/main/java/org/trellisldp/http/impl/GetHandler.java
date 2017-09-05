@@ -292,19 +292,31 @@ public class GetHandler extends BaseLdpHandler {
         }
     }
 
-    private static ResponseBuilder basicGetResponseBuilder(final Resource res, final Optional<RDFSyntax> syntax) {
+    private ResponseBuilder basicGetResponseBuilder(final Resource res, final Optional<RDFSyntax> syntax) {
         final ResponseBuilder builder = ok();
 
         // Standard HTTP Headers
         builder.lastModified(from(res.getModified())).variants(VARIANTS);
-        syntax.ifPresent(s -> {
-            builder.header(VARY, PREFER);
-            builder.type(s.mediaType);
-        });
+
+        final IRI model;
+
+        if (isNull(req.getExt())) {
+            syntax.ifPresent(s -> {
+                builder.header(VARY, PREFER);
+                builder.type(s.mediaType);
+            });
+
+            model = res.getBinary().isPresent() && syntax.isPresent() ? LDP.RDFSource : res.getInteractionModel();
+            // Link headers from User data
+            res.getTypes().forEach(type -> builder.link(type.getIRIString(), "type"));
+            res.getInbox().map(IRI::getIRIString).ifPresent(inbox -> builder.link(inbox, "inbox"));
+            res.getAnnotationService().map(IRI::getIRIString).ifPresent(svc ->
+                    builder.link(svc, annotationService.getIRIString()));
+        } else {
+            model = LDP.RDFSource;
+        }
 
         // Add LDP-required headers
-        final IRI model = res.getBinary().isPresent() && syntax.isPresent() ?
-                LDP.RDFSource : res.getInteractionModel();
         ldpResourceTypes(model).forEach(type -> {
             builder.link(type.getIRIString(), "type");
             // Mementos don't accept POST or PATCH
@@ -317,12 +329,6 @@ public class GetHandler extends BaseLdpHandler {
                 builder.header(ACCEPT_PATCH, APPLICATION_SPARQL_UPDATE);
             }
         });
-
-        // Link headers from User data
-        res.getTypes().forEach(type -> builder.link(type.getIRIString(), "type"));
-        res.getInbox().map(IRI::getIRIString).ifPresent(inbox -> builder.link(inbox, "inbox"));
-        res.getAnnotationService().map(IRI::getIRIString).ifPresent(svc ->
-                builder.link(svc, annotationService.getIRIString()));
 
         // Memento-related headers
         if (res.isMemento()) {

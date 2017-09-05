@@ -1198,7 +1198,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertFalse(varies.contains(RANGE));
         assertFalse(varies.contains(WANT_DIGEST));
         assertTrue(varies.contains(ACCEPT_DATETIME));
-        assertTrue(varies.contains(PREFER));
+        assertFalse(varies.contains(PREFER));
     }
 
     @Test
