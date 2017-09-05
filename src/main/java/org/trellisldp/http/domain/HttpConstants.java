@@ -59,8 +59,6 @@ public final class HttpConstants {
 
     public static final String TIMEMAP = "timemap";
 
-    public static final String TRELLIS_PREFIX = "trellis:";
-
     public static final String UPLOADS = "uploads";
 
     public static final String UPLOAD_PREFIX = "upload/";

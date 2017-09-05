@@ -34,7 +34,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
-import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
+import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
+import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.RDF.type;
 
@@ -88,7 +89,6 @@ public class PostHandlerTest {
     private final static Instant time = ofEpochSecond(1496262729);
     private final static String baseUrl = "http://example.org/repo/";
     private final static RDF rdf = getInstance();
-    private final static String BNODE_PREFIX = "trellis:bnode/";
     private final static Map<String, String> partitions = emptyMap();
 
     @Mock
@@ -121,8 +121,8 @@ public class PostHandlerTest {
         when(mockResourceService.put(any(IRI.class), any(Dataset.class))).thenReturn(true);
         when(mockResourceService.skolemize(any(Literal.class))).then(returnsFirstArg());
         when(mockResourceService.skolemize(any(IRI.class))).then(returnsFirstArg());
-        when(mockResourceService.skolemize(any(BlankNode.class)))
-            .thenAnswer(inv -> rdf.createIRI(BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
+        when(mockResourceService.skolemize(any(BlankNode.class))).thenAnswer(inv ->
+                rdf.createIRI(TRELLIS_BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
 
         when(mockRequest.getSession()).thenReturn(new HttpSession());
         when(mockRequest.getPartition()).thenReturn("partition");

@@ -66,7 +66,6 @@ import static org.trellisldp.http.domain.HttpConstants.DIGEST;
 import static org.trellisldp.http.domain.HttpConstants.MEMENTO_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.PREFER;
 import static org.trellisldp.http.domain.HttpConstants.RANGE;
-import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.HttpConstants.UPLOAD_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.WANT_DIGEST;
@@ -75,6 +74,8 @@ import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON_TYPE;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
+import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
+import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.RDF.type;
 
@@ -143,8 +144,6 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     private final static RDF rdf = getInstance();
 
     private final static IRI agent = rdf.createIRI("user:agent");
-
-    private final static String BNODE_PREFIX = "trellis:bnode/";
 
     private final static String UPLOAD_SESSION_ID = "upload-session-id";
 
@@ -325,7 +324,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockResourceService.unskolemize(any(IRI.class)))
             .thenAnswer(inv -> {
                 final String uri = ((IRI) inv.getArgument(0)).getIRIString();
-                if (uri.startsWith(BNODE_PREFIX)) {
+                if (uri.startsWith(TRELLIS_BNODE_PREFIX)) {
                     return bnode;
                 }
                 return (IRI) inv.getArgument(0);
@@ -335,8 +334,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockResourceService.put(any(IRI.class), any(Dataset.class))).thenReturn(true);
         when(mockResourceService.skolemize(any(Literal.class))).then(returnsFirstArg());
         when(mockResourceService.skolemize(any(IRI.class))).then(returnsFirstArg());
-        when(mockResourceService.skolemize(any(BlankNode.class)))
-            .thenAnswer(inv -> rdf.createIRI(BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
+        when(mockResourceService.skolemize(any(BlankNode.class))).thenAnswer(inv ->
+                rdf.createIRI(TRELLIS_BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
         when(mockResource.stream()).thenReturn(Stream.of(
                 rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title, rdf.createLiteral("A title")),
                 rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.created,

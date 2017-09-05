@@ -27,6 +27,7 @@ import static org.mockito.MockitoAnnotations.initMocks;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE_TYPE;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES_TYPE;
+import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.time.Instant;
@@ -76,8 +77,6 @@ public class LdpForbiddenResourceTest extends JerseyTest {
     private final static IRI identifier = rdf.createIRI("trellis:repo1/resource");
 
     private final static IRI agent = rdf.createIRI("user:agent");
-
-    private final static String BNODE_PREFIX = "trellis:bnode/";
 
     private final static BlankNode bnode = rdf.createBlankNode();
 
@@ -157,7 +156,7 @@ public class LdpForbiddenResourceTest extends JerseyTest {
         when(mockResourceService.unskolemize(any(IRI.class)))
             .thenAnswer(inv -> {
                 final String uri = ((IRI) inv.getArgument(0)).getIRIString();
-                if (uri.startsWith(BNODE_PREFIX)) {
+                if (uri.startsWith(TRELLIS_BNODE_PREFIX)) {
                     return bnode;
                 }
                 return (IRI) inv.getArgument(0);
@@ -167,8 +166,8 @@ public class LdpForbiddenResourceTest extends JerseyTest {
         when(mockResourceService.put(any(IRI.class), any(Dataset.class))).thenReturn(true);
         when(mockResourceService.skolemize(any(Literal.class))).then(returnsFirstArg());
         when(mockResourceService.skolemize(any(IRI.class))).then(returnsFirstArg());
-        when(mockResourceService.skolemize(any(BlankNode.class)))
-            .thenAnswer(inv -> rdf.createIRI(BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
+        when(mockResourceService.skolemize(any(BlankNode.class))).thenAnswer(inv ->
+                rdf.createIRI(TRELLIS_BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
         when(mockResource.stream()).thenReturn(Stream.of(
                 rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title, rdf.createLiteral("A title")),
                 rdf.createQuad(Trellis.PreferAccessControl, identifier, ACL.mode, ACL.Control)));

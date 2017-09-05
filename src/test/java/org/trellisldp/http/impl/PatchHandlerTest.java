@@ -37,8 +37,9 @@ import static org.mockito.Mockito.verify;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_RANGES;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
-import static org.trellisldp.http.domain.HttpConstants.TRELLIS_PREFIX;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
+import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
+import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.RDF.type;
 
@@ -91,7 +92,6 @@ public class PatchHandlerTest {
     private final static Instant time = ofEpochSecond(1496262729);
     private final static String baseUrl = "http://localhost:8080/repo/";
     private final static RDF rdf = getInstance();
-    private final static String BNODE_PREFIX = "trellis:bnode/";
     private final static String insert = "INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}";
     private final static IRI identifier = rdf.createIRI("trellis:partition/resource");
 
@@ -124,8 +124,8 @@ public class PatchHandlerTest {
         when(mockResourceService.put(any(IRI.class), any(Dataset.class))).thenReturn(true);
         when(mockResourceService.skolemize(any(Literal.class))).then(returnsFirstArg());
         when(mockResourceService.skolemize(any(IRI.class))).then(returnsFirstArg());
-        when(mockResourceService.skolemize(any(BlankNode.class)))
-            .thenAnswer(inv -> rdf.createIRI(BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
+        when(mockResourceService.skolemize(any(BlankNode.class))).thenAnswer(inv ->
+                rdf.createIRI(TRELLIS_BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
         when(mockLdpRequest.getRequest()).thenReturn(mockRequest);
         when(mockLdpRequest.getPath()).thenReturn("resource");
         when(mockLdpRequest.getPartition()).thenReturn("");

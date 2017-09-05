@@ -28,6 +28,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.JSONLD.compacted;
 
@@ -124,19 +125,18 @@ public class RdfUtilsTest {
     @Test
     public void testSkolemize() {
         final IRI iri = rdf.createIRI("trellis:repository/resource");
-        final IRI anonIri = rdf.createIRI("trellis:bnode/foo");
+        final IRI anonIri = rdf.createIRI(TRELLIS_BNODE_PREFIX + "foo");
         final Literal literal = rdf.createLiteral("A title");
         final BlankNode bnode = rdf.createBlankNode("foo");
-        final String BNODE_PREFIX = "trellis:bnode/";
 
         when(mockResourceService.skolemize(any(Literal.class))).then(returnsFirstArg());
         when(mockResourceService.skolemize(any(IRI.class))).then(returnsFirstArg());
-        when(mockResourceService.skolemize(any(BlankNode.class)))
-            .thenAnswer(inv -> rdf.createIRI(BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
+        when(mockResourceService.skolemize(any(BlankNode.class))).thenAnswer(inv ->
+                rdf.createIRI(TRELLIS_BNODE_PREFIX + ((BlankNode) inv.getArgument(0)).uniqueReference()));
         when(mockResourceService.unskolemize(any(IRI.class)))
             .thenAnswer(inv -> {
                 final String uri = ((IRI) inv.getArgument(0)).getIRIString();
-                if (uri.startsWith(BNODE_PREFIX)) {
+                if (uri.startsWith(TRELLIS_BNODE_PREFIX)) {
                     return bnode;
                 }
                 return (IRI) inv.getArgument(0);
@@ -156,7 +156,8 @@ public class RdfUtilsTest {
 
         assertTrue(triples.stream().anyMatch(t -> t.getSubject().equals(iri)));
         assertTrue(triples.stream().anyMatch(t -> t.getObject().equals(literal)));
-        assertTrue(triples.stream().anyMatch(t -> t.getSubject().ntriplesString().startsWith("<" + BNODE_PREFIX)));
+        assertTrue(triples.stream().anyMatch(t -> t.getSubject().ntriplesString()
+                    .startsWith("<" + TRELLIS_BNODE_PREFIX)));
 
         triples.stream().map(RdfUtils.unskolemizeTriples(mockResourceService, "http://example.org/"))
             .forEach(t -> assertTrue(graph.contains(t)));

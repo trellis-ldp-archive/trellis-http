@@ -27,6 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 
 import java.time.Instant;
@@ -90,7 +91,8 @@ public class DeleteHandlerTest {
         when(mockResource.getTypes()).thenReturn(emptyList());
         when(mockResource.getMementos()).thenReturn(emptyList());
 
-        when(mockResourceService.skolemize(any(BlankNode.class))).thenReturn(rdf.createIRI("trellis:bnode/foo"));
+        when(mockResourceService.skolemize(any(BlankNode.class)))
+            .thenReturn(rdf.createIRI(TRELLIS_BNODE_PREFIX + "foo"));
         when(mockResourceService.skolemize(eq(iri))).thenReturn(iri);
         when(mockResourceService.skolemize(eq(AS.Delete))).thenReturn(AS.Delete);
         when(mockResourceService.skolemize(eq(PROV.Activity))).thenReturn(PROV.Activity);
