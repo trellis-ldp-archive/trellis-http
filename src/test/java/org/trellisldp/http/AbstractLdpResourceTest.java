@@ -826,6 +826,16 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testGetTimeMapLinkInvalidFormat() throws IOException {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "timemap").request()
+            .accept("some/made-up-format").get();
+
+        assertEquals(NOT_ACCEPTABLE, res.getStatusInfo());
+    }
+
+    @Test
     public void testGetTimeMapLink() throws IOException {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResource.getMementos()).thenReturn(asList(
@@ -1969,6 +1979,22 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testPatchExistingResponse() throws IOException {
+        final Response res = target(RESOURCE_PATH).request()
+            .header("Prefer", "return=representation; include=\"" + Trellis.PreferUserManaged.getIRIString() + "\"")
+            .method("PATCH", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
+                        APPLICATION_SPARQL_UPDATE));
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        assertTrue(entity.contains("A title"));
     }
 
     @Test

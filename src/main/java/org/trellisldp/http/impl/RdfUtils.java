@@ -55,9 +55,9 @@ import org.trellisldp.spi.ResourceService;
  */
 public final class RdfUtils {
 
-    private static Logger LOGGER = getLogger(RdfUtils.class);
+    private static final Logger LOGGER = getLogger(RdfUtils.class);
 
-    private static RDF rdf = getInstance();
+    private static final RDF rdf = getInstance();
 
     /**
      * Create a filter based on a Prefer header

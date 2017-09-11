@@ -18,6 +18,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.time.ZonedDateTime.parse;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
@@ -54,6 +55,7 @@ import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -118,19 +120,18 @@ public final class MementoResource {
         builder.links(links.toArray(new Link[0])).link(Resource.getIRIString(), "type")
             .link(RDFSource.getIRIString(), "type").header(ALLOW, join(",", GET, HEAD, OPTIONS));
 
-        final Optional<RDFSyntax> syntax = getOutputSyntax(acceptableTypes);
-        if (syntax.isPresent()) {
-            final IRI profile = ofNullable(getProfile(acceptableTypes, syntax.get())).orElse(expanded);
+        final RDFSyntax syntax = getOutputSyntax(acceptableTypes).orElse(null);
+        if (nonNull(syntax)) {
+            final IRI profile = ofNullable(getProfile(acceptableTypes, syntax)).orElse(expanded);
 
             final StreamingOutput stream = new StreamingOutput() {
                 @Override
                 public void write(final OutputStream out) throws IOException {
-                    serializer.write(links.stream().flatMap(linkToQuads).map(Quad::asTriple), out, syntax.get(),
-                            profile);
+                    serializer.write(links.stream().flatMap(linkToQuads).map(Quad::asTriple), out, syntax, profile);
                 }
             };
 
-            return builder.type(syntax.get().mediaType).entity(stream);
+            return builder.type(syntax.mediaType).entity(stream);
         }
 
         return builder.type(APPLICATION_LINK_FORMAT)
@@ -144,8 +145,11 @@ public final class MementoResource {
             if (syntax.isPresent()) {
                 return syntax;
             }
+            if (type.isCompatible(MediaType.valueOf(APPLICATION_LINK_FORMAT))) {
+                return empty();
+            }
         }
-        return empty();
+        throw new NotAcceptableException();
     }
 
     /**

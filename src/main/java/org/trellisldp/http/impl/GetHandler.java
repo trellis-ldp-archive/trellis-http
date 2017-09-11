@@ -133,16 +133,11 @@ public class GetHandler extends BaseLdpHandler {
         final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
 
         // Check if this is already deleted
-        LOGGER.debug("Checking if the resource is deleted");
         checkDeleted(res, identifier);
 
-        LOGGER.debug("No, it's not deleted");
-        LOGGER.debug(req.getHeaders().getAcceptableMediaTypes().toString());
-        LOGGER.debug("HERE");
+        LOGGER.debug("Acceptable media types: {}", req.getHeaders().getAcceptableMediaTypes());
         final Optional<RDFSyntax> syntax = getSyntax(req.getHeaders().getAcceptableMediaTypes(), res.getBinary()
                 .map(b -> b.getMimeType().orElse(APPLICATION_OCTET_STREAM)));
-        syntax.ifPresent(s -> LOGGER.debug("Syntax: {}", s));
-        LOGGER.debug("THERE");
 
         if (ACL.equals(req.getExt()) && !res.hasAcl()) {
             throw new NotFoundException();
@@ -152,7 +147,6 @@ public class GetHandler extends BaseLdpHandler {
 
         // Add NonRDFSource-related "describe*" link headers
         res.getBinary().ifPresent(ds -> {
-            LOGGER.debug("Has binary");
             if (syntax.isPresent()) {
                 builder.link(identifier + "#description", "canonical").link(identifier, "describes");
             } else {
@@ -180,8 +174,6 @@ public class GetHandler extends BaseLdpHandler {
 
     private ResponseBuilder getLdpRs(final String identifier, final Resource res, final ResponseBuilder builder,
             final RDFSyntax syntax, final IRI profile) {
-
-        LOGGER.debug("Fetching rdf");
 
         // Check for a cache hit
         final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier), true);
@@ -234,8 +226,6 @@ public class GetHandler extends BaseLdpHandler {
 
     private ResponseBuilder getLdpNr(final String identifier, final Resource res, final ResponseBuilder builder) {
 
-        LOGGER.debug("Getting RDF");
-
         final Instant mod = res.getBinary().map(Binary::getModified).orElseThrow(() ->
                 new WebApplicationException("Could not access binary metadata for " + res.getIdentifier()));
         final EntityTag etag = new EntityTag(md5Hex(mod + identifier));
@@ -247,7 +237,6 @@ public class GetHandler extends BaseLdpHandler {
         final IRI dsid = res.getBinary().map(Binary::getIdentifier).orElseThrow(() ->
                 new WebApplicationException("Could not access binary metadata for " + res.getIdentifier()));
 
-        LOGGER.debug("Preparing output");
         try (final InputStream binary = binaryService.getContent(req.getPartition(), dsid).orElseThrow(() ->
                 new WebApplicationException("Could not load binary resolver for " + dsid))) {
 
