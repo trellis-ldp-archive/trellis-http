@@ -44,6 +44,8 @@ import static org.trellisldp.vocabulary.PROV.startedAtTime;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 import static org.trellisldp.vocabulary.XSD.dateTime;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +57,7 @@ import java.util.stream.Stream;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Quad;
@@ -109,24 +112,29 @@ public final class MementoResource {
 
         final List<MediaType> acceptableTypes = req.getHeaders().getAcceptableMediaTypes();
         final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
-        final Response.ResponseBuilder builder = Response.ok().link(identifier, ORIGINAL + " " + TIMEGATE);
         final List<Link> links = getMementoLinks(identifier, resource.getMementos()).collect(toList());
-        builder.links(links.toArray(new Link[0]))
-               .header(ALLOW, join(",", GET, HEAD, OPTIONS));
-        builder.link(Resource.getIRIString(), "type");
-        builder.link(RDFSource.getIRIString(), "type");
+
+        final Response.ResponseBuilder builder = Response.ok().link(identifier, ORIGINAL + " " + TIMEGATE);
+        builder.links(links.toArray(new Link[0])).link(Resource.getIRIString(), "type")
+            .link(RDFSource.getIRIString(), "type").header(ALLOW, join(",", GET, HEAD, OPTIONS));
 
         final Optional<RDFSyntax> syntax = getOutputSyntax(acceptableTypes);
         if (syntax.isPresent()) {
-            final IRI profile = getProfile(acceptableTypes, syntax.get());
-            builder.type(syntax.get().mediaType);
-            builder.entity(ResourceStreamer.quadStreamer(serializer, links.stream().flatMap(linkToQuads),
-                        syntax.get(), ofNullable(profile).orElse(expanded)));
-        } else {
-            builder.type(APPLICATION_LINK_FORMAT);
-            builder.entity(links.stream().map(Link::toString).collect(joining(",\n")) + "\n");
+            final IRI profile = ofNullable(getProfile(acceptableTypes, syntax.get())).orElse(expanded);
+
+            final StreamingOutput stream = new StreamingOutput() {
+                @Override
+                public void write(final OutputStream out) throws IOException {
+                    serializer.write(links.stream().flatMap(linkToQuads).map(Quad::asTriple), out, syntax.get(),
+                            profile);
+                }
+            };
+
+            return builder.type(syntax.get().mediaType).entity(stream);
         }
-        return builder;
+
+        return builder.type(APPLICATION_LINK_FORMAT)
+            .entity(links.stream().map(Link::toString).collect(joining(",\n")) + "\n");
     }
 
     private Optional<RDFSyntax> getOutputSyntax(final List<MediaType> acceptableTypes) {
