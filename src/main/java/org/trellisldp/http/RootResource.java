@@ -27,6 +27,8 @@ import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 
 import com.codahale.metrics.annotation.Timed;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +43,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.rdf.api.IRI;
@@ -48,7 +51,6 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.Triple;
 import org.slf4j.Logger;
 
-import org.trellisldp.http.impl.ResourceStreamer;
 import org.trellisldp.spi.IOService;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
@@ -109,14 +111,20 @@ public class RootResource extends BaseLdpResource {
         final RDFSyntax syntax = getSyntax(headers.getAcceptableMediaTypes(), empty())
             .orElseThrow(NotAcceptableException::new);
 
+        final IRI profile = ofNullable(getProfile(headers.getAcceptableMediaTypes(), syntax))
+            .orElseGet(() -> getDefaultProfile(syntax, identifier));
+
+        final StreamingOutput stream = new StreamingOutput() {
+            @Override
+            public void write(final OutputStream out) throws IOException {
+                ioService.write(graph.stream(), out, syntax, profile);
+            }
+        };
+
         return ok().header(ALLOW, join(",", HttpMethod.GET, HEAD, OPTIONS))
                     .link(LDP.Resource.getIRIString(), "type")
                     .link(LDP.RDFSource.getIRIString(), "type")
-                    .type(syntax.mediaType)
-                    .entity(ResourceStreamer.tripleStreamer(ioService, graph.stream().map(x -> (Triple) x),
-                        syntax, ofNullable(getProfile(headers.getAcceptableMediaTypes(), syntax)).orElseGet(() ->
-                            getDefaultProfile(syntax, identifier))))
-                    .build();
+                    .type(syntax.mediaType).entity(stream).build();
     }
 
     private static Boolean isUrl(final String value) {

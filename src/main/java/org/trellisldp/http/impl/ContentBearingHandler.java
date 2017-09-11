@@ -24,10 +24,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Map;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
@@ -92,9 +94,15 @@ class ContentBearingHandler extends BaseLdpHandler {
     protected void checkConstraint(final TrellisDataset dataset, final IRI graphName, final IRI type,
             final String baseUrl, final RDFSyntax syntax) {
         dataset.getGraph(graphName).flatMap(g -> constraintService.constrainedBy(type, baseUrl, g)).ifPresent(v -> {
+            final StreamingOutput stream = new StreamingOutput() {
+                @Override
+                public void write(final OutputStream out) throws IOException {
+                    ioService.write(v.getTriples().stream(), out, syntax);
+                }
+            };
+
             throw new WebApplicationException(status(CONFLICT)
-                .entity(ResourceStreamer.tripleStreamer(ioService, v.getTriples().stream(), syntax))
-                .link(v.getConstraint().getIRIString(), LDP.constrainedBy.getIRIString()).build());
+                .entity(stream).link(v.getConstraint().getIRIString(), LDP.constrainedBy.getIRIString()).build());
         });
     }
 
