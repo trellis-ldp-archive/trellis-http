@@ -13,6 +13,7 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.util.Collections.singletonMap;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
@@ -38,7 +39,6 @@ import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 import java.io.File;
 import java.net.URI;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -183,9 +183,8 @@ public class PutHandler extends ContentBearingHandler {
                     return status(BAD_REQUEST);
                 }
 
-                // TODO JDK9, use map literal
-                final Map<String, String> metadata = new HashMap<>();
-                metadata.put(CONTENT_TYPE, ofNullable(req.getContentType()).orElse(APPLICATION_OCTET_STREAM));
+                final Map<String, String> metadata = singletonMap(CONTENT_TYPE, ofNullable(req.getContentType())
+                        .orElse(APPLICATION_OCTET_STREAM));
                 final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(req.getPartition()).get());
 
                 // Persist the content
