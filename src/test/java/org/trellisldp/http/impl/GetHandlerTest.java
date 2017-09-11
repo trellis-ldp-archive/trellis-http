@@ -73,7 +73,6 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.WebApplicationException;
@@ -151,7 +150,6 @@ public class GetHandlerTest {
         when(mockResource.getInbox()).thenReturn(empty());
         when(mockResource.getAnnotationService()).thenReturn(empty());
         when(mockResource.getTypes()).thenReturn(emptyList());
-        when(mockResource.stream()).thenReturn(Stream.empty());
         when(mockBinaryService.getContent(any(), any()))
             .thenReturn(of(new ByteArrayInputStream("Some data".getBytes(UTF_8))));
 

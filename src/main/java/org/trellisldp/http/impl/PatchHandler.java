@@ -41,6 +41,8 @@ import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +53,7 @@ import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
@@ -187,11 +190,19 @@ public class PatchHandler extends BaseLdpHandler {
                     .map(prefer -> {
                         final RDFSyntax syntax = getSyntax(req.getHeaders().getAcceptableMediaTypes(), empty())
                             .orElseThrow(NotAcceptableException::new);
+                        final IRI profile = ofNullable(getProfile(req.getHeaders().getAcceptableMediaTypes(), syntax))
+                            .orElseGet(() -> getDefaultProfile(syntax, identifier));
+
+                        final StreamingOutput stream = new StreamingOutput() {
+                            @Override
+                            public void write(final OutputStream out) throws IOException {
+                                ioService.write(triples.stream().map(unskolemizeTriples(resourceService, baseUrl)),
+                                        out, syntax, profile);
+                            }
+                        };
+
                         return builder.header(PREFERENCE_APPLIED, "return=representation").type(syntax.mediaType)
-                               .entity(ResourceStreamer.tripleStreamer(ioService, triples.stream()
-                                       .map(unskolemizeTriples(resourceService, baseUrl)), syntax,
-                                           ofNullable(getProfile(req.getHeaders().getAcceptableMediaTypes(), syntax))
-                                               .orElseGet(() -> getDefaultProfile(syntax, identifier))));
+                               .entity(stream);
                     }).orElseGet(() -> builder.status(NO_CONTENT));
             }
         }

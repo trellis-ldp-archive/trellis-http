@@ -18,8 +18,9 @@ import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
+import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.DEFAULT_REPRESENTATION;
-import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
+import static org.trellisldp.http.domain.RdfMediaType.MEDIA_TYPES;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.spi.RDFUtils.toExternalTerm;
 import static org.trellisldp.spi.RDFUtils.toInternalTerm;
@@ -35,7 +36,6 @@ import java.util.function.Predicate;
 
 import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Variant;
 
 import org.apache.commons.rdf.api.BlankNodeOrIRI;
 import org.apache.commons.rdf.api.IRI;
@@ -44,6 +44,7 @@ import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.Triple;
 
+import org.slf4j.Logger;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ResourceService;
 
@@ -53,6 +54,8 @@ import org.trellisldp.spi.ResourceService;
  * @author acoburn
  */
 public final class RdfUtils {
+
+    private static Logger LOGGER = getLogger(RdfUtils.class);
 
     private static RDF rdf = getInstance();
 
@@ -131,18 +134,18 @@ public final class RdfUtils {
             }
             return of(TURTLE);
         }
-
         final Optional<MediaType> mt = mimeType.map(MediaType::valueOf);
         for (final MediaType type : acceptableTypes) {
             if (mt.filter(type::isCompatible).isPresent()) {
                 return empty();
             }
-            final Optional<RDFSyntax> syntax = VARIANTS.stream().map(Variant::getMediaType).filter(type::isCompatible)
+            final Optional<RDFSyntax> syntax = MEDIA_TYPES.stream().filter(type::isCompatible)
                 .findFirst().map(MediaType::toString).flatMap(RDFSyntax::byMediaType);
             if (syntax.isPresent()) {
                 return syntax;
             }
         }
+        LOGGER.debug("Valid syntax not found among {} or {}", acceptableTypes, mimeType);
         throw new NotAcceptableException();
     }
 

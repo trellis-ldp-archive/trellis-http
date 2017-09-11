@@ -142,6 +142,7 @@ public class LdpResource extends BaseLdpResource {
         }
 
         // Fetch the current state of the resource
+        LOGGER.info("Getting resource at: {}", identifier);
         return resourceService.get(identifier).map(getHandler::getRepresentation)
             .orElseGet(() -> status(NOT_FOUND)).build();
     }

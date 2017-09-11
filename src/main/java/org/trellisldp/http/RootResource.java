@@ -19,12 +19,8 @@ import static java.util.Optional.ofNullable;
 import static javax.ws.rs.HttpMethod.HEAD;
 import static javax.ws.rs.HttpMethod.OPTIONS;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
-import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static javax.ws.rs.core.Response.ok;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON;
-import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES;
-import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 import static org.trellisldp.http.impl.RdfUtils.getDefaultProfile;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
@@ -64,6 +60,7 @@ import org.trellisldp.vocabulary.RDFS;
  * @author acoburn
  */
 @Path("")
+@Produces({"text/turtle,application/ld+json,application/n-triples,text/html"})
 public class RootResource extends BaseLdpResource {
 
     private static final Logger LOGGER = getLogger(RootResource.class);
@@ -93,7 +90,6 @@ public class RootResource extends BaseLdpResource {
      */
     @GET
     @Timed
-    @Produces({TEXT_TURTLE, APPLICATION_LD_JSON, APPLICATION_N_TRIPLES, TEXT_HTML})
     public Response getPartitions(@Context final UriInfo uriInfo, @Context final HttpHeaders headers) {
 
         final IRI identifier = rdf.createIRI(

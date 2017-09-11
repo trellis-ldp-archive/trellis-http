@@ -18,6 +18,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
 import static java.time.ZonedDateTime.parse;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
+import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
@@ -32,8 +33,8 @@ import static javax.ws.rs.core.Response.Status.FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
+import static org.trellisldp.http.domain.RdfMediaType.MEDIA_TYPES;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
-import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 import static org.trellisldp.vocabulary.JSONLD.expanded;
 import static org.trellisldp.vocabulary.LDP.RDFSource;
 import static org.trellisldp.vocabulary.LDP.Resource;
@@ -114,7 +115,8 @@ public final class MementoResource {
                .header(ALLOW, join(",", GET, HEAD, OPTIONS));
         builder.link(Resource.getIRIString(), "type");
         builder.link(RDFSource.getIRIString(), "type");
-        final Optional<RDFSyntax> syntax = getSyntax(acceptableTypes, of(APPLICATION_LINK_FORMAT));
+
+        final Optional<RDFSyntax> syntax = getOutputSyntax(acceptableTypes);
         if (syntax.isPresent()) {
             final IRI profile = getProfile(acceptableTypes, syntax.get());
             builder.type(syntax.get().mediaType);
@@ -125,6 +127,17 @@ public final class MementoResource {
             builder.entity(links.stream().map(Link::toString).collect(joining(",\n")) + "\n");
         }
         return builder;
+    }
+
+    private Optional<RDFSyntax> getOutputSyntax(final List<MediaType> acceptableTypes) {
+        for (final MediaType type : acceptableTypes) {
+            final Optional<RDFSyntax> syntax = MEDIA_TYPES.stream().filter(type::isCompatible)
+                .findFirst().map(MediaType::toString).flatMap(RDFSyntax::byMediaType);
+            if (syntax.isPresent()) {
+                return syntax;
+            }
+        }
+        return empty();
     }
 
     /**

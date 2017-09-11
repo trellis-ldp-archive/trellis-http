@@ -52,6 +52,7 @@ import static org.trellisldp.http.domain.Prefer.PREFER_OMIT;
 import static org.trellisldp.http.domain.Prefer.PREFER_REPRESENTATION;
 import static org.trellisldp.http.domain.Prefer.PREFER_RETURN;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
+import static org.trellisldp.http.domain.RdfMediaType.MEDIA_TYPES;
 import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 import static org.trellisldp.http.impl.RdfUtils.filterWithPrefer;
 import static org.trellisldp.http.impl.RdfUtils.getDefaultProfile;
@@ -78,7 +79,6 @@ import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.StreamingOutput;
-import javax.ws.rs.core.Variant;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
@@ -134,10 +134,16 @@ public class GetHandler extends BaseLdpHandler {
         final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
 
         // Check if this is already deleted
+        LOGGER.debug("Checking if the resource is deleted");
         checkDeleted(res, identifier);
 
+        LOGGER.debug("No, it's not deleted");
+        LOGGER.debug(req.getHeaders().getAcceptableMediaTypes().toString());
+        LOGGER.debug("HERE");
         final Optional<RDFSyntax> syntax = getSyntax(req.getHeaders().getAcceptableMediaTypes(), res.getBinary()
                 .map(b -> b.getMimeType().orElse(APPLICATION_OCTET_STREAM)));
+        syntax.ifPresent(s -> LOGGER.debug("Syntax: {}", s));
+        LOGGER.debug("THERE");
 
         if (ACL.equals(req.getExt()) && !res.hasAcl()) {
             throw new NotFoundException();
@@ -147,6 +153,7 @@ public class GetHandler extends BaseLdpHandler {
 
         // Add NonRDFSource-related "describe*" link headers
         res.getBinary().ifPresent(ds -> {
+            LOGGER.debug("Has binary");
             if (syntax.isPresent()) {
                 builder.link(identifier + "#description", "canonical").link(identifier, "describes");
             } else {
@@ -174,6 +181,8 @@ public class GetHandler extends BaseLdpHandler {
 
     private ResponseBuilder getLdpRs(final String identifier, final Resource res, final ResponseBuilder builder,
             final RDFSyntax syntax, final IRI profile) {
+
+        LOGGER.debug("Fetching rdf");
 
         // Check for a cache hit
         final EntityTag etag = new EntityTag(md5Hex(res.getModified() + identifier), true);
@@ -210,14 +219,24 @@ public class GetHandler extends BaseLdpHandler {
             return builder.status(NO_CONTENT);
         }
 
-        try (final Stream<Quad> stream = res.stream().filter(filterWithPrefer(prefer))
-                .map(unskolemizeQuads(resourceService, req.getBaseUrl(partitions)))) {
-            return builder.entity(ResourceStreamer.quadStreamer(ioService, stream,
-                    syntax, ofNullable(profile).orElseGet(() -> getDefaultProfile(syntax, identifier))));
-        }
+        // Stream the rdf content
+        final StreamingOutput stream = new StreamingOutput() {
+            @Override
+            public void write(final OutputStream out) throws IOException {
+                try (final Stream<Quad> stream = res.stream().filter(filterWithPrefer(prefer))
+                        .map(unskolemizeQuads(resourceService, req.getBaseUrl(partitions)))) {
+                   ioService.write(stream.map(Quad::asTriple), out, syntax,
+                           ofNullable(profile).orElseGet(() -> getDefaultProfile(syntax, identifier)));
+                }
+            }
+        };
+        return builder.entity(stream);
     }
 
     private ResponseBuilder getLdpNr(final String identifier, final Resource res, final ResponseBuilder builder) {
+
+        LOGGER.debug("Getting RDF");
+
         final Instant mod = res.getBinary().map(Binary::getModified).orElseThrow(() ->
                 new WebApplicationException("Could not access binary metadata for " + res.getIdentifier()));
         final EntityTag etag = new EntityTag(md5Hex(mod + identifier));
@@ -229,6 +248,7 @@ public class GetHandler extends BaseLdpHandler {
         final IRI dsid = res.getBinary().map(Binary::getIdentifier).orElseThrow(() ->
                 new WebApplicationException("Could not access binary metadata for " + res.getIdentifier()));
 
+        LOGGER.debug("Preparing output");
         try (final InputStream binary = binaryService.getContent(req.getPartition(), dsid).orElseThrow(() ->
                 new WebApplicationException("Could not load binary resolver for " + dsid))) {
 
@@ -321,7 +341,7 @@ public class GetHandler extends BaseLdpHandler {
             builder.link(type.getIRIString(), "type");
             // Mementos don't accept POST or PATCH
             if (LDP.Container.equals(type) && !res.isMemento()) {
-                builder.header(ACCEPT_POST, VARIANTS.stream().map(Variant::getMediaType)
+                builder.header(ACCEPT_POST, MEDIA_TYPES.stream()
                         .map(mt -> mt.getType() + "/" + mt.getSubtype())
                         // text/html is excluded
                         .filter(mt -> !TEXT_HTML.equals(mt)).collect(joining(",")));
