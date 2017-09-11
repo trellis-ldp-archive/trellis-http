@@ -1612,13 +1612,6 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
-    public void testPostInvalidContent() {
-        final Response res = target(RESOURCE_PATH).request().post(entity("blah blah blah", "invalid/type"));
-
-        assertEquals(UNSUPPORTED_MEDIA_TYPE, res.getStatusInfo());
-    }
-
-    @Test
     public void testPostSlash() {
         final Response res = target(RESOURCE_PATH + "/").request().header("Slug", "test")
             .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
@@ -1734,14 +1727,6 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
             .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
         assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
-    }
-
-    @Test
-    public void testPutInvalidContent() {
-        final Response res = target(RESOURCE_PATH).request().put(entity("blah blah blah", "invalid/type"));
-
-        assertEquals(UNSUPPORTED_MEDIA_TYPE, res.getStatusInfo());
-        assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
     @Test

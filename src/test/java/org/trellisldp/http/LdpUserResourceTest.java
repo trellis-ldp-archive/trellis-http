@@ -14,7 +14,6 @@
 package org.trellisldp.http;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import javax.ws.rs.core.Application;
@@ -34,7 +33,7 @@ public class LdpUserResourceTest extends AbstractLdpResourceTest {
 
         final ResourceConfig config = new ResourceConfig();
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService,
-                    mockBinaryService, partitions, singletonList("invalid/type")));
+                    mockBinaryService, partitions));
         config.register(new TestAuthenticationFilter("testUser", "group"));
         config.register(TrailingSlashFilter.class);
         config.register(new WebAcFilter(partitions, emptyList(), mockAccessControlService));

@@ -23,7 +23,6 @@ import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
 import static javax.ws.rs.core.Response.status;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
@@ -36,7 +35,6 @@ import static org.trellisldp.vocabulary.Trellis.DeletedResource;
 import com.codahale.metrics.annotation.Timed;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
@@ -86,8 +84,6 @@ public class LdpResource extends BaseLdpResource {
 
     protected final ConstraintService constraintService;
 
-    protected final Collection<String> unsupportedTypes;
-
     /**
      * Create a LdpResource
      * @param resourceService the resource service
@@ -95,17 +91,15 @@ public class LdpResource extends BaseLdpResource {
      * @param constraintService the RDF constraint enforcing service
      * @param binaryService the datastream service
      * @param partitions a map of partitions for use with custom hostnames
-     * @param unsupportedMediaTypes any unsupported media types
      */
     public LdpResource(final ResourceService resourceService, final IOService ioService,
             final ConstraintService constraintService, final BinaryService binaryService,
-            final Map<String, String> partitions, final Collection<String> unsupportedMediaTypes) {
+            final Map<String, String> partitions) {
         super(partitions);
         this.resourceService = resourceService;
         this.ioService = ioService;
         this.binaryService = binaryService;
         this.constraintService = constraintService;
-        this.unsupportedTypes = unsupportedMediaTypes;
     }
 
     /**
@@ -222,10 +216,6 @@ public class LdpResource extends BaseLdpResource {
     @Timed
     public Response createResource(@BeanParam final LdpRequest req, final File body) {
 
-        if (unsupportedTypes.contains(req.getContentType())) {
-            return status(UNSUPPORTED_MEDIA_TYPE).build();
-        }
-
         final String path = req.getPartition() + req.getPath();
         final String identifier = "/" + ofNullable(req.getSlug())
             .orElseGet(resourceService.getIdentifierSupplier());
@@ -272,10 +262,6 @@ public class LdpResource extends BaseLdpResource {
     @PUT
     @Timed
     public Response setResource(@BeanParam final LdpRequest req, final File body) {
-
-        if (unsupportedTypes.contains(req.getContentType())) {
-            return status(UNSUPPORTED_MEDIA_TYPE).build();
-        }
 
         if (nonNull(req.getVersion()) || UPLOADS.equals(req.getExt())) {
             return status(METHOD_NOT_ALLOWED).build();
