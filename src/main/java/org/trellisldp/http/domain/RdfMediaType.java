@@ -20,7 +20,6 @@ import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import java.util.List;
 
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Variant;
 
 /**
  * RDF-based {@link MediaType} definitions
@@ -46,9 +45,6 @@ public final class RdfMediaType {
     public static final String TEXT_TURTLE = "text/turtle;charset=utf-8";
 
     public static final MediaType TEXT_TURTLE_TYPE = new MediaType("text", "turtle", "utf-8");
-
-    public static final List<Variant> VARIANTS = unmodifiableList(Variant.mediaTypes(TEXT_TURTLE_TYPE,
-                APPLICATION_LD_JSON_TYPE, APPLICATION_N_TRIPLES_TYPE, TEXT_HTML_TYPE).build());
 
     public static final List<MediaType> MEDIA_TYPES = unmodifiableList(asList(TEXT_TURTLE_TYPE,
                 APPLICATION_LD_JSON_TYPE, APPLICATION_N_TRIPLES_TYPE, TEXT_HTML_TYPE));

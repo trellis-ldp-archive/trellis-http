@@ -53,7 +53,6 @@ import static org.trellisldp.http.domain.Prefer.PREFER_REPRESENTATION;
 import static org.trellisldp.http.domain.Prefer.PREFER_RETURN;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.MEDIA_TYPES;
-import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 import static org.trellisldp.http.impl.RdfUtils.filterWithPrefer;
 import static org.trellisldp.http.impl.RdfUtils.getDefaultProfile;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
@@ -316,7 +315,7 @@ public class GetHandler extends BaseLdpHandler {
         final ResponseBuilder builder = ok();
 
         // Standard HTTP Headers
-        builder.lastModified(from(res.getModified())).variants(VARIANTS);
+        builder.lastModified(from(res.getModified()));
 
         final IRI model;
 

@@ -33,7 +33,7 @@ import static org.trellisldp.http.domain.HttpConstants.PATCH;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
-import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
+import static org.trellisldp.http.domain.RdfMediaType.MEDIA_TYPES;
 import static org.trellisldp.vocabulary.LDP.NonRDFSource;
 import static org.trellisldp.vocabulary.LDP.RDFSource;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
@@ -42,7 +42,6 @@ import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 import java.util.Map;
 
 import javax.ws.rs.core.Response.ResponseBuilder;
-import javax.ws.rs.core.Variant;
 
 import org.apache.commons.rdf.api.IRI;
 import org.slf4j.Logger;
@@ -104,8 +103,7 @@ public class OptionsHandler extends BaseLdpHandler {
             } else {
                 // Containers and binaries support POST
                 builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH, PUT, DELETE, POST));
-                builder.header(ACCEPT_POST, VARIANTS.stream().map(Variant::getMediaType)
-                        .map(mt -> mt.getType() + "/" + mt.getSubtype())
+                builder.header(ACCEPT_POST, MEDIA_TYPES.stream().map(mt -> mt.getType() + "/" + mt.getSubtype())
                         .filter(mt -> !TEXT_HTML.equals(mt)).collect(joining(",")));
             }
         }

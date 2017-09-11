@@ -21,7 +21,6 @@ import static javax.ws.rs.HttpMethod.OPTIONS;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.Response.ok;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.http.domain.RdfMediaType.VARIANTS;
 import static org.trellisldp.http.impl.RdfUtils.getDefaultProfile;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.http.impl.RdfUtils.getSyntax;
@@ -113,7 +112,6 @@ public class RootResource extends BaseLdpResource {
         return ok().header(ALLOW, join(",", HttpMethod.GET, HEAD, OPTIONS))
                     .link(LDP.Resource.getIRIString(), "type")
                     .link(LDP.RDFSource.getIRIString(), "type")
-                    .variants(VARIANTS)
                     .type(syntax.mediaType)
                     .entity(ResourceStreamer.tripleStreamer(ioService, graph.stream().map(x -> (Triple) x),
                         syntax, ofNullable(getProfile(headers.getAcceptableMediaTypes(), syntax)).orElseGet(() ->
