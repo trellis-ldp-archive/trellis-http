@@ -197,10 +197,10 @@ public final class MementoResource {
 
     private static Stream<Link> getTimeMap(final String identifier, final Stream<VersionRange> mementos) {
         return mementos.reduce((acc, x) -> new VersionRange(acc.getFrom(), x.getUntil()))
-                .map(x -> Link.fromUri(identifier + "?ext=timemap").rel(TIMEMAP)
-                        .type(APPLICATION_LINK_FORMAT)
-                        .param(FROM, ofInstant(x.getFrom(), UTC).format(RFC_1123_DATE_TIME))
-                        .param(UNTIL, ofInstant(x.getUntil(), UTC).format(RFC_1123_DATE_TIME)).build())
+            .map(x -> Link.fromUri(identifier + "?ext=timemap").rel(TIMEMAP)
+                    .type(APPLICATION_LINK_FORMAT)
+                    .param(FROM, ofInstant(x.getFrom().minusNanos(1L).plusSeconds(1L), UTC).format(RFC_1123_DATE_TIME))
+                    .param(UNTIL, ofInstant(x.getUntil(), UTC).format(RFC_1123_DATE_TIME)).build())
                 // TODO use Optional::stream with JDK9
                 .map(Stream::of).orElseGet(Stream::empty);
     }
@@ -208,6 +208,7 @@ public final class MementoResource {
     private static Function<VersionRange, Link> mementoToLink(final String identifier) {
         return range ->
             Link.fromUri(identifier + "?version=" + range.getFrom().toEpochMilli()).rel(MEMENTO)
-                .param(DATETIME, ofInstant(range.getFrom(), UTC).format(RFC_1123_DATE_TIME)).build();
+                .param(DATETIME, ofInstant(range.getFrom().minusNanos(1L).plusSeconds(1L), UTC)
+                        .format(RFC_1123_DATE_TIME)).build();
     }
 }
