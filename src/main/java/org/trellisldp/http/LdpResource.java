@@ -106,6 +106,9 @@ public class LdpResource extends BaseLdpResource {
      * Perform a GET operation on an LDP Resource
      * @param req the request parameters
      * @return the response
+     *
+     * Note: The Memento implemenation pattern exactly follows
+     * <a href="https://tools.ietf.org/html/rfc7089#section-4.2.1">section 4.2.1 of RFC 7089</a>.
      */
     @GET
     @Timed

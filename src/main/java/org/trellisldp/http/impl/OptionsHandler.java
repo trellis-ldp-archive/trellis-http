@@ -34,6 +34,7 @@ import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.MEDIA_TYPES;
+import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.vocabulary.LDP.NonRDFSource;
 import static org.trellisldp.vocabulary.LDP.RDFSource;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
@@ -86,6 +87,8 @@ public class OptionsHandler extends BaseLdpHandler {
         checkDeleted(res, identifier);
 
         final ResponseBuilder builder = status(NO_CONTENT);
+
+        ldpResourceTypes(res.getInteractionModel()).forEach(type -> builder.link(type.getIRIString(), "type"));
 
         if (res.isMemento() || TIMEMAP.equals(req.getExt())) {
             // Mementos and TimeMaps are read-only

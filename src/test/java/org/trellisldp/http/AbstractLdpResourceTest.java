@@ -1252,9 +1252,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
 
-        // LDP type links are not part of OPTIONS responses
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
     }
 
@@ -1277,10 +1276,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
 
-        // LDP type links are not part of OPTIONS responses
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
     }
 
     @Test
@@ -1308,10 +1306,9 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
 
-        // LDP type links are not part of OPTIONS responses
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
-        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
     }
 
     @Test
