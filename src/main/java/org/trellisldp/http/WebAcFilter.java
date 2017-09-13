@@ -18,6 +18,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.nonNull;
 import static javax.ws.rs.Priorities.AUTHORIZATION;
+import static javax.ws.rs.core.HttpHeaders.LINK;
+import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
@@ -38,6 +40,8 @@ import javax.ws.rs.NotAllowedException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.PreMatching;
 
 import org.apache.commons.rdf.api.IRI;
@@ -55,7 +59,7 @@ import org.trellisldp.vocabulary.Trellis;
  */
 @PreMatching
 @Priority(AUTHORIZATION)
-public class WebAcFilter implements ContainerRequestFilter {
+public class WebAcFilter implements ContainerRequestFilter, ContainerResponseFilter {
 
     private static final RDF rdf = getInstance();
 
@@ -107,6 +111,15 @@ public class WebAcFilter implements ContainerRequestFilter {
             } else {
                 throw new NotAllowedException(status(METHOD_NOT_ALLOWED).build());
             }
+        }
+    }
+
+    @Override
+    public void filter(final ContainerRequestContext req, final ContainerResponseContext res) throws IOException {
+        if (!req.getUriInfo().getQueryParameters().containsKey("ext") ||
+                !req.getUriInfo().getQueryParameters().get("ext").contains("acl")) {
+            res.getHeaders().add(LINK, fromUri(req.getUriInfo().getAbsolutePathBuilder()
+                    .queryParam("ext", "acl").build()).rel(HttpConstants.ACL).build());
         }
     }
 

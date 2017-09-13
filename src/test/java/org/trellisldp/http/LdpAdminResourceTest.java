@@ -40,7 +40,6 @@ public class LdpAdminResourceTest extends AbstractLdpResourceTest {
         config.register(new AgentAuthorizationFilter(mockAgentService, "admin"));
         config.register(new MultipartUploader(mockResourceService, mockBinaryService));
         config.register(new CacheControlFilter(86400));
-        config.register(WebAcHeaderFilter.class);
         return config;
     }
 }
