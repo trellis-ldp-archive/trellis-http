@@ -14,8 +14,7 @@
 package org.trellisldp.http.domain;
 
 import static org.junit.Assert.assertEquals;
-
-import javax.ws.rs.WebApplicationException;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
@@ -26,23 +25,23 @@ public class VersionTest {
 
     @Test
     public void testVersion() {
-        final Version v = new Version("1493646202676");
+        final Version v = Version.valueOf("1493646202676");
         assertEquals("2017-05-01T13:43:22.676Z", v.getInstant().toString());
         assertEquals("2017-05-01T13:43:22.676Z", v.toString());
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testInvalidVersion() {
-        final Version v = new Version("blah");
+        assertNull(Version.valueOf("blah"));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testBadValue() {
-        final Version v = new Version("-13.12");
+        assertNull(Version.valueOf("-13.12"));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testNullValue() {
-        final Version v = new Version(null);
+        assertNull(Version.valueOf(null));
     }
 }

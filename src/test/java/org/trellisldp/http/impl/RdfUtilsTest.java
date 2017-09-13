@@ -108,7 +108,7 @@ public class RdfUtilsTest {
         final List<Quad> quads = asList(q1, q2, q3);
 
         final List<Quad> filtered = quads.stream().filter(RdfUtils.filterWithPrefer(
-                    new Prefer("return=representation; include=\"" +
+                    Prefer.valueOf("return=representation; include=\"" +
                         Trellis.PreferServerManaged.getIRIString() + "\""))).collect(toList());
 
         assertTrue(filtered.contains(q2));
@@ -116,7 +116,7 @@ public class RdfUtilsTest {
         assertEquals(2, filtered.size());
 
         final List<Quad> filtered2 = quads.stream().filter(RdfUtils.filterWithPrefer(
-                    new Prefer("return=representation"))).collect(toList());
+                    Prefer.valueOf("return=representation"))).collect(toList());
 
         assertTrue(filtered2.contains(q3));
         assertEquals(1, filtered2.size());

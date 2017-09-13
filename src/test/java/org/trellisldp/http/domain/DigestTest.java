@@ -14,8 +14,7 @@
 package org.trellisldp.http.domain;
 
 import static org.junit.Assert.assertEquals;
-
-import javax.ws.rs.WebApplicationException;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
@@ -26,7 +25,7 @@ public class DigestTest {
 
     @Test
     public void testDigest() {
-        final Digest d = new Digest("md5=HUXZLQLMuI/KZ5KDcJPcOA==");
+        final Digest d = Digest.valueOf("md5=HUXZLQLMuI/KZ5KDcJPcOA==");
         assertEquals("md5", d.getAlgorithm());
         assertEquals("HUXZLQLMuI/KZ5KDcJPcOA==", d.getDigest());
     }
@@ -38,8 +37,8 @@ public class DigestTest {
         assertEquals("HUXZLQLMuI/KZ5KDcJPcOA==", d.getDigest());
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testInvalidDigest() {
-        final Digest d = new Digest("blah");
+        assertNull(Digest.valueOf("blah"));
     }
 }

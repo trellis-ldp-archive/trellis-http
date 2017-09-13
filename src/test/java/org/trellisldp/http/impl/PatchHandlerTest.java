@@ -175,7 +175,7 @@ public class PatchHandlerTest {
     public void testPreferRepresentation() {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
-        when(mockLdpRequest.getPrefer()).thenReturn(new Prefer("return=representation"));
+        when(mockLdpRequest.getPrefer()).thenReturn(Prefer.valueOf("return=representation"));
 
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
                 mockResourceService, mockIoService, mockConstraintService);
@@ -197,7 +197,7 @@ public class PatchHandlerTest {
     public void testPreferHTMLRepresentation() {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
-        when(mockLdpRequest.getPrefer()).thenReturn(new Prefer("return=representation"));
+        when(mockLdpRequest.getPrefer()).thenReturn(Prefer.valueOf("return=representation"));
         when(mockLdpRequest.getHeaders().getAcceptableMediaTypes())
             .thenReturn(singletonList(MediaType.valueOf(RDFA_HTML.mediaType)));
 

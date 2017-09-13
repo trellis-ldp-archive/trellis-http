@@ -14,10 +14,13 @@
 package org.trellisldp.http.impl;
 
 import static java.lang.String.join;
+import static java.util.Collections.singletonList;
 import static java.util.Date.from;
 import static java.util.Objects.isNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.of;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.HEAD;
@@ -46,9 +49,7 @@ import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.RANGE;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.HttpConstants.WANT_DIGEST;
-import static org.trellisldp.http.domain.Prefer.PREFER_INCLUDE;
 import static org.trellisldp.http.domain.Prefer.PREFER_MINIMAL;
-import static org.trellisldp.http.domain.Prefer.PREFER_OMIT;
 import static org.trellisldp.http.domain.Prefer.PREFER_REPRESENTATION;
 import static org.trellisldp.http.domain.Prefer.PREFER_RETURN;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
@@ -191,10 +192,9 @@ public class GetHandler extends BaseLdpHandler {
         }
 
         final Prefer prefer = ACL.equals(req.getExt()) ?
-            new Prefer(join("=", PREFER_RETURN, PREFER_REPRESENTATION) + "; " + PREFER_INCLUDE + "=\"" +
-                    PreferAccessControl.getIRIString() + "\"; " + PREFER_OMIT + "=\"" +
-                    PreferUserManaged.getIRIString() + " " + LDP.PreferContainment.getIRIString() + " " +
-                    LDP.PreferMembership.getIRIString() + "\"") : req.getPrefer();
+            new Prefer(PREFER_REPRESENTATION, singletonList(PreferAccessControl.getIRIString()),
+                    of(PreferUserManaged, LDP.PreferContainment, LDP.PreferMembership).map(IRI::getIRIString)
+                        .collect(toList()), null, null, null) : req.getPrefer();
 
         ofNullable(prefer).ifPresent(p -> builder.header(PREFERENCE_APPLIED, PREFER_RETURN + "=" + p.getPreference()
                     .orElse(PREFER_REPRESENTATION)));

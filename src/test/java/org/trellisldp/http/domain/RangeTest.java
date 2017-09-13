@@ -14,8 +14,7 @@
 package org.trellisldp.http.domain;
 
 import static org.junit.Assert.assertTrue;
-
-import javax.ws.rs.WebApplicationException;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
@@ -26,40 +25,38 @@ public class RangeTest {
 
     @Test
     public void testRange() {
-        final Range range = new Range("bytes=1-10");
+        final Range range = Range.valueOf("bytes=1-10");
         assertTrue(range.getFrom().equals(1));
         assertTrue(range.getTo().equals(10));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testInvalidRange() {
-        final Range range = new Range("bytes=10-1");
+        assertNull(Range.valueOf("bytes=10-1"));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testInvalidNumbers() {
-        final Range range = new Range("bytes=1-15.5");
+        assertNull(Range.valueOf("bytes=1-15.5"));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testInvalidRange2() {
-        final Range range = new Range("bytes=1-15, 20-24");
+        assertNull(Range.valueOf("bytes=1-15, 20-24"));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testInvalidNumbers3() {
-        final Range range = new Range("bytes=1-foo");
+        assertNull(Range.valueOf("bytes=1-foo"));
     }
 
-
-
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testBadInput() {
-        final Range range = new Range("blahblahblah");
+        assertNull(Range.valueOf("blahblahblah"));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testNullInput() {
-        final Range range = new Range(null);
+        assertNull(Range.valueOf(null));
     }
 }

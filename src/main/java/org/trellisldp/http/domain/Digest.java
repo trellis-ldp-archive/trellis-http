@@ -13,10 +13,6 @@
  */
 package org.trellisldp.http.domain;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-
-import javax.ws.rs.WebApplicationException;
-
 /**
  * A class representing an HTTP Digest header
  *
@@ -29,20 +25,6 @@ public class Digest {
     private final String algorithm;
 
     private final String digestValue;
-
-    /**
-     * Create a Digest header representation
-     * @param value the value of the Digest header
-     */
-    public Digest(final String value) {
-        final String[] parts = value.split("=", 2);
-        if (parts.length == 2) {
-            algorithm = parts[0];
-            digestValue = parts[1];
-        } else {
-            throw new WebApplicationException("Invalid Digest header: " + value, BAD_REQUEST);
-        }
-    }
 
     /**
      * Create a Digest header representation
@@ -68,5 +50,18 @@ public class Digest {
      */
     public String getDigest() {
         return digestValue;
+    }
+
+    /**
+     * Get a Digest object from a string-based header value
+     * @param value the header value
+     * @return a Digest object or null if the value is invalid
+     */
+    public static Digest valueOf(final String value) {
+        final String[] parts = value.split("=", 2);
+        if (parts.length == 2) {
+            return new Digest(parts[0], parts[1]);
+        }
+        return null;
     }
 }

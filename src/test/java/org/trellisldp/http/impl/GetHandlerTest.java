@@ -204,7 +204,7 @@ public class GetHandlerTest {
     public void testGetPreferLdprs() {
         when(mockHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(TEXT_TURTLE_TYPE));
         when(mockLdpRequest.getPrefer())
-            .thenReturn(new Prefer("return=representation; include=\"http://www.w3.org/ns/ldp#PreferContainment"));
+            .thenReturn(Prefer.valueOf("return=representation; include=\"http://www.w3.org/ns/ldp#PreferContainment"));
 
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
                 mockIoService, mockBinaryService);
@@ -325,7 +325,7 @@ public class GetHandlerTest {
     @Test
     public void testMinimalLdprs() {
         when(mockHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(APPLICATION_LD_JSON_TYPE));
-        when(mockLdpRequest.getPrefer()).thenReturn(new Prefer("return=minimal"));
+        when(mockLdpRequest.getPrefer()).thenReturn(Prefer.valueOf("return=minimal"));
 
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
                 mockIoService, mockBinaryService);

@@ -17,12 +17,9 @@ import static java.lang.Integer.parseInt;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Optional;
-
-import javax.ws.rs.WebApplicationException;
 
 import org.slf4j.Logger;
 
@@ -41,13 +38,12 @@ public class Range {
 
     /**
      * Create a Range object
-     * @param value the range value
+     * @param from the from value
+     * @param to the to value
      */
-    public Range(final String value) {
-        final Integer[] vals = parse(value).orElseThrow(() ->
-                new WebApplicationException("Invalid Range request", BAD_REQUEST));
-        from = vals[0];
-        to = vals[1];
+    public Range(final Integer from, final Integer to) {
+        this.from = from;
+        this.to = to;
     }
 
     /**
@@ -64,6 +60,19 @@ public class Range {
      */
     public Integer getTo() {
         return to;
+    }
+
+    /**
+     * Get a Range object from a header value
+     * @param value the header value
+     * @return the Range object or null if the value is not parseable
+     */
+    public static Range valueOf(final String value) {
+        final Optional<Integer[]> vals = parse(value);
+        if (vals.isPresent()) {
+            return new Range(vals.get()[0], vals.get()[1]);
+        }
+        return null;
     }
 
     private static Optional<Integer[]> parse(final String range) {

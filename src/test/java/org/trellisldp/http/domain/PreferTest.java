@@ -16,9 +16,8 @@ package org.trellisldp.http.domain;
 import static java.util.Optional.of;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
-import javax.ws.rs.WebApplicationException;
 
 import org.junit.Test;
 
@@ -29,7 +28,7 @@ public class PreferTest {
 
     @Test
     public void testPrefer1() {
-        final Prefer prefer = new Prefer("return=representation; include=\"http://example.org/test\"");
+        final Prefer prefer = Prefer.valueOf("return=representation; include=\"http://example.org/test\"");
         assertEquals(of("representation"), prefer.getPreference());
         assertEquals(1L, prefer.getInclude().size());
         assertTrue(prefer.getInclude().contains("http://example.org/test"));
@@ -55,7 +54,7 @@ public class PreferTest {
 
     @Test
     public void testPrefer1c() {
-        final Prefer prefer = new Prefer("return=representation; include=http://example.org/test");
+        final Prefer prefer = Prefer.valueOf("return=representation; include=http://example.org/test");
         assertEquals(of("representation"), prefer.getPreference());
         assertEquals(1L, prefer.getInclude().size());
         assertTrue(prefer.getInclude().contains("http://example.org/test"));
@@ -68,7 +67,7 @@ public class PreferTest {
 
     @Test
     public void testPrefer2() {
-        final Prefer prefer = new Prefer("return  =  representation;   include =  \"http://example.org/test\"");
+        final Prefer prefer = Prefer.valueOf("return  =  representation;   include =  \"http://example.org/test\"");
         assertEquals(of("representation"), prefer.getPreference());
         assertEquals(1L, prefer.getInclude().size());
         assertTrue(prefer.getInclude().contains("http://example.org/test"));
@@ -81,7 +80,7 @@ public class PreferTest {
 
     @Test
     public void testPrefer3() {
-        final Prefer prefer = new Prefer("return=minimal");
+        final Prefer prefer = Prefer.valueOf("return=minimal");
         assertEquals(of("minimal"), prefer.getPreference());
         assertTrue(prefer.getInclude().isEmpty());
         assertTrue(prefer.getOmit().isEmpty());
@@ -93,7 +92,7 @@ public class PreferTest {
 
     @Test
     public void testPrefer4() {
-        final Prefer prefer = new Prefer("return=other");
+        final Prefer prefer = Prefer.valueOf("return=other");
         assertTrue(prefer.getInclude().isEmpty());
         assertTrue(prefer.getOmit().isEmpty());
         assertFalse(prefer.getPreference().isPresent());
@@ -105,7 +104,7 @@ public class PreferTest {
 
     @Test
     public void testPrefer5() {
-        final Prefer prefer = new Prefer("return=representation; omit=\"http://example.org/test\"");
+        final Prefer prefer = Prefer.valueOf("return=representation; omit=\"http://example.org/test\"");
         assertEquals(of("representation"), prefer.getPreference());
         assertTrue(prefer.getInclude().isEmpty());
         assertFalse(prefer.getOmit().isEmpty());
@@ -131,7 +130,7 @@ public class PreferTest {
 
     @Test
     public void testPrefer6() {
-        final Prefer prefer = new Prefer("handling=lenient; return=minimal");
+        final Prefer prefer = Prefer.valueOf("handling=lenient; return=minimal");
         assertTrue(prefer.getInclude().isEmpty());
         assertTrue(prefer.getOmit().isEmpty());
         assertEquals(of("minimal"), prefer.getPreference());
@@ -143,7 +142,7 @@ public class PreferTest {
 
     @Test
     public void testPrefer7() {
-        final Prefer prefer = new Prefer("respond-async; depth-noroot");
+        final Prefer prefer = Prefer.valueOf("respond-async; depth-noroot");
         assertTrue(prefer.getInclude().isEmpty());
         assertTrue(prefer.getOmit().isEmpty());
         assertFalse(prefer.getPreference().isPresent());
@@ -155,7 +154,7 @@ public class PreferTest {
 
     @Test
     public void testPrefer8() {
-        final Prefer prefer = new Prefer("handling=strict; return=minimal");
+        final Prefer prefer = Prefer.valueOf("handling=strict; return=minimal");
         assertTrue(prefer.getInclude().isEmpty());
         assertTrue(prefer.getOmit().isEmpty());
         assertEquals(of("minimal"), prefer.getPreference());
@@ -167,7 +166,7 @@ public class PreferTest {
 
     @Test
     public void testPrefer9() {
-        final Prefer prefer = new Prefer("handling=blah; return=minimal");
+        final Prefer prefer = Prefer.valueOf("handling=blah; return=minimal");
         assertTrue(prefer.getInclude().isEmpty());
         assertTrue(prefer.getOmit().isEmpty());
         assertEquals(of("minimal"), prefer.getPreference());
@@ -193,8 +192,8 @@ public class PreferTest {
         assertTrue(prefer.getOmit().isEmpty());
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testNullPrefer() {
-        final Prefer prefer = new Prefer(null);
+        assertNull(Prefer.valueOf(null));
     }
 }

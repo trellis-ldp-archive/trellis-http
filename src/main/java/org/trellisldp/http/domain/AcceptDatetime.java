@@ -18,14 +18,11 @@ import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.Optional;
-
-import javax.ws.rs.WebApplicationException;
 
 import org.slf4j.Logger;
 
@@ -44,9 +41,8 @@ public class AcceptDatetime {
      * Create an Accept-Datetime header object
      * @param datetime the date time in RFC 1123 format
      */
-    public AcceptDatetime(final String datetime) {
-        this.datetime = parseDatetime(datetime).orElseThrow(() ->
-                new WebApplicationException("Invalid Accept-Datetime request", BAD_REQUEST));
+    public AcceptDatetime(final Instant datetime) {
+        this.datetime = datetime;
     }
 
     /**
@@ -60,6 +56,19 @@ public class AcceptDatetime {
     @Override
     public String toString() {
         return datetime.toString();
+    }
+
+    /**
+     * Create an Accept-Datetime header object from a string
+     * @param value the header value
+     * @return an AcceptDatetime object or null if the value is not parseable
+     */
+    public static AcceptDatetime valueOf(final String value) {
+        final Optional<Instant> datetime = parseDatetime(value);
+        if (datetime.isPresent()) {
+            return new AcceptDatetime(datetime.get());
+        }
+        return null;
     }
 
     private static Optional<Instant> parseDatetime(final String datetime) {

@@ -14,8 +14,7 @@
 package org.trellisldp.http.domain;
 
 import static org.junit.Assert.assertEquals;
-
-import javax.ws.rs.WebApplicationException;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
@@ -26,18 +25,18 @@ public class AcceptDatetimeTest {
 
     @Test
     public void testDatetime() {
-        final AcceptDatetime datetime = new AcceptDatetime("Mon, 1 May 2017 13:43:22 GMT");
+        final AcceptDatetime datetime = AcceptDatetime.valueOf("Mon, 1 May 2017 13:43:22 GMT");
         assertEquals("2017-05-01T13:43:22Z", datetime.toString());
         assertEquals("2017-05-01T13:43:22Z", datetime.getInstant().toString());
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testInvalidDatetime() {
-        final AcceptDatetime datetime = new AcceptDatetime("Mon, 2 May 2017 13:43:22 GMT");
+        assertNull(AcceptDatetime.valueOf("Mon, 2 May 2017 13:43:22 GMT"));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testNullDatetime() {
-        final AcceptDatetime datetime = new AcceptDatetime(null);
+        assertNull(AcceptDatetime.valueOf(null));
     }
 }

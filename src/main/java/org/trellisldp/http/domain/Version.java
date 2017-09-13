@@ -18,13 +18,10 @@ import static java.time.Instant.ofEpochMilli;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.time.Instant;
 import java.util.Optional;
-
-import javax.ws.rs.WebApplicationException;
 
 import org.slf4j.Logger;
 
@@ -41,11 +38,10 @@ public class Version {
 
     /**
      * Create a Version parameter
-     * @param version the version timestamp
+     * @param time the version timestamp
      */
-    public Version(final String version) {
-        time = parse(version).orElseThrow(() ->
-                new WebApplicationException(NOT_FOUND));
+    public Version(final Instant time) {
+        this.time = time;
     }
 
     /**
@@ -70,5 +66,18 @@ public class Version {
             }
         }
         return empty();
+    }
+
+    /**
+     * Create a Version object from a string value
+     * @param value the header value
+     * @return a Version header or null if the value is not parseable
+     */
+    public static Version valueOf(final String value) {
+        final Optional<Instant> time = parse(value);
+        if (time.isPresent()) {
+            return new Version(time.get());
+        }
+        return null;
     }
 }
