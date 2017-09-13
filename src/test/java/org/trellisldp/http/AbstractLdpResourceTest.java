@@ -401,6 +401,28 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testScrewyPreferHeader() {
+        final Response res = target(RESOURCE_PATH).request().header("Prefer", "wait=just one minute").get();
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+    }
+
+    @Test
+    public void testScrewyAcceptDatetimeHeader() {
+        final Response res = target(RESOURCE_PATH).request().header("Accept-Datetime",
+                "it's pathetic how we both").get();
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+    }
+
+    @Test
+    public void testScrewyRange() {
+        final Response res = target(BINARY_PATH).request().header("Range", "say it to my face, then").get();
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+    }
+
+    @Test
     public void testGetRootSlash() {
         final Response res = target(REPO1 + "/").request().get();
 
@@ -701,6 +723,13 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         doThrow(new IOException()).when(mockInputStream).close();
         final Response res = target(BINARY_PATH).request().get();
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
+    }
+
+    @Test
+    public void testGetVersionError() throws IOException {
+        final Response res = target(BINARY_PATH).queryParam("version", "looking at my history").request().get();
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
     }
 
     @Test
@@ -1425,6 +1454,14 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPostInvalidLink() {
+        final Response res = target(RESOURCE_PATH).request().header("Link", "I never really liked his friends")
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+    }
+
+    @Test
     public void testPostUnknownLinkType() {
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
@@ -1555,12 +1592,20 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPostUnparseableDigest() {
+        final Response res = target(RESOURCE_PATH).request()
+            .header("Digest", "digest this, man!").post(entity("some data.", TEXT_PLAIN_TYPE));
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+    }
+
+    @Test
     public void testPostBinaryWithInvalidDigestType() {
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
                     any(Instant.class))).thenReturn(empty());
         final Response res = target(RESOURCE_PATH).request().header("Slug", "newresource")
-            .header("Digest", "foo=blahblah").post(entity("some data.", TEXT_PLAIN_TYPE));
+            .header("Digest", "uh=huh").post(entity("some data.", TEXT_PLAIN_TYPE));
 
         assertEquals(BAD_REQUEST, res.getStatusInfo());
     }

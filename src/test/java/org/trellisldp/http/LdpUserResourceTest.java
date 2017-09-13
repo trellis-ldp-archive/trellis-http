@@ -36,6 +36,7 @@ public class LdpUserResourceTest extends AbstractLdpResourceTest {
                     mockBinaryService, partitions));
         config.register(new TestAuthenticationFilter("testUser", "group"));
         config.register(TrailingSlashFilter.class);
+        config.register(ParamValidationFilter.class);
         config.register(new WebAcFilter(partitions, emptyList(), mockAccessControlService));
         config.register(new AgentAuthorizationFilter(mockAgentService, "admin"));
         config.register(new MultipartUploader(mockResourceService, mockBinaryService));

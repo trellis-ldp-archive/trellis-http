@@ -177,6 +177,18 @@ public class PreferTest {
     }
 
     @Test
+    public void testPrefer10() {
+        final Prefer prefer = Prefer.valueOf("wait=4");
+        assertTrue(prefer.getInclude().isEmpty());
+        assertTrue(prefer.getOmit().isEmpty());
+        assertFalse(prefer.getPreference().isPresent());
+        assertFalse(prefer.getHandling().isPresent());
+        assertEquals((Integer)4, prefer.getWait().get());
+        assertFalse(prefer.getRespondAsync());
+        assertFalse(prefer.getDepthNoroot());
+    }
+
+    @Test
     public void testStaticInclude() {
         final Prefer prefer = Prefer.ofInclude();
         assertEquals(of("representation"), prefer.getPreference());

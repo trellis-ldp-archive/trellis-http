@@ -48,6 +48,7 @@ public class LdpRequest {
 
     @QueryParam("ext")
     private String ext;
+
     @Context
     private UriInfo uriInfo;
 
