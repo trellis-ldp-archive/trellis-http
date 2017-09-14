@@ -51,7 +51,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -717,10 +716,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testGetBinaryError() throws IOException {
         when(mockBinaryService.getContent(eq(REPO1), eq(binaryInternalIdentifier)))
-            .thenReturn(of(mockInputStream));
-        when(mockInputStream.available()).thenReturn(0);
-        when(mockInputStream.read(any(byte[].class), anyInt(), anyInt())).thenReturn(-1);
-        doThrow(new IOException()).when(mockInputStream).close();
+            .thenReturn(empty());
         final Response res = target(BINARY_PATH).request().get();
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
     }

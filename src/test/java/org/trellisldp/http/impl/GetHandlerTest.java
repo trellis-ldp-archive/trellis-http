@@ -13,7 +13,6 @@
  */
 package org.trellisldp.http.impl;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Instant.ofEpochSecond;
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZonedDateTime.ofInstant;
@@ -67,9 +66,7 @@ import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.JSONLD.compacted;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Predicate;
@@ -135,9 +132,6 @@ public class GetHandlerTest {
     private HttpHeaders mockHeaders;
 
     @Mock
-    private InputStream mockInputStream;
-
-    @Mock
     private LdpRequest mockLdpRequest;
 
     @Before
@@ -150,8 +144,6 @@ public class GetHandlerTest {
         when(mockResource.getInbox()).thenReturn(empty());
         when(mockResource.getAnnotationService()).thenReturn(empty());
         when(mockResource.getTypes()).thenReturn(emptyList());
-        when(mockBinaryService.getContent(any(), any()))
-            .thenReturn(of(new ByteArrayInputStream("Some data".getBytes(UTF_8))));
 
         when(mockLdpRequest.getRequest()).thenReturn(mockRequest);
         when(mockLdpRequest.getPath()).thenReturn("");
@@ -476,18 +468,6 @@ public class GetHandlerTest {
         assertTrue(res.getLinks().stream()
                 .anyMatch(link -> link.getRel().equals("canonical") &&
                     !link.getUri().toString().endsWith("#description")));
-    }
-
-    @Test(expected = WebApplicationException.class)
-    public void testGetBinaryError() throws IOException {
-        when(mockResource.getBinary()).thenReturn(of(testBinary));
-        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
-        when(mockBinaryService.getContent(any(), any())).thenReturn(empty());
-
-        final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
-                mockIoService, mockBinaryService);
-
-        getHandler.getRepresentation(mockResource).build();
     }
 
     @Test

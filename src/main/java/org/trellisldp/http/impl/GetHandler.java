@@ -228,7 +228,7 @@ public class GetHandler extends BaseLdpHandler {
 
         final Instant mod = res.getBinary().map(Binary::getModified).orElseThrow(() ->
                 new WebApplicationException("Could not access binary metadata for " + res.getIdentifier()));
-        final EntityTag etag = new EntityTag(md5Hex(mod + identifier));
+        final EntityTag etag = new EntityTag(md5Hex(mod + identifier + "BINARY"));
         checkCache(req.getRequest(), mod, etag);
 
         // Set last-modified to be the binary's last-modified value
@@ -237,57 +237,52 @@ public class GetHandler extends BaseLdpHandler {
         final IRI dsid = res.getBinary().map(Binary::getIdentifier).orElseThrow(() ->
                 new WebApplicationException("Could not access binary metadata for " + res.getIdentifier()));
 
-        try (final InputStream binary = binaryService.getContent(req.getPartition(), dsid).orElseThrow(() ->
-                new WebApplicationException("Could not load binary resolver for " + dsid))) {
+        builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes").tag(etag);
 
-            builder.header(VARY, RANGE).header(VARY, WANT_DIGEST).header(ACCEPT_RANGES, "bytes").tag(etag);
-
-            if (res.isMemento()) {
-                builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
-            } else {
-                builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE));
-            }
-
-            // Add upload service headers, if relevant
-            binaryService.getResolver(dsid).filter(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
-                    builder.link(identifier + "?ext=" + UPLOADS, multipartUploadService.getIRIString()));
-
-            // Add instance digests, if Requested and supported
-            ofNullable(req.getWantDigest()).map(WantDigest::getAlgorithms).ifPresent(algs ->
-                    algs.stream().filter(binaryService.supportedAlgorithms()::contains).findFirst().ifPresent(alg ->
-                        getBinaryDigest(dsid, alg).ifPresent(digest -> builder.header(DIGEST, digest))));
-
-            // Stream the binary content
-            final StreamingOutput stream = new StreamingOutput() {
-                @Override
-                public void write(final OutputStream out) throws IOException {
-                    // TODO -- with JDK 9 use InputStream::transferTo instead of IOUtils::copy
-                    try {
-                        if (isNull(req.getRange())) {
-                            IOUtils.copy(binary, out);
-                        } else {
-                            // Range Requests
-                            final long skipped = binary.skip(req.getRange().getFrom());
-                            if (skipped < req.getRange().getFrom()) {
-                                LOGGER.warn("Trying to skip more data available in the input stream! {}, {}",
-                                        skipped, req.getRange().getFrom());
-                            }
-                            try (final InputStream sliced = new BoundedInputStream(binary,
-                                        req.getRange().getTo() - req.getRange().getFrom())) {
-                                IOUtils.copy(sliced, out);
-                            }
-                        }
-                    } catch (final IOException ex) {
-                        throw new WebApplicationException("Error processing binary content: " +
-                                ex.getMessage());
-                    }
-                }
-            };
-
-            return builder.entity(stream);
-        } catch (final IOException ex) {
-            throw new WebApplicationException("Error processing binary content: " + ex);
+        if (res.isMemento()) {
+            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
+        } else {
+            builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE));
         }
+
+        // Add upload service headers, if relevant
+        binaryService.getResolver(dsid).filter(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
+                builder.link(identifier + "?ext=" + UPLOADS, multipartUploadService.getIRIString()));
+
+        // Add instance digests, if Requested and supported
+        ofNullable(req.getWantDigest()).map(WantDigest::getAlgorithms).ifPresent(algs ->
+                algs.stream().filter(binaryService.supportedAlgorithms()::contains).findFirst().ifPresent(alg ->
+                    getBinaryDigest(dsid, alg).ifPresent(digest -> builder.header(DIGEST, digest))));
+
+        // Stream the binary content
+        final StreamingOutput stream = new StreamingOutput() {
+            @Override
+            public void write(final OutputStream out) throws IOException {
+                // TODO -- with JDK 9 use InputStream::transferTo instead of IOUtils::copy
+                try (final InputStream binary = binaryService.getContent(req.getPartition(), dsid).orElseThrow(() ->
+                        new IOException("Could not retrieve content from " + dsid))) {
+                    if (isNull(req.getRange())) {
+                        IOUtils.copy(binary, out);
+                    } else {
+                        // Range Requests
+                        final long skipped = binary.skip(req.getRange().getFrom());
+                        if (skipped < req.getRange().getFrom()) {
+                            LOGGER.warn("Trying to skip more data available in the input stream! {}, {}",
+                                    skipped, req.getRange().getFrom());
+                        }
+                        try (final InputStream sliced = new BoundedInputStream(binary,
+                                    req.getRange().getTo() - req.getRange().getFrom())) {
+                            IOUtils.copy(sliced, out);
+                        }
+                    }
+                } catch (final IOException ex) {
+                    throw new WebApplicationException("Error processing binary content: " +
+                            ex.getMessage());
+                }
+            }
+        };
+
+        return builder.entity(stream);
     }
 
     private Optional<String> getBinaryDigest(final IRI dsid, final String algorithm) {
