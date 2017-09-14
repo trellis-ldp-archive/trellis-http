@@ -144,8 +144,7 @@ public final class MementoResource {
                 .findFirst().map(MediaType::toString).flatMap(RDFSyntax::byMediaType);
             if (syntax.isPresent()) {
                 return syntax;
-            }
-            if (type.isCompatible(MediaType.valueOf(APPLICATION_LINK_FORMAT))) {
+            } else if (type.isCompatible(MediaType.valueOf(APPLICATION_LINK_FORMAT))) {
                 return empty();
             }
         }
