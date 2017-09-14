@@ -129,6 +129,7 @@ public final class RdfUtils {
     public static Optional<RDFSyntax> getSyntax(final List<MediaType> acceptableTypes,
             final Optional<String> mimeType) {
         if (acceptableTypes.isEmpty()) {
+            // TODO -- JDK9 refactor with Optional::or
             if (mimeType.isPresent()) {
                 return empty();
             }
