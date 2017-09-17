@@ -15,6 +15,7 @@ package org.trellisldp.http;
 
 import static java.net.URI.create;
 import static java.time.Instant.MAX;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -23,7 +24,9 @@ import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.seeOther;
 import static javax.ws.rs.core.Response.status;
+import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
@@ -35,6 +38,7 @@ import static org.trellisldp.vocabulary.Trellis.DeletedResource;
 import com.codahale.metrics.annotation.Timed;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
@@ -47,14 +51,23 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.PreMatching;
+import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.IRI;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Resource;
+import org.trellisldp.http.domain.AcceptDatetime;
+import org.trellisldp.http.domain.Digest;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.PATCH;
+import org.trellisldp.http.domain.Prefer;
+import org.trellisldp.http.domain.Range;
+import org.trellisldp.http.domain.Version;
 import org.trellisldp.http.impl.DeleteHandler;
 import org.trellisldp.http.impl.GetHandler;
 import org.trellisldp.http.impl.MementoResource;
@@ -71,8 +84,9 @@ import org.trellisldp.vocabulary.LDP;
 /**
  * @author acoburn
  */
+@PreMatching
 @Path("{partition}{path: .*}")
-public class LdpResource extends BaseLdpResource {
+public class LdpResource extends BaseLdpResource implements ContainerRequestFilter {
 
     private static final Logger LOGGER = getLogger(LdpResource.class);
 
@@ -100,6 +114,54 @@ public class LdpResource extends BaseLdpResource {
         this.ioService = ioService;
         this.binaryService = binaryService;
         this.constraintService = constraintService;
+    }
+
+    @Override
+    public void filter(final ContainerRequestContext ctx) throws IOException {
+        // Check for a trailing slash. If so, redirect
+        final String path = ctx.getUriInfo().getPath();
+        if (path.endsWith("/")) {
+            ctx.abortWith(seeOther(fromUri(path.substring(0, path.length() - 1)).build()).build());
+        }
+
+        // Validate header/query parameters
+        ofNullable(ctx.getHeaderString("Accept-Datetime")).ifPresent(x -> {
+            if (isNull(AcceptDatetime.valueOf(x))) {
+                ctx.abortWith(status(BAD_REQUEST).build());
+            }
+        });
+
+        ofNullable(ctx.getHeaderString("Prefer")).ifPresent(x -> {
+            if (isNull(Prefer.valueOf(x))) {
+                ctx.abortWith(status(BAD_REQUEST).build());
+            }
+        });
+
+        ofNullable(ctx.getHeaderString("Range")).ifPresent(x -> {
+            if (isNull(Range.valueOf(x))) {
+                ctx.abortWith(status(BAD_REQUEST).build());
+            }
+        });
+
+        ofNullable(ctx.getHeaderString("Link")).ifPresent(x -> {
+            try {
+                Link.valueOf(x);
+            } catch (final IllegalArgumentException ex) {
+                ctx.abortWith(status(BAD_REQUEST).build());
+            }
+        });
+
+        ofNullable(ctx.getHeaderString("Digest")).ifPresent(x -> {
+            if (isNull(Digest.valueOf(x))) {
+                ctx.abortWith(status(BAD_REQUEST).build());
+            }
+        });
+
+        ofNullable(ctx.getUriInfo().getQueryParameters().getFirst("version")).ifPresent(x -> {
+            if (isNull(Version.valueOf(x))) {
+                ctx.abortWith(status(BAD_REQUEST).build());
+            }
+        });
     }
 
     /**

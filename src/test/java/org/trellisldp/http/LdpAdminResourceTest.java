@@ -35,8 +35,6 @@ public class LdpAdminResourceTest extends AbstractLdpResourceTest {
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService, mockBinaryService,
                     partitions));
         config.register(new TestAuthenticationFilter("testUser", "admin"));
-        config.register(TrailingSlashFilter.class);
-        config.register(ParamValidationFilter.class);
         config.register(new WebAcFilter(partitions, emptyList(), mockAccessControlService));
         config.register(new AgentAuthorizationFilter(mockAgentService, "admin"));
         config.register(new MultipartUploader(mockResourceService, mockBinaryService));
