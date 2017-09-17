@@ -13,11 +13,16 @@
  */
 package org.trellisldp.http;
 
+import static java.lang.String.join;
 import static java.net.URI.create;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
+import static javax.ws.rs.HttpMethod.OPTIONS;
+import static javax.ws.rs.HttpMethod.POST;
+import static javax.ws.rs.core.HttpHeaders.ALLOW;
+import static javax.ws.rs.core.Link.TYPE;
 import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -91,7 +96,7 @@ public class MultipartUploader implements ContainerRequestFilter, ContainerRespo
 
     private static final Logger LOGGER = getLogger(MultipartUploader.class);
 
-    private static final List<String> INVALID_EXT_METHODS = asList("PATCH", "PUT", "DELETE");
+    private static final List<String> INVALID_EXT_METHODS = asList("PATCH", "PUT", "DELETE", "GET");
 
     private static final List<String> READ_METHODS = asList("GET", "HEAD", "OPTIONS");
 
@@ -149,19 +154,26 @@ public class MultipartUploader implements ContainerRequestFilter, ContainerRespo
 
     @Override
     public void filter(final ContainerRequestContext req, final ContainerResponseContext res) throws IOException {
-        if (READ_METHODS.contains(req.getMethod()) && res.getLinks().stream().filter(l -> l.getRel().equals("type"))
-                .map(Link::getUri).map(URI::toString)
+        if (READ_METHODS.contains(req.getMethod())) {
+
+            if (res.getLinks().stream().filter(l -> l.getRel().equals(TYPE)).map(Link::getUri).map(URI::toString)
                 .anyMatch(uri -> uri.equals(Container.getIRIString()) || uri.equals(NonRDFSource.getIRIString()))) {
 
-            final String partition = req.getUriInfo().getPathSegments().stream().map(PathSegment::getPath)
-                .findFirst().orElseThrow(() -> new WebApplicationException("Missing partition name!"));
-            final String identifier = partitions.getOrDefault(partition, req.getUriInfo().getBaseUri().toString()) +
-                req.getUriInfo().getPath();
+                final String partition = req.getUriInfo().getPathSegments().stream().map(PathSegment::getPath)
+                    .findFirst().orElseThrow(() -> new WebApplicationException("Missing partition name!"));
+                final String identifier = partitions.getOrDefault(partition, req.getUriInfo().getBaseUri().toString()) +
+                    req.getUriInfo().getPath();
 
-            binaryService.getResolverForPartition(partition)
-                .map(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
-                    res.getHeaders().add("Link", fromUri(identifier + "?ext=" + UPLOADS)
-                        .rel(multipartUploadService.getIRIString()).build()));
+                binaryService.getResolverForPartition(partition)
+                    .map(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
+                        res.getHeaders().add("Link", fromUri(identifier + "?ext=" + UPLOADS)
+                            .rel(multipartUploadService.getIRIString()).build()));
+            }
+
+            final List<String> exts = req.getUriInfo().getQueryParameters().getOrDefault("ext", emptyList());
+            if (exts.contains(UPLOADS)) {
+                res.getHeaders().putSingle(ALLOW, join(",", POST, OPTIONS));
+            }
         }
     }
 

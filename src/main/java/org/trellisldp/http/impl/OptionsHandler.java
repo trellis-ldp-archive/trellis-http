@@ -31,7 +31,6 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.PATCH;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
-import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.MEDIA_TYPES;
 import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
@@ -93,10 +92,6 @@ public class OptionsHandler extends BaseLdpHandler {
         if (res.isMemento() || TIMEMAP.equals(req.getExt())) {
             // Mementos and TimeMaps are read-only
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
-        // TODO -- move this into a filter in the MultipartUploader class
-        } else if (UPLOADS.equals(req.getExt())) {
-            // Upload handlers accept POST
-            builder.header(ALLOW, join(",", POST, OPTIONS));
         } else {
             builder.header(ACCEPT_PATCH, APPLICATION_SPARQL_UPDATE);
             // ACL resources allow a limited set of methods (no DELETE or POST)
