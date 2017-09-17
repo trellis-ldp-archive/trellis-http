@@ -200,6 +200,7 @@ public class GetHandler extends BaseLdpHandler {
                     .orElse(PREFER_REPRESENTATION)));
 
         // Add upload service headers, if relevant
+        // TODO -- move this into a filter in the MultipartUploader class
         if (!LDP.RDFSource.equals(res.getInteractionModel())) {
             binaryService.getResolverForPartition(req.getPartition())
                 .map(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
@@ -246,6 +247,7 @@ public class GetHandler extends BaseLdpHandler {
         }
 
         // Add upload service headers, if relevant
+        // TODO -- move this into a post filter in the MultipartUploader class
         binaryService.getResolver(dsid).filter(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
                 builder.link(identifier + "?ext=" + UPLOADS, multipartUploadService.getIRIString()));
 

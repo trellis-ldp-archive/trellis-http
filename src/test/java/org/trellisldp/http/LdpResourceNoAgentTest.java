@@ -33,7 +33,7 @@ public class LdpResourceNoAgentTest extends AbstractLdpResourceTest {
         final ResourceConfig config = new ResourceConfig();
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService,
                     mockBinaryService, partitions));
-        config.register(new MultipartUploader(mockResourceService, mockBinaryService));
+        config.register(new MultipartUploader(mockResourceService, mockBinaryService, partitions));
         config.register(new CacheControlFilter(86400));
         return config;
     }

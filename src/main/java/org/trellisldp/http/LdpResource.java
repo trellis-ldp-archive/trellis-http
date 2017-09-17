@@ -13,14 +13,12 @@
  */
 package org.trellisldp.http;
 
-import static java.net.URI.create;
 import static java.time.Instant.MAX;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
-import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
@@ -29,8 +27,6 @@ import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
-import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
-import static org.trellisldp.http.domain.HttpConstants.UPLOAD_PREFIX;
 import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.vocabulary.Trellis.DeletedResource;
@@ -50,7 +46,6 @@ import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.PreMatching;
@@ -239,7 +234,7 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     @Consumes("application/sparql-update")
     public Response updateResource(@BeanParam final LdpRequest req, final String body) {
 
-        if (nonNull(req.getVersion()) || UPLOADS.equals(req.getExt())) {
+        if (nonNull(req.getVersion())) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
@@ -260,7 +255,7 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     @Timed
     public Response deleteResource(@BeanParam final LdpRequest req) {
 
-        if (nonNull(req.getVersion()) || UPLOADS.equals(req.getExt())) {
+        if (nonNull(req.getVersion())) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 
@@ -284,16 +279,6 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
         final String path = req.getPartition() + req.getPath();
         final String identifier = "/" + ofNullable(req.getSlug())
             .orElseGet(resourceService.getIdentifierSupplier());
-
-        if (UPLOADS.equals(req.getExt()) && binaryService.getResolverForPartition(req.getPartition())
-                .filter(BinaryService.Resolver::supportsMultipartUpload).isPresent()) {
-            final String uploadId = binaryService.getResolverForPartition(req.getPartition())
-                .map(res-> res.initiateUpload(req.getPartition(), rdf.createIRI(TRELLIS_PREFIX + path + identifier),
-                            req.getContentType()))
-                .orElseThrow(() -> new WebApplicationException("Cannot initiate multipart upload", BAD_REQUEST));
-            return status(CREATED).location(create(req.getBaseUrl(partitions) + UPLOAD_PREFIX + req.getPartition() +
-                        "/" + uploadId)).build();
-        }
 
         if (nonNull(req.getExt()) || nonNull(req.getVersion())) {
             return status(METHOD_NOT_ALLOWED).build();
@@ -328,7 +313,7 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     @Timed
     public Response setResource(@BeanParam final LdpRequest req, final File body) {
 
-        if (nonNull(req.getVersion()) || UPLOADS.equals(req.getExt())) {
+        if (nonNull(req.getVersion())) {
             return status(METHOD_NOT_ALLOWED).build();
         }
 

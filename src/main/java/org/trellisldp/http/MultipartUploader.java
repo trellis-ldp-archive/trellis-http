@@ -14,12 +14,20 @@
 package org.trellisldp.http;
 
 import static java.net.URI.create;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.CREATED;
+import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static javax.ws.rs.core.Response.created;
+import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.Response.serverError;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.UPLOAD_PREFIX;
+import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
@@ -30,7 +38,9 @@ import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 
 import com.codahale.metrics.annotation.Timed;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 
 import javax.json.Json;
@@ -46,6 +56,12 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.PreMatching;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.IRI;
@@ -60,25 +76,64 @@ import org.trellisldp.vocabulary.XSD;
 /**
  * @author acoburn
  */
+@PreMatching
 @Path(UPLOAD_PREFIX + "{partition}/{id}")
-public class MultipartUploader {
+public class MultipartUploader implements ContainerRequestFilter {
 
     private static final RDF rdf = getInstance();
 
     private static final Logger LOGGER = getLogger(MultipartUploader.class);
 
+    private static final List<String> INVALID_EXT_METHODS = asList("PATCH", "PUT", "DELETE");
+
     private final BinaryService binaryService;
 
     private final ResourceService resourceService;
+
+    private final Map<String, String> partitions;
 
     /**
      * Create a multipart uploader object
      * @param resourceService the resource service
      * @param binaryService the binary service
+     * @param partitions the partition base URLs
      */
-    public MultipartUploader(final ResourceService resourceService, final BinaryService binaryService) {
+    public MultipartUploader(final ResourceService resourceService, final BinaryService binaryService,
+            final Map<String, String> partitions) {
+        this.partitions = partitions;
         this.resourceService = resourceService;
         this.binaryService = binaryService;
+    }
+
+    @Override
+    public void filter(final ContainerRequestContext ctx) throws IOException {
+        final List<String> exts = ctx.getUriInfo().getQueryParameters().getOrDefault("ext", emptyList());
+        if (exts.contains(UPLOADS)) {
+            if (INVALID_EXT_METHODS.contains(ctx.getMethod())) {
+                ctx.abortWith(status(METHOD_NOT_ALLOWED).build());
+            }
+
+            if (ctx.getMethod().equals("POST")) {
+                final String partition = ctx.getUriInfo().getPathSegments().stream().map(PathSegment::getPath)
+                    .findFirst().orElseThrow(() -> new WebApplicationException("Missing partition name!"));
+                final String path = ctx.getUriInfo().getPath();
+                final String baseUrl = partitions.getOrDefault(partition, ctx.getUriInfo().getBaseUri().toString());
+                final String contentType = ofNullable(ctx.getMediaType()).map(MediaType::toString)
+                    .orElse(APPLICATION_OCTET_STREAM);
+                final String identifier = ofNullable(ctx.getHeaderString("Slug"))
+                    .orElseGet(resourceService.getIdentifierSupplier());
+                if (binaryService.getResolverForPartition(partition)
+                        .filter(BinaryService.Resolver::supportsMultipartUpload).isPresent()) {
+                    final String uploadId = binaryService.getResolverForPartition(partition)
+                        .map(res-> res.initiateUpload(partition, rdf.createIRI(TRELLIS_PREFIX + path + identifier),
+                                    contentType))
+                        .orElseThrow(() -> new WebApplicationException("Cannot initiate multipart upload",
+                                    BAD_REQUEST));
+                    ctx.abortWith(status(CREATED).location(create(baseUrl + UPLOAD_PREFIX + partition +
+                                "/" + uploadId)).build());
+                }
+            }
+        }
     }
 
     /**

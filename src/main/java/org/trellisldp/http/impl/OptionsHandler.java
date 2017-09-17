@@ -93,6 +93,7 @@ public class OptionsHandler extends BaseLdpHandler {
         if (res.isMemento() || TIMEMAP.equals(req.getExt())) {
             // Mementos and TimeMaps are read-only
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS));
+        // TODO -- move this into a filter in the MultipartUploader class
         } else if (UPLOADS.equals(req.getExt())) {
             // Upload handlers accept POST
             builder.header(ALLOW, join(",", POST, OPTIONS));
