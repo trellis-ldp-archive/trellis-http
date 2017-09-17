@@ -14,6 +14,7 @@
 package org.trellisldp.http;
 
 import static java.time.Instant.MAX;
+import static java.util.Arrays.asList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
@@ -35,6 +36,7 @@ import com.codahale.metrics.annotation.Timed;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -92,6 +94,8 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     protected final BinaryService binaryService;
 
     protected final ConstraintService constraintService;
+
+    private static final List<String> MUTATING_METHODS = asList("POST", "PUT", "DELETE", "PATCH");
 
     /**
      * Create a LdpResource
@@ -153,10 +157,19 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
         });
 
         ofNullable(ctx.getUriInfo().getQueryParameters().getFirst("version")).ifPresent(x -> {
+            // Check well-formedness
             if (isNull(Version.valueOf(x))) {
                 ctx.abortWith(status(BAD_REQUEST).build());
+            // Do not allow mutating versioned resources
+            } else if (MUTATING_METHODS.contains(ctx.getMethod())) {
+                ctx.abortWith(status(METHOD_NOT_ALLOWED).build());
             }
         });
+
+        // Do not allow direct manipulation of timemaps
+        ofNullable(ctx.getUriInfo().getQueryParameters().get("ext")).filter(l -> l.contains(TIMEMAP))
+            .filter(x -> MUTATING_METHODS.contains(ctx.getMethod()))
+            .ifPresent(x -> ctx.abortWith(status(METHOD_NOT_ALLOWED).build()));
     }
 
     /**
@@ -234,10 +247,6 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     @Consumes("application/sparql-update")
     public Response updateResource(@BeanParam final LdpRequest req, final String body) {
 
-        if (nonNull(req.getVersion())) {
-            return status(METHOD_NOT_ALLOWED).build();
-        }
-
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
         final PatchHandler patchHandler = new PatchHandler(partitions, req, body, resourceService, ioService,
                 constraintService);
@@ -254,10 +263,6 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     @DELETE
     @Timed
     public Response deleteResource(@BeanParam final LdpRequest req) {
-
-        if (nonNull(req.getVersion())) {
-            return status(METHOD_NOT_ALLOWED).build();
-        }
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
         final DeleteHandler deleteHandler = new DeleteHandler(partitions, req, resourceService);
@@ -279,10 +284,6 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
         final String path = req.getPartition() + req.getPath();
         final String identifier = "/" + ofNullable(req.getSlug())
             .orElseGet(resourceService.getIdentifierSupplier());
-
-        if (nonNull(req.getExt()) || nonNull(req.getVersion())) {
-            return status(METHOD_NOT_ALLOWED).build();
-        }
 
         final PostHandler postHandler = new PostHandler(partitions, req, identifier, body, resourceService,
                 ioService, constraintService, binaryService);
@@ -312,10 +313,6 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     @PUT
     @Timed
     public Response setResource(@BeanParam final LdpRequest req, final File body) {
-
-        if (nonNull(req.getVersion())) {
-            return status(METHOD_NOT_ALLOWED).build();
-        }
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
         final PutHandler putHandler = new PutHandler(partitions, req, body, resourceService, ioService,

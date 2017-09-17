@@ -1458,6 +1458,14 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPostToTimemap() {
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "timemap").request()
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+    }
+
+    @Test
     public void testPostUnknownLinkType() {
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
@@ -2033,6 +2041,14 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertEquals(CONFLICT, res.getStatusInfo());
         assertTrue(res.getLinks().stream()
                 .anyMatch(hasLink(Trellis.InvalidRange, LDP.constrainedBy.getIRIString())));
+    }
+
+    @Test
+    public void testPatchToTimemap() {
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "timemap").request()
+            .method("PATCH", entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
     }
 
     @Test
