@@ -18,6 +18,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
+import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
@@ -32,14 +33,17 @@ import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.auditCreation;
 import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.vocabulary.LDP.Container;
 import static org.trellisldp.vocabulary.LDP.NonRDFSource;
 import static org.trellisldp.vocabulary.RDF.type;
 import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
+import static org.trellisldp.vocabulary.Trellis.multipartUploadService;
 
 import com.codahale.metrics.annotation.Timed;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -59,7 +63,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.PreMatching;
+import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
@@ -78,13 +85,15 @@ import org.trellisldp.vocabulary.XSD;
  */
 @PreMatching
 @Path(UPLOAD_PREFIX + "{partition}/{id}")
-public class MultipartUploader implements ContainerRequestFilter {
+public class MultipartUploader implements ContainerRequestFilter, ContainerResponseFilter {
 
     private static final RDF rdf = getInstance();
 
     private static final Logger LOGGER = getLogger(MultipartUploader.class);
 
     private static final List<String> INVALID_EXT_METHODS = asList("PATCH", "PUT", "DELETE");
+
+    private static final List<String> READ_METHODS = asList("GET", "HEAD", "OPTIONS");
 
     private final BinaryService binaryService;
 
@@ -104,6 +113,8 @@ public class MultipartUploader implements ContainerRequestFilter {
         this.resourceService = resourceService;
         this.binaryService = binaryService;
     }
+
+
 
     @Override
     public void filter(final ContainerRequestContext ctx) throws IOException {
@@ -133,6 +144,24 @@ public class MultipartUploader implements ContainerRequestFilter {
                                 "/" + uploadId)).build());
                 }
             }
+        }
+    }
+
+    @Override
+    public void filter(final ContainerRequestContext req, final ContainerResponseContext res) throws IOException {
+        if (READ_METHODS.contains(req.getMethod()) && res.getLinks().stream().filter(l -> l.getRel().equals("type"))
+                .map(Link::getUri).map(URI::toString)
+                .anyMatch(uri -> uri.equals(Container.getIRIString()) || uri.equals(NonRDFSource.getIRIString()))) {
+
+            final String partition = req.getUriInfo().getPathSegments().stream().map(PathSegment::getPath)
+                .findFirst().orElseThrow(() -> new WebApplicationException("Missing partition name!"));
+            final String identifier = partitions.getOrDefault(partition, req.getUriInfo().getBaseUri().toString()) +
+                req.getUriInfo().getPath();
+
+            binaryService.getResolverForPartition(partition)
+                .map(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
+                    res.getHeaders().add("Link", fromUri(identifier + "?ext=" + UPLOADS)
+                        .rel(multipartUploadService.getIRIString()).build()));
         }
     }
 

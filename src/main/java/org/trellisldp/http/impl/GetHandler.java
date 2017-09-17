@@ -47,7 +47,6 @@ import static org.trellisldp.http.domain.HttpConstants.PATCH;
 import static org.trellisldp.http.domain.HttpConstants.PREFER;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.HttpConstants.RANGE;
-import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.domain.HttpConstants.WANT_DIGEST;
 import static org.trellisldp.http.domain.Prefer.PREFER_MINIMAL;
 import static org.trellisldp.http.domain.Prefer.PREFER_REPRESENTATION;
@@ -63,7 +62,6 @@ import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.vocabulary.OA.annotationService;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
-import static org.trellisldp.vocabulary.Trellis.multipartUploadService;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -199,13 +197,6 @@ public class GetHandler extends BaseLdpHandler {
         ofNullable(prefer).ifPresent(p -> builder.header(PREFERENCE_APPLIED, PREFER_RETURN + "=" + p.getPreference()
                     .orElse(PREFER_REPRESENTATION)));
 
-        // Add upload service headers, if relevant
-        // TODO -- move this into a filter in the MultipartUploader class
-        if (!LDP.RDFSource.equals(res.getInteractionModel())) {
-            binaryService.getResolverForPartition(req.getPartition())
-                .map(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
-                    builder.link(identifier + "?ext=" + UPLOADS, multipartUploadService.getIRIString()));
-        }
 
         if (ofNullable(prefer).flatMap(Prefer::getPreference).filter(PREFER_MINIMAL::equals).isPresent()) {
             return builder.status(NO_CONTENT);
@@ -245,11 +236,6 @@ public class GetHandler extends BaseLdpHandler {
         } else {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PUT, DELETE));
         }
-
-        // Add upload service headers, if relevant
-        // TODO -- move this into a post filter in the MultipartUploader class
-        binaryService.getResolver(dsid).filter(BinaryService.Resolver::supportsMultipartUpload).ifPresent(x ->
-                builder.link(identifier + "?ext=" + UPLOADS, multipartUploadService.getIRIString()));
 
         // Add instance digests, if Requested and supported
         ofNullable(req.getWantDigest()).map(WantDigest::getAlgorithms).ifPresent(algs ->
