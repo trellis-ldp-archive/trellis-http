@@ -1356,6 +1356,98 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testOptionsPreflightInvalid() {
+        final Response res = target(RESOURCE_PATH).request().header("Origin", "http://foo.com")
+            .header("Access-Control-Request-Method", "PUT")
+            .header("Access-Control-Request-Headers", "Content-Type, Link").options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertNull(res.getHeaderString("Access-Control-Allow-Origin"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Credentials"));
+        assertNull(res.getHeaderString("Access-Control-Max-Age"));
+
+        assertNull(res.getHeaderString("Access-Control-Allow-Headers"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Methods"));
+    }
+
+    @Test
+    public void testOptionsPreflightInvalid2() {
+        final String baseUri = getBaseUri().toString();
+        final String origin = baseUri.substring(0, baseUri.length() - 1);
+        final Response res = target(RESOURCE_PATH).request().header("Origin", origin)
+            .header("Access-Control-Request-Method", "PUT")
+            .header("Access-Control-Request-Headers", "Content-Type, Link, Bar").options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertNull(res.getHeaderString("Access-Control-Allow-Origin"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Credentials"));
+        assertNull(res.getHeaderString("Access-Control-Max-Age"));
+
+        assertNull(res.getHeaderString("Access-Control-Allow-Headers"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Methods"));
+    }
+
+    @Test
+    public void testOptionsPreflightInvalid3() {
+        final String baseUri = getBaseUri().toString();
+        final String origin = baseUri.substring(0, baseUri.length() - 1);
+        final Response res = target(RESOURCE_PATH).request().header("Origin", origin)
+            .header("Access-Control-Request-Method", "FOO")
+            .header("Access-Control-Request-Headers", "Content-Type, Link").options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertNull(res.getHeaderString("Access-Control-Allow-Origin"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Credentials"));
+        assertNull(res.getHeaderString("Access-Control-Max-Age"));
+
+        assertNull(res.getHeaderString("Access-Control-Allow-Headers"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Methods"));
+    }
+
+    @Test
+    public void testOptionsPreflight() {
+        final String baseUri = getBaseUri().toString();
+        final String origin = baseUri.substring(0, baseUri.length() - 1);
+        final Response res = target(RESOURCE_PATH).request().header("Origin", origin)
+            .header("Access-Control-Request-Method", "PUT")
+            .header("Access-Control-Request-Headers", "Content-Type, Link").options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertEquals(origin, res.getHeaderString("Access-Control-Allow-Origin"));
+        assertEquals("true", res.getHeaderString("Access-Control-Allow-Credentials"));
+        assertEquals("100", res.getHeaderString("Access-Control-Max-Age"));
+
+        final List<String> headers = stream(res.getHeaderString("Access-Control-Allow-Headers").split(","))
+            .collect(toList());
+        assertEquals(3L, headers.size());
+        assertTrue(headers.contains("link"));
+        assertTrue(headers.contains("content-type"));
+        assertTrue(headers.contains("accept"));
+
+        final List<String> methods = stream(res.getHeaderString("Access-Control-Allow-Methods").split(","))
+            .collect(toList());
+        assertEquals(2L, methods.size());
+        assertTrue(methods.contains("PUT"));
+        assertTrue(methods.contains("PATCH"));
+    }
+
+    @Test
+    public void testOptionsPreflightSimple() {
+        final String baseUri = getBaseUri().toString();
+        final String origin = baseUri.substring(0, baseUri.length() - 1);
+        final Response res = target(RESOURCE_PATH).request().header("Origin", origin)
+            .header("Access-Control-Request-Method", "POST")
+            .header("Access-Control-Request-Headers", "Pragma").options();
+
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertEquals(origin, res.getHeaderString("Access-Control-Allow-Origin"));
+        assertEquals("true", res.getHeaderString("Access-Control-Allow-Credentials"));
+        assertEquals("100", res.getHeaderString("Access-Control-Max-Age"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Methods"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Headers"));
+    }
+
+    @Test
     public void testOptionsNonexistent() {
         final Response res = target(NON_EXISTENT_PATH).request().options();
 

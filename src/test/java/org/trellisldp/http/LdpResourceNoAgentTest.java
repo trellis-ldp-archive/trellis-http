@@ -13,6 +13,7 @@
  */
 package org.trellisldp.http;
 
+import static java.util.Arrays.asList;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import javax.ws.rs.core.Application;
@@ -30,11 +31,16 @@ public class LdpResourceNoAgentTest extends AbstractLdpResourceTest {
         // Junit runner doesn't seem to work very well with JerseyTest
         initMocks(this);
 
+        final String baseUri = getBaseUri().toString();
+        final String origin = baseUri.substring(0, baseUri.length() - 1);
+
         final ResourceConfig config = new ResourceConfig();
         config.register(new LdpResource(mockResourceService, ioService, mockConstraintService,
                     mockBinaryService, partitions));
         config.register(new MultipartUploader(mockResourceService, mockBinaryService, partitions));
         config.register(new CacheControlFilter(86400));
+        config.register(new CrossOriginResourceSharingFilter(asList(origin), asList("PATCH", "POST", "PUT"),
+                        asList("Link", "Content-Type", "Accept"), asList("Link", "Content-Type"), true, 100));
         return config;
     }
 }
