@@ -1257,6 +1257,54 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertEquals(GONE, res.getStatusInfo());
     }
 
+    @Test
+    public void testGetCORSInvalid() {
+        final Response res = target(RESOURCE_PATH).request().header("Origin", "http://foo.com")
+            .header("Access-Control-Request-Method", "PUT")
+            .header("Access-Control-Request-Headers", "Content-Type, Link").get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertNull(res.getHeaderString("Access-Control-Allow-Origin"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Credentials"));
+        assertNull(res.getHeaderString("Access-Control-Max-Age"));
+
+        assertNull(res.getHeaderString("Access-Control-Allow-Headers"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Methods"));
+    }
+
+    @Test
+    public void testGetCORS() {
+        final String baseUri = getBaseUri().toString();
+        final String origin = baseUri.substring(0, baseUri.length() - 1);
+        final Response res = target(RESOURCE_PATH).request().header("Origin", origin)
+            .header("Access-Control-Request-Method", "PUT")
+            .header("Access-Control-Request-Headers", "Content-Type, Link").get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertEquals(origin, res.getHeaderString("Access-Control-Allow-Origin"));
+        assertEquals("true", res.getHeaderString("Access-Control-Allow-Credentials"));
+        assertNull(res.getHeaderString("Access-Control-Max-Age"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Headers"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Methods"));
+    }
+
+    @Test
+    public void testGetCORSSimple() {
+        final String baseUri = getBaseUri().toString();
+        final String origin = baseUri.substring(0, baseUri.length() - 1);
+        final Response res = target(RESOURCE_PATH).request().header("Origin", origin)
+            .header("Access-Control-Request-Method", "POST")
+            .header("Access-Control-Request-Headers", "Pragma").get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertEquals(origin, res.getHeaderString("Access-Control-Allow-Origin"));
+        assertEquals("true", res.getHeaderString("Access-Control-Allow-Credentials"));
+        assertNull(res.getHeaderString("Access-Control-Max-Age"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Methods"));
+        assertNull(res.getHeaderString("Access-Control-Allow-Headers"));
+    }
+
+
     /* ******************************* *
      *            OPTIONS Tests
      * ******************************* */
