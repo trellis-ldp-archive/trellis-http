@@ -41,7 +41,7 @@ import javax.ws.rs.container.PreMatching;
  * @author acoburn
  */
 @PreMatching
-@Priority(AUTHORIZATION - 1)
+@Priority(AUTHORIZATION - 10)
 public class CrossOriginResourceSharingFilter implements ContainerResponseFilter {
 
     private static final Set<String> simpleResponseHeaders = unmodifiableSet(new HashSet<>(asList("cache-control",

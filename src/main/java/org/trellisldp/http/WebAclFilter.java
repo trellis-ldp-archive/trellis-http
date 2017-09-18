@@ -59,11 +59,11 @@ import org.trellisldp.vocabulary.Trellis;
  */
 @PreMatching
 @Priority(AUTHORIZATION)
-public class WebAcFilter implements ContainerRequestFilter, ContainerResponseFilter {
+public class WebAclFilter implements ContainerRequestFilter, ContainerResponseFilter {
 
     private static final RDF rdf = getInstance();
 
-    private static final Logger LOGGER = getLogger(WebAcFilter.class);
+    private static final Logger LOGGER = getLogger(WebAclFilter.class);
 
     private final AccessControlService accessService;
     private final Map<String, String> partitions;
@@ -73,12 +73,12 @@ public class WebAcFilter implements ContainerRequestFilter, ContainerResponseFil
     private static final Set<String> appendable = new HashSet<>(asList("POST"));
 
     /**
-     * Create a new WebAc-based auth filter
+     * Create a new WebAcl-based auth filter
      * @param partitions the partitions in use
      * @param challenges the challenges
      * @param accessService the access service
      */
-    public WebAcFilter(final Map<String, String> partitions, final List<String> challenges,
+    public WebAclFilter(final Map<String, String> partitions, final List<String> challenges,
             final AccessControlService accessService) {
         this.accessService = accessService;
         this.partitions = partitions;

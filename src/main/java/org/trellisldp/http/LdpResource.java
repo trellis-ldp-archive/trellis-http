@@ -18,6 +18,7 @@ import static java.util.Arrays.asList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static javax.ws.rs.Priorities.AUTHORIZATION;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.GONE;
@@ -40,6 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.annotation.Priority;
+import javax.inject.Singleton;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -53,6 +56,7 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.Provider;
 
 import org.apache.commons.rdf.api.IRI;
 import org.slf4j.Logger;
@@ -82,6 +86,9 @@ import org.trellisldp.vocabulary.LDP;
  * @author acoburn
  */
 @PreMatching
+@Provider
+@Priority(AUTHORIZATION + 20)
+@Singleton
 @Path("{partition}{path: .*}")
 public class LdpResource extends BaseLdpResource implements ContainerRequestFilter {
 

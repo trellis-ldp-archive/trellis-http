@@ -14,10 +14,12 @@
 package org.trellisldp.http;
 
 import static javax.ws.rs.HttpMethod.GET;
+import static javax.ws.rs.Priorities.USER;
 import static javax.ws.rs.core.HttpHeaders.CACHE_CONTROL;
 
 import java.io.IOException;
 
+import javax.annotation.Priority;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
@@ -26,6 +28,7 @@ import javax.ws.rs.core.CacheControl;
 /**
  * @author acoburn
  */
+@Priority(USER)
 public class CacheControlFilter implements ContainerResponseFilter {
 
     private final Integer cacheAge;

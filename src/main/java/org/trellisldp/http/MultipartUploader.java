@@ -21,6 +21,7 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 import static javax.ws.rs.HttpMethod.OPTIONS;
 import static javax.ws.rs.HttpMethod.POST;
+import static javax.ws.rs.Priorities.AUTHORIZATION;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.Link.TYPE;
 import static javax.ws.rs.core.Link.fromUri;
@@ -52,6 +53,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Priority;
+import javax.inject.Singleton;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -75,6 +78,7 @@ import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.Provider;
 
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
@@ -89,6 +93,9 @@ import org.trellisldp.vocabulary.XSD;
  * @author acoburn
  */
 @PreMatching
+@Provider
+@Priority(AUTHORIZATION + 10)
+@Singleton
 @Path(UPLOAD_PREFIX + "{partition}/{id}")
 public class MultipartUploader implements ContainerRequestFilter, ContainerResponseFilter {
 

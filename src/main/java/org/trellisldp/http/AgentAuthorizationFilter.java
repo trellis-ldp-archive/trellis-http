@@ -33,7 +33,7 @@ import org.trellisldp.spi.AgentService;
  * @author acoburn
  */
 @PreMatching
-@Priority(AUTHENTICATION)
+@Priority(AUTHENTICATION - 100)
 public class AgentAuthorizationFilter implements ContainerRequestFilter {
 
     private final AgentService agentService;

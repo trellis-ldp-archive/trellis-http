@@ -60,8 +60,8 @@ import org.trellisldp.vocabulary.RDFS;
 /**
  * @author acoburn
  */
-@Path("")
 @Produces({"text/turtle,application/ld+json,application/n-triples,text/html"})
+@Path("")
 public class RootResource extends BaseLdpResource {
 
     private static final Logger LOGGER = getLogger(RootResource.class);
