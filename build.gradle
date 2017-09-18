@@ -45,7 +45,7 @@ ext {
     junitVersion = '4.12'
     mockitoVersion = '2.10.0'
     trellisJenaIOVersion = '0.1.0'
-    jerseyVersion = '2.25.1'
+    jerseyVersion = '2.26'
     logbackVersion = '1.2.3'
     jsonVersion = '1.1'
     jacksonVersion = '2.9.1'
@@ -80,6 +80,7 @@ dependencies {
     testImplementation group: 'org.glassfish', name: 'javax.json', version: jsonVersion
     testImplementation group: 'org.glassfish.jersey.core', name: 'jersey-server', version: jerseyVersion
     testImplementation group: 'org.glassfish.jersey.test-framework.providers', name: 'jersey-test-framework-provider-inmemory', version: jerseyVersion
+    testImplementation group: 'org.glassfish.jersey.inject', name: 'jersey-hk2', version: jerseyVersion
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
     testImplementation group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisJenaIOVersion
 
