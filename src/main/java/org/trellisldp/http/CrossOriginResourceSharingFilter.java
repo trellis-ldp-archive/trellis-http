@@ -43,8 +43,11 @@ import javax.ws.rs.container.PreMatching;
 @Priority(AUTHORIZATION - 1)
 public class CrossOriginResourceSharingFilter implements ContainerResponseFilter {
 
-    private static final Set<String> simpleHeaders = unmodifiableSet(new HashSet<>(asList("cache-control",
+    private static final Set<String> simpleResponseHeaders = unmodifiableSet(new HashSet<>(asList("cache-control",
                     "content-language", "expires", "last-modified", "pragma")));
+
+    private static final Set<String> simpleHeaders = unmodifiableSet(new HashSet<>(asList("accept", "accept-language",
+                    "content-language")));
 
     private static final Set<String> simpleMethods = unmodifiableSet(new HashSet<>(asList("GET", "HEAD", "POST")));
 
@@ -76,7 +79,7 @@ public class CrossOriginResourceSharingFilter implements ContainerResponseFilter
         this.allowedMethods = new HashSet<>(allowedMethods);
         this.allowedHeaders = allowedHeaders.stream().map(String::toLowerCase).filter(x -> !simpleHeaders.contains(x))
             .collect(toSet());
-        this.exposedHeaders = exposedHeaders.stream().filter(x -> !simpleHeaders.contains(x)).collect(toSet());
+        this.exposedHeaders = exposedHeaders.stream().filter(x -> !simpleResponseHeaders.contains(x)).collect(toSet());
         this.credentials = credentials;
         this.cacheSeconds = cacheSeconds;
     }

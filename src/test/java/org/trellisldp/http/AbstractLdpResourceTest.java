@@ -1294,7 +1294,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         final String origin = baseUri.substring(0, baseUri.length() - 1);
         final Response res = target(RESOURCE_PATH).request().header("Origin", origin)
             .header("Access-Control-Request-Method", "POST")
-            .header("Access-Control-Request-Headers", "Pragma").get();
+            .header("Access-Control-Request-Headers", "Accept").get();
 
         assertEquals(OK, res.getStatusInfo());
         assertEquals(origin, res.getHeaderString("Access-Control-Allow-Origin"));
@@ -1470,7 +1470,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertEquals(3L, headers.size());
         assertTrue(headers.contains("link"));
         assertTrue(headers.contains("content-type"));
-        assertTrue(headers.contains("accept"));
+        assertTrue(headers.contains("accept-datetime"));
 
         final List<String> methods = stream(res.getHeaderString("Access-Control-Allow-Methods").split(","))
             .collect(toList());
@@ -1485,7 +1485,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         final String origin = baseUri.substring(0, baseUri.length() - 1);
         final Response res = target(RESOURCE_PATH).request().header("Origin", origin)
             .header("Access-Control-Request-Method", "POST")
-            .header("Access-Control-Request-Headers", "Pragma").options();
+            .header("Access-Control-Request-Headers", "Accept").options();
 
         assertEquals(NO_CONTENT, res.getStatusInfo());
         assertEquals(origin, res.getHeaderString("Access-Control-Allow-Origin"));

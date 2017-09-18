@@ -41,7 +41,8 @@ public class LdpResourceTest extends AbstractLdpResourceTest {
         config.register(new MultipartUploader(mockResourceService, mockBinaryService, partitions));
         config.register(new CacheControlFilter(86400));
         config.register(new CrossOriginResourceSharingFilter(asList(origin), asList("PATCH", "POST", "PUT"),
-                        asList("Link", "Content-Type", "Accept"), asList("Link", "Content-Type"), true, 100));
+                        asList("Link", "Content-Type", "Accept-Datetime"),
+                        asList("Link", "Content-Type", "Memento-Datetime"), true, 100));
         return config;
     }
 }
