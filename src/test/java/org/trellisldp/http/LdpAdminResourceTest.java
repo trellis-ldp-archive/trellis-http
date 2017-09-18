@@ -45,8 +45,8 @@ public class LdpAdminResourceTest extends AbstractLdpResourceTest {
         config.register(new CacheControlFilter(86400));
         config.register(new CrossOriginResourceSharingFilter(asList(origin),
                     asList("PATCH", "POST", "PUT"),
-                    asList("Link", "Content-Type", "Link", "Accept-Datetime"),
-                    asList("Link", "Link", "Content-Type", "Memento-Datetime"), true, 100));
+                    asList("Link", "Content-Type", "Accept", "Accept-Datetime"),
+                    asList("Link", "Content-Type", "Pragma", "Memento-Datetime"), true, 100));
         return config;
     }
 }

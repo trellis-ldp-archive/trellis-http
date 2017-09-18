@@ -25,6 +25,7 @@ import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
 import static javax.ws.rs.core.SecurityContext.DIGEST_AUTH;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
@@ -106,6 +107,9 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
     @Override
     public Application configure() {
 
+        final String baseUri = getBaseUri().toString();
+        final String origin = baseUri.substring(0, baseUri.length() - 1);
+
         final Map<String, String> partitions = new HashMap<>();
         partitions.put("repo1", "http://example.org/");
         partitions.put("repo2", "http://example.org/");
@@ -120,6 +124,10 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
                     partitions));
         config.register(new TestAuthenticationFilter("testUser", "group"));
         config.register(new WebAcFilter(partitions, asList(BASIC_AUTH, DIGEST_AUTH), mockAccessControlService));
+        config.register(new CrossOriginResourceSharingFilter(asList(origin),
+                    asList("PATCH", "POST", "PUT"),
+                    asList("Link", "Content-Type", "Accept", "Accept-Datetime"),
+                    emptyList(), false, 0));
         return config;
     }
 
@@ -201,6 +209,15 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
         assertEquals(2L, res.getHeaders().get(WWW_AUTHENTICATE).size());
         assertTrue(res.getHeaders().get(WWW_AUTHENTICATE).contains(DIGEST_AUTH));
         assertTrue(res.getHeaders().get(WWW_AUTHENTICATE).contains(BASIC_AUTH));
+    }
+
+    @Test
+    public void testCORS() {
+        final String baseUri = getBaseUri().toString();
+        final String origin = baseUri.substring(0, baseUri.length() - 1);
+
+        final Response res = target("repo1/resource").request().header("Origin", origin).options();
+        assertNull(res.getHeaderString("Access-Control-Allow-Origin"));
     }
 
     @Test

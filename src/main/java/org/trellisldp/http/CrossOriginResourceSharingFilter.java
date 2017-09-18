@@ -16,6 +16,7 @@ package org.trellisldp.http;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.joining;
@@ -77,9 +78,10 @@ public class CrossOriginResourceSharingFilter implements ContainerResponseFilter
             final Integer cacheSeconds) {
         this.origins = new HashSet<>(origins);
         this.allowedMethods = new HashSet<>(allowedMethods);
-        this.allowedHeaders = allowedHeaders.stream().map(String::toLowerCase).filter(x -> !simpleHeaders.contains(x))
-            .collect(toSet());
-        this.exposedHeaders = exposedHeaders.stream().filter(x -> !simpleResponseHeaders.contains(x)).collect(toSet());
+        this.allowedHeaders = allowedHeaders.stream().map(String::toLowerCase)
+            .filter(x -> !simpleHeaders.contains(x)).collect(toSet());
+        this.exposedHeaders = exposedHeaders.stream().map(String::toLowerCase)
+            .filter(x -> !simpleResponseHeaders.contains(x)).collect(toSet());
         this.credentials = credentials;
         this.cacheSeconds = cacheSeconds;
     }
@@ -147,8 +149,13 @@ public class CrossOriginResourceSharingFilter implements ContainerResponseFilter
         final String method = req.getHeaderString("Access-Control-Request-Method");
 
         // 6.2.4 Set field-names as the value of Access-Control-Request-Headers
-        final Set<String> fieldNames = stream(req.getHeaderString("Access-Control-Request-Headers")
-                .split(",")).map(String::trim).collect(toSet());
+        final String requestHeaders = req.getHeaderString("Access-Control-Request-Headers");
+        final Set<String> fieldNames;
+        if (isNull(requestHeaders)) {
+            fieldNames = emptySet();
+        } else {
+            fieldNames = stream(requestHeaders.split(",")).map(String::trim).collect(toSet());
+        }
 
         // 6.2.5 If the method is not a case-sensitive match for the values
         // in the list of allowed methods, then terminate this set of steps.
