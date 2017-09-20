@@ -51,6 +51,7 @@ public class HttpResolver implements BinaryService.Resolver {
 
     private static final Logger LOGGER = getLogger(HttpResolver.class);
 
+    // TODO - JDK9 use the new HttpClient library
     private final Client httpClient;
 
     /**
