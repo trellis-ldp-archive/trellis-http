@@ -34,8 +34,8 @@ import static javax.ws.rs.core.Response.Status.FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
-import static org.trellisldp.http.domain.RdfMediaType.MEDIA_TYPES;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
+import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 import static org.trellisldp.vocabulary.JSONLD.expanded;
 import static org.trellisldp.vocabulary.LDP.RDFSource;
 import static org.trellisldp.vocabulary.LDP.Resource;
@@ -50,12 +50,10 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -120,7 +118,7 @@ public final class MementoResource {
         builder.links(links.toArray(new Link[0])).link(Resource.getIRIString(), "type")
             .link(RDFSource.getIRIString(), "type").header(ALLOW, join(",", GET, HEAD, OPTIONS));
 
-        final RDFSyntax syntax = getOutputSyntax(acceptableTypes).orElse(null);
+        final RDFSyntax syntax = getSyntax(acceptableTypes, of(APPLICATION_LINK_FORMAT)).orElse(null);
         if (nonNull(syntax)) {
             final IRI profile = ofNullable(getProfile(acceptableTypes, syntax)).orElse(expanded);
 
@@ -136,19 +134,6 @@ public final class MementoResource {
 
         return builder.type(APPLICATION_LINK_FORMAT)
             .entity(links.stream().map(Link::toString).collect(joining(",\n")) + "\n");
-    }
-
-    private Optional<RDFSyntax> getOutputSyntax(final List<MediaType> acceptableTypes) {
-        for (final MediaType type : acceptableTypes) {
-            final Optional<RDFSyntax> syntax = MEDIA_TYPES.stream().filter(type::isCompatible)
-                .findFirst().map(MediaType::toString).flatMap(RDFSyntax::byMediaType);
-            if (syntax.isPresent()) {
-                return syntax;
-            } else if (type.isCompatible(MediaType.valueOf(APPLICATION_LINK_FORMAT))) {
-                return empty();
-            }
-        }
-        throw new NotAcceptableException();
     }
 
     /**

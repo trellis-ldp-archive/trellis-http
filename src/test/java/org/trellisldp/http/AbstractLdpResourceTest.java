@@ -851,6 +851,16 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testGetTimeMapLinkDefaultFormat() throws IOException {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+
+        final Response res = target(RESOURCE_PATH).queryParam("ext", "timemap").request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertEquals(MediaType.valueOf(APPLICATION_LINK_FORMAT), res.getMediaType());
+    }
+
+    @Test
     public void testGetTimeMapLinkInvalidFormat() throws IOException {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
 
