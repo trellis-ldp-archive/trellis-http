@@ -123,7 +123,8 @@ public class PostHandler extends ContentBearingHandler {
                 readEntityIntoDataset(identifier, baseUrl, PreferUserManaged, rdfSyntax.get(), dataset);
 
                 // Check for any constraints
-                checkConstraint(dataset, PreferUserManaged, ldpType, baseUrl, rdfSyntax.get());
+                checkConstraint(dataset, PreferUserManaged, ldpType, TRELLIS_PREFIX + req.getPartition(),
+                        rdfSyntax.get());
 
             } else if (nonNull(entity)) {
                 // Check the expected digest value

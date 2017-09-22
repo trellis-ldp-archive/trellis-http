@@ -251,7 +251,7 @@ public class PostHandlerTest {
 
         verify(mockIoService).read(any(InputStream.class), eq(baseUrl + path), eq(TURTLE));
 
-        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any(Graph.class));
+        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq("trellis:partition"), any(Graph.class));
 
         verify(mockResourceService).put(eq(identifier), any(Dataset.class));
     }
@@ -367,7 +367,7 @@ public class PostHandlerTest {
         when(mockIoService.read(any(), any(), eq(TURTLE))).thenAnswer(x -> Stream.of(
                     rdf.createTriple(rdf.createIRI("http://example.org/repository/newresource"), DC.title,
                         rdf.createLiteral("A title"))));
-        when(mockConstraintService.constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any()))
+        when(mockConstraintService.constrainedBy(eq(LDP.RDFSource), eq("trellis:partition"), any()))
             .thenReturn(of(new ConstraintViolation(Trellis.InvalidRange,
                             rdf.createTriple(identifier, type, rdf.createLiteral("Some literal")))));
         final File entity = new File(getClass().getResource("/simpleTriple.ttl").getFile());
