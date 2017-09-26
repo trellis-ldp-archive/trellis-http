@@ -16,6 +16,8 @@ package org.trellisldp.http.impl;
 import static java.net.URI.create;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.nonNull;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
@@ -24,6 +26,7 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
+import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
@@ -98,10 +101,10 @@ public class PostHandler extends ContentBearingHandler {
 
         LOGGER.info("Creating resource as {}", identifier);
 
-        final Optional<RDFSyntax> rdfSyntax = ofNullable(contentType).flatMap(RDFSyntax::byMediaType)
+        final Optional<RDFSyntax> givenRdfSyntax = ofNullable(contentType).flatMap(RDFSyntax::byMediaType)
             .filter(SUPPORTED_RDF_TYPES::contains);
 
-        final IRI defaultType = nonNull(contentType) && !rdfSyntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
+        final IRI defaultType = nonNull(contentType) && !givenRdfSyntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
         final IRI internalId = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath() + id);
 
         // Add LDP type (ldp:Resource results in the defaultType)
@@ -109,6 +112,18 @@ public class PostHandler extends ContentBearingHandler {
             .filter(l -> "type".equals(l.getRel())).map(Link::getUri).map(URI::toString)
             .filter(l -> l.startsWith(LDP.URI)).map(rdf::createIRI)
             .filter(l -> !LDP.Resource.equals(l)).orElse(defaultType);
+
+        final Optional<RDFSyntax> rdfSyntax;
+        // Force an empty rdf syntax on NonRDFSource resources
+        if (ldpType.equals(LDP.NonRDFSource)) {
+            rdfSyntax = empty();
+        // If there is still no syntax, use Turtle
+        } else if (!givenRdfSyntax.isPresent()) {
+            // TODO - JDK9 Optional::or
+            rdfSyntax = of(TURTLE);
+        } else {
+            rdfSyntax = givenRdfSyntax;
+        }
 
         try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
 

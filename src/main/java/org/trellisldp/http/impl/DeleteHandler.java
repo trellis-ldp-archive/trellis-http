@@ -83,7 +83,7 @@ public class DeleteHandler extends BaseLdpHandler {
 
         // If this is a container, are there contained resources?
         if (ldpResourceTypes(res.getInteractionModel()).anyMatch(Container::equals)) {
-            try (final Stream<Triple> contains = res.stream(PreferContainment)) {
+            try (final Stream<? extends Triple> contains = res.stream(PreferContainment)) {
                 if (contains.findAny().isPresent()) {
                     return status(CONFLICT).link(UnsupportedRecursiveDelete.getIRIString(),
                             constrainedBy.getIRIString());
@@ -101,7 +101,7 @@ public class DeleteHandler extends BaseLdpHandler {
 
             // When deleting just the ACL graph, keep the user managed triples in tact
             if (ACL.equals(req.getExt())) {
-                try (final Stream<Triple> triples = res.stream(PreferUserManaged)) {
+                try (final Stream<? extends Triple> triples = res.stream(PreferUserManaged)) {
                     triples.map(t -> rdf.createQuad(PreferUserManaged, t.getSubject(), t.getPredicate(), t.getObject()))
                         .forEach(dataset::add);
                 }

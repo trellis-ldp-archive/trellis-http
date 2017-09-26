@@ -107,7 +107,7 @@ public class PatchHandler extends BaseLdpHandler {
         final List<Triple> triples = new ArrayList<>();
         // Update existing graph
         try (final TrellisGraph graph = TrellisGraph.createGraph()) {
-            try (final Stream<Triple> stream = res.stream(graphName)) {
+            try (final Stream<? extends Triple> stream = res.stream(graphName)) {
                 stream.forEach(graph::add);
             }
             ioService.update(graph.asGraph(), sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath() +
@@ -173,7 +173,7 @@ public class PatchHandler extends BaseLdpHandler {
                 });
 
             // When updating User or ACL triples, be sure to add the other category to the dataset
-            try (final Stream<Triple> remaining = res.stream(otherGraph)) {
+            try (final Stream<? extends Triple> remaining = res.stream(otherGraph)) {
                 remaining.map(t -> rdf.createQuad(otherGraph, t.getSubject(), t.getPredicate(), t.getObject()))
                     .forEach(dataset::add);
             }

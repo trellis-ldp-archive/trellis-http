@@ -197,7 +197,7 @@ public class PutHandler extends ContentBearingHandler {
                             rdf.createLiteral(Long.toString(entity.length()), XSD.long_)));
             }
 
-            try (final Stream<Triple> remaining = res.stream(otherGraph)) {
+            try (final Stream<? extends Triple> remaining = res.stream(otherGraph)) {
                 remaining.map(t -> rdf.createQuad(otherGraph, t.getSubject(), t.getPredicate(), t.getObject()))
                     .forEach(dataset::add);
             }
