@@ -1585,7 +1585,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
      * ******************************* */
     @Test
     public void testPost() {
-        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
             .thenReturn(empty());
 
@@ -1617,7 +1617,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostTypeMismatch() {
-        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
             .thenReturn(empty());
 
@@ -1630,7 +1630,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostUnknownLinkType() {
-        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
             .thenReturn(empty());
 
@@ -1647,7 +1647,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostBadContent() {
-        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
             .thenReturn(empty());
 
@@ -1670,7 +1670,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostSlug() {
-        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
 
         final Response res = target(RESOURCE_PATH).request().header("Slug", "child")
             .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
@@ -1700,7 +1700,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostConstraint() {
-        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
             .thenReturn(empty());
 
@@ -1735,7 +1735,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostBinary() {
-        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
                     any(Instant.class))).thenReturn(empty());
         final Response res = target(RESOURCE_PATH).request().header("Slug", "newresource")
@@ -1749,7 +1749,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostBinaryWithInvalidDigest() {
-        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
                     any(Instant.class))).thenReturn(empty());
         final Response res = target(RESOURCE_PATH).request().header("Slug", "newresource")
@@ -1768,7 +1768,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostBinaryWithInvalidDigestType() {
-        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
                     any(Instant.class))).thenReturn(empty());
         final Response res = target(RESOURCE_PATH).request().header("Slug", "newresource")
@@ -1779,7 +1779,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostBinaryWithMd5Digest() {
-        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
                     any(Instant.class))).thenReturn(empty());
         final Response res = target(RESOURCE_PATH).request().header("Digest", "md5=BJozgIQwPzzVzSxvjQsWkA==")
@@ -1793,7 +1793,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostBinaryWithSha1Digest() {
-        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
                     any(Instant.class))).thenReturn(empty());
         final Response res = target(RESOURCE_PATH).request().header("Digest", "sha=3VWEuvPnAM6riDQJUu4TG7A4Ots=")
@@ -1807,7 +1807,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPostBinaryWithSha256Digest() {
-        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/newresource")),
                     any(Instant.class))).thenReturn(empty());
         final Response res = target(RESOURCE_PATH).request()
