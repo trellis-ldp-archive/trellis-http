@@ -22,6 +22,7 @@ import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
@@ -335,11 +336,25 @@ public class PutHandlerTest {
     }
 
     @Test
+    public void testInvalidContentType() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
+        when(mockLdpRequest.getContentType()).thenReturn(TEXT_TURTLE);
+        when(mockLdpRequest.getLink()).thenReturn(fromUri(LDP.NonRDFSource.getIRIString()).rel("type").build());
+
+        final File entity = new File(getClass().getResource("/simpleTriple.ttl").getFile());
+        final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
+                mockIoService, mockConstraintService, mockBinaryService);
+
+        final Response res = putHandler.setResource(mockResource).build();
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+    }
+
+    @Test
     public void testError() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
         when(mockResourceService.put(eq(rdf.createIRI(TRELLIS_PREFIX + "partition/resource")), any(Dataset.class)))
             .thenReturn(false);
-        when(mockLdpRequest.getContentType()).thenReturn(TEXT_TURTLE);
+        when(mockLdpRequest.getContentType()).thenReturn(TEXT_PLAIN);
         when(mockLdpRequest.getLink()).thenReturn(fromUri(LDP.NonRDFSource.getIRIString()).rel("type").build());
 
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile());

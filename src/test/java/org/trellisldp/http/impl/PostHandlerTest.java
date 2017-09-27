@@ -90,6 +90,7 @@ public class PostHandlerTest {
     private final static String baseUrl = "http://example.org/repo/";
     private final static RDF rdf = getInstance();
     private final static Map<String, String> partitions = emptyMap();
+    private File entity;
 
     @Mock
     private ResourceService mockResourceService;
@@ -131,10 +132,11 @@ public class PostHandlerTest {
     }
 
     @Test
-    public void testPostLdprs() {
+    public void testPostLdprs() throws IOException {
         when(mockRequest.getLink()).thenReturn(fromUri(LDP.Container.getIRIString()).rel("type").build());
 
-        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", null,
+        final File entity = new File(getClass().getResource("/emptyData.txt").getFile());
+        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
                 mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
@@ -147,8 +149,9 @@ public class PostHandlerTest {
     }
 
     @Test
-    public void testDefaultType1() {
-        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", null,
+    public void testDefaultType1() throws IOException {
+        final File entity = new File(getClass().getResource("/emptyData.txt").getFile());
+        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
                 mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
@@ -161,10 +164,11 @@ public class PostHandlerTest {
     }
 
     @Test
-    public void testDefaultType2() {
+    public void testDefaultType2() throws IOException {
         when(mockRequest.getContentType()).thenReturn("text/plain");
 
-        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", null,
+        final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
+        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
                 mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
@@ -177,10 +181,11 @@ public class PostHandlerTest {
     }
 
     @Test
-    public void testDefaultType3() {
+    public void testDefaultType3() throws IOException {
         when(mockRequest.getLink()).thenReturn(fromUri(LDP.Resource.getIRIString()).rel("type").build());
 
-        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", null,
+        final File entity = new File(getClass().getResource("/emptyData.txt").getFile());
+        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
                 mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
@@ -193,11 +198,12 @@ public class PostHandlerTest {
     }
 
     @Test
-    public void testDefaultType4() {
+    public void testDefaultType4() throws IOException {
         when(mockRequest.getContentType()).thenReturn("text/plain");
         when(mockRequest.getLink()).thenReturn(fromUri(LDP.Resource.getIRIString()).rel("type").build());
 
-        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", null,
+        final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
+        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
                 mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
@@ -210,10 +216,11 @@ public class PostHandlerTest {
     }
 
     @Test
-    public void testDefaultType5() {
+    public void testDefaultType5() throws IOException {
         when(mockRequest.getContentType()).thenReturn("text/turtle");
+        final File entity = new File(getClass().getResource("/emptyData.txt").getFile());
 
-        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", null,
+        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
                 mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
@@ -381,12 +388,13 @@ public class PostHandlerTest {
     }
 
     @Test
-    public void testError() {
+    public void testError() throws IOException {
         when(mockResourceService.put(eq(rdf.createIRI(TRELLIS_PREFIX + "partition/newresource")), any(Dataset.class)))
             .thenReturn(false);
         when(mockRequest.getContentType()).thenReturn("text/turtle");
 
-        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", null,
+        final File entity = new File(getClass().getResource("/emptyData.txt").getFile());
+        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
                 mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();

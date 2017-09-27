@@ -151,9 +151,14 @@ public class PutHandler extends ContentBearingHandler {
                     .map(Link::getUri).map(URI::toString).filter(l -> l.startsWith(LDP.URI)).map(rdf::createIRI)
                     .filter(l -> !LDP.Resource.equals(l)).orElseGet(res::getInteractionModel);
 
-        // It is not possible to change the LDP type to a type that is
+        // It is not possible to change the LDP type to a type that is not a subclass
         if (!ldpResourceTypes(ldpType).anyMatch(res.getInteractionModel()::equals)) {
-            return status(CONFLICT);
+            return status(CONFLICT).entity("Cannot change the LDP type to " + ldpType).type(TEXT_PLAIN);
+        }
+
+        if (ldpType.equals(LDP.NonRDFSource) && rdfSyntax.isPresent()) {
+            LOGGER.warn("Cannot save a NonRDFSource with RDF syntax");
+            return status(BAD_REQUEST).entity("Cannot save a NonRDFSource with RDF syntax").type(TEXT_PLAIN);
         }
 
         final IRI internalId = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());

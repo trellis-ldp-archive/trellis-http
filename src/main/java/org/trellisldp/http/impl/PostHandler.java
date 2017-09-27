@@ -14,10 +14,9 @@
 package org.trellisldp.http.impl;
 
 import static java.net.URI.create;
+import static java.time.Instant.now;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.nonNull;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
@@ -101,10 +100,10 @@ public class PostHandler extends ContentBearingHandler {
 
         LOGGER.info("Creating resource as {}", identifier);
 
-        final Optional<RDFSyntax> givenRdfSyntax = ofNullable(contentType).flatMap(RDFSyntax::byMediaType)
+        final Optional<RDFSyntax> rdfSyntax = ofNullable(contentType).flatMap(RDFSyntax::byMediaType)
             .filter(SUPPORTED_RDF_TYPES::contains);
 
-        final IRI defaultType = nonNull(contentType) && !givenRdfSyntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
+        final IRI defaultType = nonNull(contentType) && !rdfSyntax.isPresent() ? LDP.NonRDFSource : LDP.RDFSource;
         final IRI internalId = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath() + id);
 
         // Add LDP type (ldp:Resource results in the defaultType)
@@ -113,16 +112,9 @@ public class PostHandler extends ContentBearingHandler {
             .filter(l -> l.startsWith(LDP.URI)).map(rdf::createIRI)
             .filter(l -> !LDP.Resource.equals(l)).orElse(defaultType);
 
-        final Optional<RDFSyntax> rdfSyntax;
-        // Force an empty rdf syntax on NonRDFSource resources
-        if (ldpType.equals(LDP.NonRDFSource)) {
-            rdfSyntax = empty();
-        // If there is still no syntax, use Turtle
-        } else if (!givenRdfSyntax.isPresent()) {
-            // TODO - JDK9 Optional::or
-            rdfSyntax = of(TURTLE);
-        } else {
-            rdfSyntax = givenRdfSyntax;
+        if (ldpType.equals(LDP.NonRDFSource) && rdfSyntax.isPresent()) {
+            LOGGER.error("Cannot save a NonRDFSource with RDF syntax");
+            return status(BAD_REQUEST).type(TEXT_PLAIN).entity("Cannot save a NonRDFSource with RDF syntax");
         }
 
         try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
@@ -134,14 +126,7 @@ public class PostHandler extends ContentBearingHandler {
             dataset.add(rdf.createQuad(PreferServerManaged, internalId, RDF.type, ldpType));
 
             // Add user-supplied data
-            if (nonNull(entity) && rdfSyntax.isPresent()) {
-                readEntityIntoDataset(identifier, baseUrl, PreferUserManaged, rdfSyntax.get(), dataset);
-
-                // Check for any constraints
-                checkConstraint(dataset, PreferUserManaged, ldpType, TRELLIS_PREFIX + req.getPartition(),
-                        rdfSyntax.get());
-
-            } else if (nonNull(entity)) {
+            if (ldpType.equals(LDP.NonRDFSource)) {
                 // Check the expected digest value
                 final Digest digest = req.getDigest();
                 if (nonNull(digest) && !getDigestForEntity(digest).equals(digest.getDigest())) {
@@ -150,8 +135,11 @@ public class PostHandler extends ContentBearingHandler {
 
                 final Map<String, String> metadata = singletonMap(CONTENT_TYPE, ofNullable(contentType)
                         .orElse(APPLICATION_OCTET_STREAM));
-                final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(req.getPartition()).get());
+                final IRI binaryLocation = rdf.createIRI(binaryService.getIdentifierSupplier(req.getPartition())
+                        .get());
                 dataset.add(rdf.createQuad(PreferServerManaged, internalId, DC.hasPart, binaryLocation));
+                dataset.add(rdf.createQuad(PreferServerManaged, binaryLocation, DC.modified,
+                            rdf.createLiteral(now().toString(), XSD.dateTime)));
                 dataset.add(rdf.createQuad(PreferServerManaged, binaryLocation, DC.format,
                             rdf.createLiteral(ofNullable(contentType).orElse(APPLICATION_OCTET_STREAM))));
                 dataset.add(rdf.createQuad(PreferServerManaged, binaryLocation, DC.extent,
@@ -159,6 +147,12 @@ public class PostHandler extends ContentBearingHandler {
 
                 // Persist the content
                 persistContent(binaryLocation, metadata);
+            } else {
+                readEntityIntoDataset(identifier, baseUrl, PreferUserManaged, rdfSyntax.orElse(TURTLE), dataset);
+
+                // Check for any constraints
+                checkConstraint(dataset, PreferUserManaged, ldpType, TRELLIS_PREFIX + req.getPartition(),
+                        rdfSyntax.orElse(TURTLE));
             }
 
             if (resourceService.put(internalId, dataset.asDataset())) {
