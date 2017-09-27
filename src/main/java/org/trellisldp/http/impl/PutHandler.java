@@ -156,10 +156,6 @@ public class PutHandler extends ContentBearingHandler {
             return status(CONFLICT).entity("Cannot change the LDP type to " + ldpType).type(TEXT_PLAIN);
         }
 
-        if (ldpType.equals(LDP.NonRDFSource) && rdfSyntax.isPresent()) {
-            return status(BAD_REQUEST).entity("Cannot save a NonRDFSource with RDF syntax").type(TEXT_PLAIN);
-        }
-
         final IRI internalId = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
 
         try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
@@ -174,13 +170,13 @@ public class PutHandler extends ContentBearingHandler {
             dataset.add(rdf.createQuad(PreferServerManaged, internalId, RDF.type, ldpType));
 
             // Add user-supplied data
-            if (nonNull(entity) && rdfSyntax.isPresent()) {
+            if (rdfSyntax.isPresent()) {
                 readEntityIntoDataset(identifier, baseUrl, graphName, rdfSyntax.get(), dataset);
 
                 // Check for any constraints
                 checkConstraint(dataset, PreferUserManaged, ldpType, baseUrl, rdfSyntax.get());
 
-            } else if (nonNull(entity)) {
+            } else {
                 // Check the expected digest value
                 final Digest digest = req.getDigest();
                 if (nonNull(digest) && !getDigestForEntity(digest).equals(digest.getDigest())) {

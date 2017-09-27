@@ -22,7 +22,6 @@ import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Link.fromUri;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
@@ -290,7 +289,8 @@ public class PutHandlerTest {
 
     @Test
     public void testPutLdpResourceEmpty() {
-        final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, null, mockResourceService,
+        final File entity = new File(getClass().getResource("/emptyData.txt").getFile());
+        final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
                 mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
@@ -336,7 +336,7 @@ public class PutHandlerTest {
     }
 
     @Test
-    public void testInvalidContentType() {
+    public void testRdfToNonRDFSource() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
         when(mockLdpRequest.getContentType()).thenReturn(TEXT_TURTLE);
         when(mockLdpRequest.getLink()).thenReturn(fromUri(LDP.NonRDFSource.getIRIString()).rel("type").build());
@@ -346,7 +346,11 @@ public class PutHandlerTest {
                 mockIoService, mockConstraintService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
-        assertEquals(BAD_REQUEST, res.getStatusInfo());
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.NonRDFSource)));
     }
 
     @Test

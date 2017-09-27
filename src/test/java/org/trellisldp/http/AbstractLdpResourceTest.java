@@ -1616,6 +1616,19 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPostTypeMismatch() {
+        when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
+            .thenReturn(empty());
+
+        final Response res = target(RESOURCE_PATH).request()
+            .header("Link", "<http://www.w3.org/ns/ldp#NonRDFSource>; rel=\"type\"")
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+    }
+
+    @Test
     public void testPostUnknownLinkType() {
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
