@@ -113,7 +113,6 @@ public class PostHandler extends ContentBearingHandler {
             .filter(l -> !LDP.Resource.equals(l)).orElse(defaultType);
 
         if (ldpType.equals(LDP.NonRDFSource) && rdfSyntax.isPresent()) {
-            LOGGER.error("Cannot save a NonRDFSource with RDF syntax");
             return status(BAD_REQUEST).type(TEXT_PLAIN).entity("Cannot save a NonRDFSource with RDF syntax");
         }
 

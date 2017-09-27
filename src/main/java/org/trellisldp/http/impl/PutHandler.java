@@ -157,7 +157,6 @@ public class PutHandler extends ContentBearingHandler {
         }
 
         if (ldpType.equals(LDP.NonRDFSource) && rdfSyntax.isPresent()) {
-            LOGGER.warn("Cannot save a NonRDFSource with RDF syntax");
             return status(BAD_REQUEST).entity("Cannot save a NonRDFSource with RDF syntax").type(TEXT_PLAIN);
         }
 
