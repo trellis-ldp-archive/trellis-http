@@ -202,14 +202,19 @@ public class GetHandler extends BaseLdpHandler {
             return builder.status(NO_CONTENT);
         }
 
+        // Short circuit HEAD requests
+        if (HEAD.equals(req.getRequest().getMethod())) {
+            return builder;
+        }
+
         // Stream the rdf content
         final StreamingOutput stream = new StreamingOutput() {
             @Override
             public void write(final OutputStream out) throws IOException {
-                try (final Stream<Quad> stream = res.stream().filter(filterWithPrefer(prefer))
-                        .map(unskolemizeQuads(resourceService, req.getBaseUrl(partitions)))) {
-                   ioService.write(stream.map(Quad::asTriple), out, syntax,
-                           ofNullable(profile).orElseGet(() -> getDefaultProfile(syntax, identifier)));
+                try (final Stream<? extends Quad> stream = res.stream()) {
+                    ioService.write(stream.filter(filterWithPrefer(prefer))
+                        .map(unskolemizeQuads(resourceService, req.getBaseUrl(partitions))).map(Quad::asTriple), out,
+                        syntax, ofNullable(profile).orElseGet(() -> getDefaultProfile(syntax, identifier)));
                 }
             }
         };

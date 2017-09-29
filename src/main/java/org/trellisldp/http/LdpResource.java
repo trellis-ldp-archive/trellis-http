@@ -47,6 +47,7 @@ import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.HEAD;
 import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -190,7 +191,24 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     @GET
     @Timed
     public Response getResource(@BeanParam final LdpRequest req) {
+        return fetchResource(req);
+    }
 
+    /**
+     * Perform a HEAD operation on an LDP Resource
+     * @param req the request parameters
+     * @return the response
+     *
+     * Note: The Memento implemenation pattern exactly follows
+     * <a href="https://tools.ietf.org/html/rfc7089#section-4.2.1">section 4.2.1 of RFC 7089</a>.
+     */
+    @HEAD
+    @Timed
+    public Response getResourceHeaders(@BeanParam final LdpRequest req) {
+        return fetchResource(req);
+    }
+
+    private Response fetchResource(final LdpRequest req) {
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
         final GetHandler getHandler = new GetHandler(partitions, req, resourceService, ioService, binaryService);
 
