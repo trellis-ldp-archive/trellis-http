@@ -343,6 +343,18 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
                 rdf.createQuad(Trellis.PreferAccessControl, identifier, ACL.mode, ACL.Control)));
     }
 
+    /* ****************************** *
+     *           HEAD Tests
+     * ****************************** */
+    @Test
+    public void testHeadDefaultType() {
+        final Response res = target(RESOURCE_PATH).request().head();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(TEXT_TURTLE_TYPE.isCompatible(res.getMediaType()));
+        assertTrue(res.getMediaType().isCompatible(TEXT_TURTLE_TYPE));
+    }
+
     /* ******************************* *
      *            GET Tests
      * ******************************* */
