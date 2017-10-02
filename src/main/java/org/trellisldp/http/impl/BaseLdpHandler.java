@@ -23,7 +23,6 @@ import static org.apache.commons.rdf.api.RDFSyntax.NTRIPLES;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.LDP.Resource;
-import static org.trellisldp.vocabulary.Trellis.DeletedResource;
 
 import java.time.Instant;
 import java.util.List;
@@ -74,7 +73,7 @@ public class BaseLdpHandler {
      * @throws WebApplicationException a 410 Gone exception
      */
     protected static void checkDeleted(final Resource res, final String identifier) {
-       if (Resource.equals(res.getInteractionModel()) && res.getTypes().contains(DeletedResource)) {
+       if (RdfUtils.isDeleted(res)) {
             throw new WebApplicationException(status(GONE)
                     .links(MementoResource.getMementoLinks(identifier, res.getMementos())
                     .toArray(Link[]::new)).build());

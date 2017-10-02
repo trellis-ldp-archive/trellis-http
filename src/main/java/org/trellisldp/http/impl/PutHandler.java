@@ -30,6 +30,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
+import static org.trellisldp.spi.RDFUtils.auditCreation;
 import static org.trellisldp.spi.RDFUtils.auditUpdate;
 import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
@@ -122,6 +123,14 @@ public class PutHandler extends ContentBearingHandler {
 
     /**
      * Set the data for a resource
+     * @return the response builder
+     */
+    public ResponseBuilder createResource() {
+        return setResource(null);
+    }
+
+    /**
+     * Set the data for a resource
      * @param res the resource
      * @return the response builder
      */
@@ -130,11 +139,8 @@ public class PutHandler extends ContentBearingHandler {
         final String identifier = baseUrl + req.getPartition() + req.getPath() +
             (ACL.equals(req.getExt()) ? "?ext=acl" : "");
 
-        // Check if this is already deleted
-        checkDeleted(res, identifier);
-
         // Check the cache
-        checkResourceCache(identifier, res);
+        ofNullable(res).ifPresent(r -> checkResourceCache(identifier, r));
 
         final Session session = ofNullable(req.getSession()).orElseGet(HttpSession::new);
         final Optional<RDFSyntax> rdfSyntax = ofNullable(req.getContentType()).flatMap(RDFSyntax::byMediaType)
@@ -147,12 +153,17 @@ public class PutHandler extends ContentBearingHandler {
 
         LOGGER.info("Setting resource as {}", identifier);
 
+        final IRI heuristicType = nonNull(req.getContentType()) && !rdfSyntax.isPresent() ?
+            LDP.NonRDFSource : LDP.RDFSource;
+
+        final IRI defaultType = ofNullable(res).map(Resource::getInteractionModel).orElse(heuristicType);
+
         final IRI ldpType = ofNullable(req.getLink()).filter(l -> "type".equals(l.getRel()))
                     .map(Link::getUri).map(URI::toString).filter(l -> l.startsWith(LDP.URI)).map(rdf::createIRI)
-                    .filter(l -> !LDP.Resource.equals(l)).orElseGet(res::getInteractionModel);
+                    .filter(l -> !LDP.Resource.equals(l)).orElse(defaultType);
 
         // It is not possible to change the LDP type to a type that is not a subclass
-        if (!ldpResourceTypes(ldpType).anyMatch(res.getInteractionModel()::equals)) {
+        if (nonNull(res) && !ldpResourceTypes(ldpType).anyMatch(res.getInteractionModel()::equals)) {
             return status(CONFLICT).entity("Cannot change the LDP type to " + ldpType).type(TEXT_PLAIN);
         }
 
@@ -163,8 +174,13 @@ public class PutHandler extends ContentBearingHandler {
             final IRI otherGraph = getInactiveGraphName();
 
             // Add audit quads
-            auditUpdate(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
-                .forEach(dataset::add);
+            if (nonNull(res)) {
+                auditUpdate(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
+                    .forEach(dataset::add);
+            } else {
+                auditCreation(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
+                    .forEach(dataset::add);
+            }
 
             // Add LDP type
             dataset.add(rdf.createQuad(PreferServerManaged, internalId, RDF.type, ldpType));
@@ -197,9 +213,11 @@ public class PutHandler extends ContentBearingHandler {
                             rdf.createLiteral(Long.toString(entity.length()), XSD.long_)));
             }
 
-            try (final Stream<? extends Triple> remaining = res.stream(otherGraph)) {
-                remaining.map(t -> rdf.createQuad(otherGraph, t.getSubject(), t.getPredicate(), t.getObject()))
-                    .forEach(dataset::add);
+            if (nonNull(res)) {
+                try (final Stream<? extends Triple> remaining = res.stream(otherGraph)) {
+                    remaining.map(t -> rdf.createQuad(otherGraph, t.getSubject(), t.getPredicate(), t.getObject()))
+                        .forEach(dataset::add);
+                }
             }
 
             if (resourceService.put(internalId, dataset.asDataset())) {

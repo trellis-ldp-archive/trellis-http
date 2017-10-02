@@ -24,8 +24,9 @@ import static org.trellisldp.http.domain.RdfMediaType.MEDIA_TYPES;
 import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.spi.RDFUtils.toExternalTerm;
 import static org.trellisldp.spi.RDFUtils.toInternalTerm;
-import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 import static org.trellisldp.vocabulary.JSONLD.expanded;
+import static org.trellisldp.vocabulary.Trellis.DeletedResource;
+import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.util.HashSet;
 import java.util.List;
@@ -45,8 +46,10 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.Triple;
 
 import org.slf4j.Logger;
+import org.trellisldp.api.Resource;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.spi.ResourceService;
+import org.trellisldp.vocabulary.LDP;
 
 /**
  * RDF Utility functions
@@ -175,6 +178,15 @@ public final class RdfUtils {
      */
     public static IRI getDefaultProfile(final RDFSyntax syntax, final String identifier) {
         return getDefaultProfile(syntax, rdf.createIRI(identifier));
+    }
+
+    /**
+     * Check if the resource has a deleted mark
+     * @param res the resource
+     * @return true if the resource has been deleted; false otherwise
+     */
+    public static Boolean isDeleted(final Resource res) {
+        return LDP.Resource.equals(res.getInteractionModel()) && res.getTypes().contains(DeletedResource);
     }
 
     /**

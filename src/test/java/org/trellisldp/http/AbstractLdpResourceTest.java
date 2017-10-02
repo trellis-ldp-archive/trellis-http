@@ -1266,6 +1266,14 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testGetLdpResource() {
+        when(mockDeletedResource.getTypes()).thenReturn(emptyList());
+        final Response res = target(DELETED_PATH).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+    }
+
+    @Test
     public void testGetNotFound() {
         final Response res = target(NON_EXISTENT_PATH).request().get();
 
@@ -1912,7 +1920,11 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         final Response res = target(RESOURCE_PATH + "/test").request()
             .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
-        assertEquals(NOT_FOUND, res.getStatusInfo());
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
     @Test
@@ -1920,7 +1932,11 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         final Response res = target(DELETED_PATH).request()
             .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
 
-        assertEquals(GONE, res.getStatusInfo());
+        assertEquals(NO_CONTENT, res.getStatusInfo());
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
     @Test

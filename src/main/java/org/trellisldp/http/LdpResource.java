@@ -31,7 +31,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
-import static org.trellisldp.vocabulary.Trellis.DeletedResource;
 
 import com.codahale.metrics.annotation.Timed;
 
@@ -77,6 +76,7 @@ import org.trellisldp.http.impl.OptionsHandler;
 import org.trellisldp.http.impl.PatchHandler;
 import org.trellisldp.http.impl.PostHandler;
 import org.trellisldp.http.impl.PutHandler;
+import org.trellisldp.http.impl.RdfUtils;
 import org.trellisldp.spi.BinaryService;
 import org.trellisldp.spi.ConstraintService;
 import org.trellisldp.spi.IOService;
@@ -320,8 +320,7 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
             if (ixModel.filter(type -> ldpResourceTypes(type).anyMatch(LDP.Container::equals)).isPresent()) {
                 return resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path + identifier), MAX)
                     .map(x -> status(CONFLICT)).orElseGet(postHandler::createResource).build();
-           } else if (ixModel.filter(LDP.Resource::equals).isPresent() &&
-                    parent.get().getTypes().contains(DeletedResource)) {
+            } else if (parent.filter(RdfUtils::isDeleted).isPresent()) {
                 return status(GONE).build();
             }
             return status(METHOD_NOT_ALLOWED).build();
@@ -343,7 +342,7 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
         final PutHandler putHandler = new PutHandler(partitions, req, body, resourceService, ioService,
                 constraintService, binaryService);
 
-        return resourceService.get(identifier, MAX).map(putHandler::setResource)
-            .orElseGet(() -> status(NOT_FOUND)).build();
+        return resourceService.get(identifier, MAX).filter(res -> !RdfUtils.isDeleted(res))
+            .map(putHandler::setResource).orElseGet(putHandler::createResource).build();
     }
 }
