@@ -138,9 +138,8 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
             }
         });
 
-        ofNullable(ctx.getHeaderString("Slug")).filter(s -> s.contains("/")).ifPresent(x -> {
-            ctx.abortWith(status(BAD_REQUEST).build());
-        });
+        ofNullable(ctx.getHeaderString("Slug")).filter(s -> s.contains("/")).ifPresent(x ->
+            ctx.abortWith(status(BAD_REQUEST).build()));
 
         ofNullable(ctx.getHeaderString("Prefer")).ifPresent(x -> {
             if (isNull(Prefer.valueOf(x))) {
