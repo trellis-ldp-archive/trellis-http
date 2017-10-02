@@ -1703,6 +1703,16 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testPostBadSlug() {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+
+        final Response res = target(RESOURCE_PATH).request().header("Slug", "child/grandchild")
+            .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(BAD_REQUEST, res.getStatusInfo());
+    }
+
+    @Test
     public void testPostVersion() {
         final Response res = target(RESOURCE_PATH).queryParam("version", timestamp).request().header("Slug", "test")
             .post(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
