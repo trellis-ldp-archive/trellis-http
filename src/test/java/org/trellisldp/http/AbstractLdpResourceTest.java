@@ -2106,14 +2106,14 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
-    public void testDeleteRecursive() {
+    public void testDeleteWithChildren() {
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.Container);
         when(mockVersionedResource.stream(eq(LDP.PreferContainment))).thenAnswer(inv -> Stream.of(
                     rdf.createTriple(identifier, LDP.contains, rdf.createIRI(identifier.getIRIString() + "/child"))));
 
         final Response res = target(RESOURCE_PATH).request().delete();
 
-        assertEquals(CONFLICT, res.getStatusInfo());
+        assertEquals(NO_CONTENT, res.getStatusInfo());
     }
 
     @Test
