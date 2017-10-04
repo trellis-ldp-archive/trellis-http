@@ -44,8 +44,8 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.junit.Before;
 import org.junit.Test;
-import org.trellisldp.spi.BinaryService.Resolver;
-import org.trellisldp.spi.RuntimeRepositoryException;
+import org.trellisldp.api.BinaryService.Resolver;
+import org.trellisldp.api.RuntimeRepositoryException;
 
 /**
  * @author acoburn

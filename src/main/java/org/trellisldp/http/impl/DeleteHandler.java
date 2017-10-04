@@ -21,7 +21,6 @@ import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
-import static org.trellisldp.spi.RDFUtils.auditDeletion;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.util.Map;
@@ -33,9 +32,9 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import org.apache.commons.rdf.api.Triple;
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
+import org.trellisldp.api.ResourceService;
+import org.trellisldp.api.Session;
 import org.trellisldp.http.domain.LdpRequest;
-import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.Session;
 
 /**
  * The DELETE response builder
@@ -80,7 +79,7 @@ public class DeleteHandler extends BaseLdpHandler {
         try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
 
             // Add the audit quads
-            auditDeletion(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
+            audit.deletion(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService))
                 .forEach(dataset::add);
 
             // When deleting just the ACL graph, keep the user managed triples in tact

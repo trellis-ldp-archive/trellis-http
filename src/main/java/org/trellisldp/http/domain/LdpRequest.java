@@ -27,7 +27,7 @@ import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
 
-import org.trellisldp.spi.Session;
+import org.trellisldp.api.Session;
 
 /**
  * @author acoburn

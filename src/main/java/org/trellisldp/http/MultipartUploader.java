@@ -33,12 +33,11 @@ import static javax.ws.rs.core.Response.created;
 import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.Response.serverError;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
+import static org.trellisldp.api.RDFUtils.getInstance;
 import static org.trellisldp.http.domain.HttpConstants.UPLOAD_PREFIX;
 import static org.trellisldp.http.domain.HttpConstants.UPLOADS;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.spi.RDFUtils.auditCreation;
-import static org.trellisldp.spi.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.LDP.Container;
 import static org.trellisldp.vocabulary.LDP.NonRDFSource;
 import static org.trellisldp.vocabulary.RDF.type;
@@ -52,6 +51,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 
 import javax.annotation.Priority;
 import javax.inject.Singleton;
@@ -83,9 +83,10 @@ import javax.ws.rs.ext.Provider;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
 import org.slf4j.Logger;
+import org.trellisldp.api.AuditService;
+import org.trellisldp.api.BinaryService;
+import org.trellisldp.api.ResourceService;
 import org.trellisldp.http.impl.TrellisDataset;
-import org.trellisldp.spi.BinaryService;
-import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.XSD;
 
@@ -100,6 +101,8 @@ import org.trellisldp.vocabulary.XSD;
 public class MultipartUploader implements ContainerRequestFilter, ContainerResponseFilter {
 
     private static final RDF rdf = getInstance();
+
+    private static AuditService audit = ServiceLoader.load(AuditService.class).iterator().next();
 
     private static final Logger LOGGER = getLogger(MultipartUploader.class);
 
@@ -249,8 +252,8 @@ public class MultipartUploader implements ContainerRequestFilter, ContainerRespo
                     final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + upload.getPath());
 
                     // Add Audit quads
-                    auditCreation(identifier, upload.getSession()).stream()
-                        .map(skolemizeQuads(resourceService, upload.getBaseUrl())).forEach(dataset::add);
+                    audit.creation(identifier, upload.getSession()).stream()
+                        .map(skolemizeQuads(resourceService)).forEach(dataset::add);
                     dataset.add(rdf.createQuad(PreferServerManaged, identifier, type, NonRDFSource));
                     dataset.add(rdf.createQuad(PreferServerManaged, identifier, DC.hasPart,
                                 upload.getBinary().getIdentifier()));

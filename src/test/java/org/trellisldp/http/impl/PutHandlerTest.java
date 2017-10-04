@@ -39,9 +39,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.api.RDFUtils.TRELLIS_BNODE_PREFIX;
+import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
+import static org.trellisldp.api.RDFUtils.getInstance;
 
 import java.io.File;
 import java.io.InputStream;
@@ -61,6 +61,7 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
+import org.apache.commons.rdf.api.RDFTerm;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -69,13 +70,13 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import org.trellisldp.api.Binary;
+import org.trellisldp.api.BinaryService;
+import org.trellisldp.api.ConstraintService;
+import org.trellisldp.api.ConstraintViolation;
+import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
+import org.trellisldp.api.ResourceService;
 import org.trellisldp.http.domain.LdpRequest;
-import org.trellisldp.spi.BinaryService;
-import org.trellisldp.spi.ConstraintService;
-import org.trellisldp.spi.ConstraintViolation;
-import org.trellisldp.spi.IOService;
-import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.SKOS;
 import org.trellisldp.vocabulary.Trellis;
@@ -131,6 +132,16 @@ public class PutHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getBaseUrl(any())).thenReturn(baseUrl);
         when(mockLdpRequest.getSession()).thenReturn(new HttpSession());
+        when(mockResourceService.toInternal(any(RDFTerm.class))).thenAnswer(inv -> {
+            final RDFTerm term = (RDFTerm) inv.getArgument(0);
+            if (term instanceof IRI) {
+                final String iri = ((IRI) term).getIRIString();
+                if (iri.startsWith(baseUrl)) {
+                    return rdf.createIRI(TRELLIS_PREFIX + iri.substring(baseUrl.length()));
+                }
+            }
+            return term;
+        });
     }
 
     @Test

@@ -38,9 +38,9 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_RANGES;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.api.RDFUtils.TRELLIS_BNODE_PREFIX;
+import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
+import static org.trellisldp.api.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.RDF.type;
 
 import java.time.Instant;
@@ -63,6 +63,7 @@ import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
+import org.apache.commons.rdf.api.RDFTerm;
 import org.apache.commons.rdf.api.Triple;
 
 import org.junit.Before;
@@ -71,14 +72,14 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import org.trellisldp.api.ConstraintService;
+import org.trellisldp.api.ConstraintViolation;
+import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
+import org.trellisldp.api.ResourceService;
+import org.trellisldp.api.RuntimeRepositoryException;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.Prefer;
-import org.trellisldp.spi.ConstraintService;
-import org.trellisldp.spi.ConstraintViolation;
-import org.trellisldp.spi.IOService;
-import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.RuntimeRepositoryException;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDFS;
 import org.trellisldp.vocabulary.Trellis;
@@ -132,6 +133,16 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getBaseUrl(any())).thenReturn(baseUrl);
         when(mockLdpRequest.getHeaders()).thenReturn(mockHttpHeaders);
         when(mockHttpHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(TEXT_TURTLE_TYPE));
+        when(mockResourceService.toInternal(any(RDFTerm.class))).thenAnswer(inv -> {
+            final RDFTerm term = (RDFTerm) inv.getArgument(0);
+            if (term instanceof IRI) {
+                final String iri = ((IRI) term).getIRIString();
+                if (iri.startsWith(baseUrl)) {
+                    return rdf.createIRI(TRELLIS_PREFIX + iri.substring(baseUrl.length()));
+                }
+            }
+            return term;
+        });
     }
 
     @Test(expected = WebApplicationException.class)

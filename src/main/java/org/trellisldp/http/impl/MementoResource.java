@@ -64,10 +64,10 @@ import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 
+import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.VersionRange;
 import org.trellisldp.http.domain.LdpRequest;
-import org.trellisldp.spi.IOService;
 
 /**
  * @author acoburn

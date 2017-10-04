@@ -34,13 +34,13 @@ import javax.ws.rs.core.StreamingOutput;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 
+import org.trellisldp.api.BinaryService;
+import org.trellisldp.api.ConstraintService;
+import org.trellisldp.api.IOService;
+import org.trellisldp.api.ResourceService;
+import org.trellisldp.api.RuntimeRepositoryException;
 import org.trellisldp.http.domain.Digest;
 import org.trellisldp.http.domain.LdpRequest;
-import org.trellisldp.spi.BinaryService;
-import org.trellisldp.spi.ConstraintService;
-import org.trellisldp.spi.IOService;
-import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.RuntimeRepositoryException;
 import org.trellisldp.vocabulary.LDP;
 
 /**
@@ -80,7 +80,7 @@ class ContentBearingHandler extends BaseLdpHandler {
             final RDFSyntax syntax, final TrellisDataset dataset) {
         try (final InputStream input = new FileInputStream(entity)) {
             ioService.read(input, identifier, syntax)
-                .map(skolemizeTriples(resourceService, baseUrl))
+                .map(skolemizeTriples(resourceService))
                 .map(triple -> rdf.createQuad(graphName, triple.getSubject(), triple.getPredicate(),
                             triple.getObject()))
                 .forEach(dataset::add);

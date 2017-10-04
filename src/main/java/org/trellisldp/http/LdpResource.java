@@ -29,8 +29,8 @@ import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
+import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
+import static org.trellisldp.api.RDFUtils.ldpResourceTypes;
 
 import com.codahale.metrics.annotation.Timed;
 
@@ -61,7 +61,11 @@ import javax.ws.rs.ext.Provider;
 import org.apache.commons.rdf.api.IRI;
 import org.slf4j.Logger;
 
+import org.trellisldp.api.BinaryService;
+import org.trellisldp.api.ConstraintService;
+import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
+import org.trellisldp.api.ResourceService;
 import org.trellisldp.http.domain.AcceptDatetime;
 import org.trellisldp.http.domain.Digest;
 import org.trellisldp.http.domain.LdpRequest;
@@ -77,10 +81,6 @@ import org.trellisldp.http.impl.PatchHandler;
 import org.trellisldp.http.impl.PostHandler;
 import org.trellisldp.http.impl.PutHandler;
 import org.trellisldp.http.impl.RdfUtils;
-import org.trellisldp.spi.BinaryService;
-import org.trellisldp.spi.ConstraintService;
-import org.trellisldp.spi.IOService;
-import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
 
 /**

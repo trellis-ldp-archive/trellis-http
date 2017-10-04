@@ -27,10 +27,9 @@ import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
+import static org.trellisldp.api.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.spi.RDFUtils.auditCreation;
-import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
@@ -46,13 +45,13 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.slf4j.Logger;
+import org.trellisldp.api.BinaryService;
+import org.trellisldp.api.ConstraintService;
+import org.trellisldp.api.IOService;
+import org.trellisldp.api.ResourceService;
+import org.trellisldp.api.Session;
 import org.trellisldp.http.domain.Digest;
 import org.trellisldp.http.domain.LdpRequest;
-import org.trellisldp.spi.BinaryService;
-import org.trellisldp.spi.ConstraintService;
-import org.trellisldp.spi.IOService;
-import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
@@ -119,7 +118,7 @@ public class PostHandler extends ContentBearingHandler {
         try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
 
             // Add Audit quads
-            auditCreation(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
+            audit.creation(internalId, session).stream().map(skolemizeQuads(resourceService))
                 .forEach(dataset::add);
 
             dataset.add(rdf.createQuad(PreferServerManaged, internalId, RDF.type, ldpType));

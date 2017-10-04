@@ -26,8 +26,8 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.core.SecurityContext;
 
+import org.trellisldp.api.AgentService;
 import org.trellisldp.http.impl.HttpSession;
-import org.trellisldp.spi.AgentService;
 
 /**
  * @author acoburn

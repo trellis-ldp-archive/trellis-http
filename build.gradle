@@ -29,7 +29,7 @@ ext {
     license = 'Apache 2'
 
     /* Dependencies */
-    trellisSpiVersion = '0.1.3'
+    trellisApiVersion = '0.2.0-SNAPSHOT'
     trellisVocabularyVersion = '0.1.0'
     commonsRdfVersion = '0.3.0-incubating'
     commonsCodecVersion = '1.10'
@@ -44,7 +44,9 @@ ext {
     /* Testing */
     junitVersion = '4.12'
     mockitoVersion = '2.10.0'
-    trellisJenaIOVersion = '0.1.1'
+    trellisJenaIOVersion = '0.2.0-SNAPSHOT'
+    trellisAuditVersion = '0.1.0-SNAPSHOT'
+    trellisEventVersion = '0.1.0-SNAPSHOT'
     jerseyVersion = '2.26'
     logbackVersion = '1.2.3'
     jsonVersion = '1.1'
@@ -65,7 +67,7 @@ dependencies {
     api group: 'javax.ws.rs', name: 'javax.ws.rs-api', version: jaxrsVersion
     api group: 'io.dropwizard.metrics', name: 'metrics-annotation', version: metricsVersion
     api group: 'org.apache.commons', name: 'commons-rdf-api', version: commonsRdfVersion
-    api group: 'org.trellisldp', name: 'trellis-spi', version: trellisSpiVersion
+    api group: 'org.trellisldp', name: 'trellis-api', version: trellisApiVersion
     api group: 'javax.inject', name: 'javax.inject', version: javaxInjectVersion
 
     implementation group: 'javax.json', name: 'javax.json-api', version: javaxJsonVersion
@@ -83,6 +85,8 @@ dependencies {
     testImplementation group: 'org.glassfish.jersey.inject', name: 'jersey-hk2', version: jerseyVersion
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
     testImplementation group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisJenaIOVersion
+    testImplementation group: 'org.trellisldp', name: 'trellis-audit', version: trellisAuditVersion
+    testImplementation group: 'org.trellisldp', name: 'trellis-event-serialization', version: trellisEventVersion
 
     testRuntimeClasspath group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
 

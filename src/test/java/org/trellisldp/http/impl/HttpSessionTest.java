@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 import java.time.Instant;
 
 import org.junit.Test;
-import org.trellisldp.spi.Session;
+import org.trellisldp.api.Session;
 import org.trellisldp.vocabulary.Trellis;
 
 /**

@@ -31,9 +31,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.mockito.Mockito.when;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.api.RDFUtils.TRELLIS_BNODE_PREFIX;
+import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
+import static org.trellisldp.api.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.RDF.type;
 
 import java.time.Instant;
@@ -50,23 +50,24 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
+import org.apache.commons.rdf.api.RDFTerm;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
+import org.trellisldp.api.AccessControlService;
+import org.trellisldp.api.AgentService;
 import org.trellisldp.api.Binary;
+import org.trellisldp.api.BinaryService;
+import org.trellisldp.api.ConstraintService;
+import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
+import org.trellisldp.api.ResourceService;
+import org.trellisldp.api.Session;
 import org.trellisldp.api.VersionRange;
 import org.trellisldp.io.JenaIOService;
-import org.trellisldp.spi.AccessControlService;
-import org.trellisldp.spi.AgentService;
-import org.trellisldp.spi.BinaryService;
-import org.trellisldp.spi.ConstraintService;
-import org.trellisldp.spi.IOService;
-import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.ACL;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
@@ -210,6 +211,27 @@ public class CORSResourceTest extends JerseyTest {
         when(mockResource.getInbox()).thenReturn(empty());
         when(mockResource.getAnnotationService()).thenReturn(empty());
         when(mockResource.getTypes()).thenReturn(emptyList());
+
+        when(mockResourceService.toInternal(any(RDFTerm.class))).thenAnswer(inv -> {
+            final RDFTerm term = (RDFTerm) inv.getArgument(0);
+            if (term instanceof IRI) {
+                final String iri = ((IRI) term).getIRIString();
+                if (iri.startsWith(BASE_URL)) {
+                    return rdf.createIRI(TRELLIS_PREFIX + iri.substring(BASE_URL.length()));
+                }
+            }
+            return term;
+        });
+        when(mockResourceService.toExternal(any(RDFTerm.class))).thenAnswer(inv -> {
+            final RDFTerm term = (RDFTerm) inv.getArgument(0);
+            if (term instanceof IRI) {
+                final String iri = ((IRI) term).getIRIString();
+                if (iri.startsWith(TRELLIS_PREFIX)) {
+                    return rdf.createIRI(BASE_URL + iri.substring(TRELLIS_PREFIX.length()));
+                }
+            }
+            return term;
+        });
 
         when(mockResourceService.unskolemize(any(IRI.class)))
             .thenAnswer(inv -> {

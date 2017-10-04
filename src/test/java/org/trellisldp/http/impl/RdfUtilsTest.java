@@ -28,8 +28,9 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
-import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.api.RDFUtils.TRELLIS_BNODE_PREFIX;
+import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
+import static org.trellisldp.api.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.JSONLD.compacted;
 
 import java.util.List;
@@ -43,9 +44,10 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
+import org.apache.commons.rdf.api.RDFTerm;
 import org.apache.commons.rdf.api.Triple;
+import org.trellisldp.api.ResourceService;
 import org.trellisldp.http.domain.Prefer;
-import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.Trellis;
 import org.junit.Test;
@@ -125,6 +127,7 @@ public class RdfUtilsTest {
     @Test
     public void testSkolemize() {
         final IRI iri = rdf.createIRI("trellis:repository/resource");
+        final String baseUrl = "http://example.org/";
         final IRI anonIri = rdf.createIRI(TRELLIS_BNODE_PREFIX + "foo");
         final Literal literal = rdf.createLiteral("A title");
         final BlankNode bnode = rdf.createBlankNode("foo");
@@ -141,6 +144,26 @@ public class RdfUtilsTest {
                 }
                 return (IRI) inv.getArgument(0);
             });
+        when(mockResourceService.toExternal(any(RDFTerm.class))).thenAnswer(inv -> {
+            final RDFTerm term = (RDFTerm) inv.getArgument(0);
+            if (term instanceof IRI) {
+                final String iriString = ((IRI) term).getIRIString();
+                if (iriString.startsWith(TRELLIS_PREFIX)) {
+                    return rdf.createIRI(baseUrl + iriString.substring(TRELLIS_PREFIX.length()));
+                }
+            }
+            return term;
+        });
+        when(mockResourceService.toInternal(any(RDFTerm.class))).thenAnswer(inv -> {
+            final RDFTerm term = (RDFTerm) inv.getArgument(0);
+            if (term instanceof IRI) {
+                final String iriString = ((IRI) term).getIRIString();
+                if (iriString.startsWith(baseUrl)) {
+                    return rdf.createIRI(TRELLIS_PREFIX + iriString.substring(baseUrl.length()));
+                }
+            }
+            return term;
+        });
 
         when(mockResourceService.unskolemize(any(Literal.class))).then(returnsFirstArg());
 
@@ -151,7 +174,7 @@ public class RdfUtilsTest {
         graph.add(rdf.createTriple(bnode, DC.title, literal));
 
         final List<Triple> triples = graph.stream()
-            .map(RdfUtils.skolemizeTriples(mockResourceService, "http://example.org/"))
+            .map(RdfUtils.skolemizeTriples(mockResourceService))
             .collect(toList());
 
         assertTrue(triples.stream().anyMatch(t -> t.getSubject().equals(iri)));
@@ -159,7 +182,7 @@ public class RdfUtilsTest {
         assertTrue(triples.stream().anyMatch(t -> t.getSubject().ntriplesString()
                     .startsWith("<" + TRELLIS_BNODE_PREFIX)));
 
-        triples.stream().map(RdfUtils.unskolemizeTriples(mockResourceService, "http://example.org/"))
+        triples.stream().map(RdfUtils.unskolemizeTriples(mockResourceService))
             .forEach(t -> assertTrue(graph.contains(t)));
     }
 

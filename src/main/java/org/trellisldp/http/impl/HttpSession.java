@@ -16,8 +16,8 @@ package org.trellisldp.http.impl;
 import static java.time.Instant.now;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
+import static org.trellisldp.api.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.Trellis.AnonymousUser;
 
 import java.time.Instant;
@@ -25,7 +25,7 @@ import java.util.Optional;
 
 import org.apache.commons.rdf.api.IRI;
 
-import org.trellisldp.spi.Session;
+import org.trellisldp.api.Session;
 
 /**
  * @author acoburn

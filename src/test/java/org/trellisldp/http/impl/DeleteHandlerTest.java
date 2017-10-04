@@ -27,8 +27,9 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_BNODE_PREFIX;
-import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.api.RDFUtils.TRELLIS_BNODE_PREFIX;
+import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
+import static org.trellisldp.api.RDFUtils.getInstance;
 
 import java.time.Instant;
 
@@ -42,15 +43,16 @@ import org.apache.commons.rdf.api.Dataset;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
+import org.apache.commons.rdf.api.RDFTerm;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.trellisldp.api.Resource;
+import org.trellisldp.api.ResourceService;
+import org.trellisldp.api.Session;
 import org.trellisldp.http.domain.LdpRequest;
-import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.AS;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.PROV;
@@ -109,6 +111,16 @@ public class DeleteHandlerTest {
         when(mockSession.getCreated()).thenReturn(time);
         when(mockSession.getAgent()).thenReturn(Trellis.AnonymousUser);
         when(mockSession.getDelegatedBy()).thenReturn(empty());
+        when(mockResourceService.toInternal(any(RDFTerm.class))).thenAnswer(inv -> {
+            final RDFTerm term = (RDFTerm) inv.getArgument(0);
+            if (term instanceof IRI) {
+                final String iriString = ((IRI) term).getIRIString();
+                if (iriString.startsWith(baseUrl)) {
+                    return rdf.createIRI(TRELLIS_PREFIX + iriString.substring(baseUrl.length()));
+                }
+            }
+            return term;
+        });
     }
 
     @Test

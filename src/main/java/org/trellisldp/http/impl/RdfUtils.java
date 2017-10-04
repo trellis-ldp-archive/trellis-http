@@ -21,9 +21,7 @@ import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.DEFAULT_REPRESENTATION;
 import static org.trellisldp.http.domain.RdfMediaType.MEDIA_TYPES;
-import static org.trellisldp.spi.RDFUtils.getInstance;
-import static org.trellisldp.spi.RDFUtils.toExternalTerm;
-import static org.trellisldp.spi.RDFUtils.toInternalTerm;
+import static org.trellisldp.api.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.JSONLD.expanded;
 import static org.trellisldp.vocabulary.Trellis.DeletedResource;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
@@ -47,8 +45,8 @@ import org.apache.commons.rdf.api.Triple;
 
 import org.slf4j.Logger;
 import org.trellisldp.api.Resource;
+import org.trellisldp.api.ResourceService;
 import org.trellisldp.http.domain.Prefer;
-import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
 
 /**
@@ -80,47 +78,43 @@ public final class RdfUtils {
     /**
      * Convert triples from a skolemized form to an externa form
      * @param svc the resourceService
-     * @param baseUrl the baseUrl
      * @return a mapping function
      */
-    public static Function<Triple, Triple> unskolemizeTriples(final ResourceService svc, final String baseUrl) {
-        return triple -> rdf.createTriple((BlankNodeOrIRI) toExternalTerm(svc.unskolemize(triple.getSubject()),
-                    baseUrl), triple.getPredicate(), toExternalTerm(svc.unskolemize(triple.getObject()), baseUrl));
+    public static Function<Triple, Triple> unskolemizeTriples(final ResourceService svc) {
+        return triple -> rdf.createTriple((BlankNodeOrIRI) svc.toExternal(svc.unskolemize(triple.getSubject())),
+                    triple.getPredicate(), svc.toExternal(svc.unskolemize(triple.getObject())));
     }
 
     /**
      * Convert triples from an external form to a skolemized form
      * @param svc the resourceService
-     * @param baseUrl the baseUrl
      * @return a mapping function
      */
-    public static Function<Triple, Triple> skolemizeTriples(final ResourceService svc, final String baseUrl) {
-        return triple -> rdf.createTriple((BlankNodeOrIRI) toInternalTerm(svc.skolemize(triple.getSubject()), baseUrl),
-                triple.getPredicate(), toInternalTerm(svc.skolemize(triple.getObject()), baseUrl));
+    public static Function<Triple, Triple> skolemizeTriples(final ResourceService svc) {
+        return triple -> rdf.createTriple((BlankNodeOrIRI) svc.toInternal(svc.skolemize(triple.getSubject())),
+                triple.getPredicate(), svc.toInternal(svc.skolemize(triple.getObject())));
     }
 
     /**
      * Convert quads from a skolemized form to an external form
      * @param svc the resource service
-     * @param baseUrl the baseUrl
      * @return a mapping function
      */
-    public static Function<Quad, Quad> unskolemizeQuads(final ResourceService svc, final String baseUrl) {
+    public static Function<Quad, Quad> unskolemizeQuads(final ResourceService svc) {
         return quad -> rdf.createQuad(quad.getGraphName().orElse(PreferUserManaged),
-                    (BlankNodeOrIRI) toExternalTerm(svc.unskolemize(quad.getSubject()), baseUrl),
-                    quad.getPredicate(), toExternalTerm(svc.unskolemize(quad.getObject()), baseUrl));
+                    (BlankNodeOrIRI) svc.toExternal(svc.unskolemize(quad.getSubject())),
+                    quad.getPredicate(), svc.toExternal(svc.unskolemize(quad.getObject())));
     }
 
     /**
      * Convert quads from an external form to a skolemized form
      * @param svc the resource service
-     * @param baseUrl the baseUrl
      * @return a mapping function
      */
-    public static Function<Quad, Quad> skolemizeQuads(final ResourceService svc, final String baseUrl) {
+    public static Function<Quad, Quad> skolemizeQuads(final ResourceService svc) {
         return quad -> rdf.createQuad(quad.getGraphName().orElse(PreferUserManaged),
-                (BlankNodeOrIRI) toInternalTerm(svc.skolemize(quad.getSubject()), baseUrl), quad.getPredicate(),
-                toInternalTerm(svc.skolemize(quad.getObject()), baseUrl));
+                (BlankNodeOrIRI) svc.toInternal(svc.skolemize(quad.getSubject())), quad.getPredicate(),
+                svc.toInternal(svc.skolemize(quad.getObject())));
     }
 
     /**

@@ -14,7 +14,7 @@
 package org.trellisldp.http;
 
 import static java.util.Arrays.asList;
-import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.api.RDFUtils.getInstance;
 
 import java.util.List;
 import java.util.Map;

@@ -37,9 +37,9 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.IRI;
 import org.slf4j.Logger;
-import org.trellisldp.spi.BinaryService;
-import org.trellisldp.spi.BinaryService.MultipartUpload;
-import org.trellisldp.spi.RuntimeRepositoryException;
+import org.trellisldp.api.BinaryService;
+import org.trellisldp.api.BinaryService.MultipartUpload;
+import org.trellisldp.api.RuntimeRepositoryException;
 
 /**
  * @author acoburn

@@ -36,6 +36,7 @@ import static javax.ws.rs.core.Response.ok;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.api.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
@@ -58,7 +59,6 @@ import static org.trellisldp.http.impl.RdfUtils.getDefaultProfile;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeQuads;
-import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.vocabulary.OA.annotationService;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
@@ -86,13 +86,13 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.Binary;
+import org.trellisldp.api.BinaryService;
+import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
+import org.trellisldp.api.ResourceService;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.http.domain.WantDigest;
-import org.trellisldp.spi.BinaryService;
-import org.trellisldp.spi.IOService;
-import org.trellisldp.spi.ResourceService;
 import org.trellisldp.vocabulary.LDP;
 
 /**
@@ -213,7 +213,7 @@ public class GetHandler extends BaseLdpHandler {
             public void write(final OutputStream out) throws IOException {
                 try (final Stream<? extends Quad> stream = res.stream()) {
                     ioService.write(stream.filter(filterWithPrefer(prefer))
-                        .map(unskolemizeQuads(resourceService, req.getBaseUrl(partitions))).map(Quad::asTriple), out,
+                        .map(unskolemizeQuads(resourceService)).map(Quad::asTriple), out,
                         syntax, ofNullable(profile).orElseGet(() -> getDefaultProfile(syntax, identifier)));
                 }
             }

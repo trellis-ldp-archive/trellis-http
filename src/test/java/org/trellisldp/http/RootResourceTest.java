@@ -41,8 +41,8 @@ import org.junit.Test;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 
+import org.trellisldp.api.IOService;
 import org.trellisldp.io.JenaIOService;
-import org.trellisldp.spi.IOService;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
 

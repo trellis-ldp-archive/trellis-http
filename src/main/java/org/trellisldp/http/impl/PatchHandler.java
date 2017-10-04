@@ -25,6 +25,8 @@ import static javax.ws.rs.core.Response.serverError;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
+import static org.trellisldp.api.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.Prefer.PREFER_REPRESENTATION;
@@ -34,9 +36,6 @@ import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeTriples;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.spi.RDFUtils.auditUpdate;
-import static org.trellisldp.spi.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
@@ -60,14 +59,14 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.Triple;
 import org.slf4j.Logger;
 
+import org.trellisldp.api.ConstraintService;
+import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
+import org.trellisldp.api.ResourceService;
+import org.trellisldp.api.RuntimeRepositoryException;
+import org.trellisldp.api.Session;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.Prefer;
-import org.trellisldp.spi.ConstraintService;
-import org.trellisldp.spi.IOService;
-import org.trellisldp.spi.ResourceService;
-import org.trellisldp.spi.RuntimeRepositoryException;
-import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.LDP;
 import org.trellisldp.vocabulary.RDF;
 
@@ -153,12 +152,12 @@ public class PatchHandler extends BaseLdpHandler {
 
         try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
 
-            triples.stream().map(skolemizeTriples(resourceService, baseUrl))
+            triples.stream().map(skolemizeTriples(resourceService))
                 .map(t -> rdf.createQuad(graphName, t.getSubject(), t.getPredicate(), t.getObject()))
                 .forEach(dataset::add);
 
             // Add audit-related triples
-            auditUpdate(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
+            audit.update(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService))
                 .forEach(dataset::add);
 
             // Add existing LDP type
@@ -196,7 +195,7 @@ public class PatchHandler extends BaseLdpHandler {
                         final StreamingOutput stream = new StreamingOutput() {
                             @Override
                             public void write(final OutputStream out) throws IOException {
-                                ioService.write(triples.stream().map(unskolemizeTriples(resourceService, baseUrl)),
+                                ioService.write(triples.stream().map(unskolemizeTriples(resourceService)),
                                         out, syntax, profile);
                             }
                         };

@@ -25,8 +25,8 @@ import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.SESSION_PROPERTY;
-import static org.trellisldp.spi.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.spi.RDFUtils.getInstance;
+import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
+import static org.trellisldp.api.RDFUtils.getInstance;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -47,10 +47,10 @@ import javax.ws.rs.container.PreMatching;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
 import org.slf4j.Logger;
+import org.trellisldp.api.AccessControlService;
+import org.trellisldp.api.Session;
 import org.trellisldp.http.domain.HttpConstants;
 import org.trellisldp.http.impl.HttpSession;
-import org.trellisldp.spi.AccessControlService;
-import org.trellisldp.spi.Session;
 import org.trellisldp.vocabulary.ACL;
 import org.trellisldp.vocabulary.Trellis;
 
