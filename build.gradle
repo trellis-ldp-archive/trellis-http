@@ -29,7 +29,7 @@ ext {
     license = 'Apache 2'
 
     /* Dependencies */
-    trellisApiVersion = '0.2.0-SNAPSHOT'
+    trellisApiVersion = '0.2.0'
     trellisVocabularyVersion = '0.1.0'
     commonsRdfVersion = '0.3.0-incubating'
     commonsCodecVersion = '1.10'
@@ -44,9 +44,9 @@ ext {
     /* Testing */
     junitVersion = '4.12'
     mockitoVersion = '2.10.0'
-    trellisJenaIOVersion = '0.2.0-SNAPSHOT'
-    trellisAuditVersion = '0.1.0-SNAPSHOT'
-    trellisEventVersion = '0.1.0-SNAPSHOT'
+    trellisJenaIOVersion = '0.2.0'
+    trellisAuditVersion = '0.1.0'
+    trellisEventVersion = '0.1.0'
     jerseyVersion = '2.26'
     logbackVersion = '1.2.3'
     jsonVersion = '1.1'
