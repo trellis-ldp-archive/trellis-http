@@ -5,6 +5,7 @@ The HTTP abstractions for a Trellis repository
 [![Build status](https://ci.appveyor.com/api/projects/status/rr082ct4dani5a8q?svg=true)](https://ci.appveyor.com/project/acoburn/trellis-http)
 [![Coverage Status](https://coveralls.io/repos/github/trellis-ldp/trellis-http/badge.svg?branch=master)](https://coveralls.io/github/trellis-ldp/trellis-http?branch=master)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.trellisldp/trellis-http/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.trellisldp/trellis-http/)
+[![Code Climate](https://codeclimate.com/github/trellis-ldp/trellis-http/badges/gpa.svg)](https://codeclimate.com/github/trellis-ldp/trellis-http)
 
 
 ## Building
