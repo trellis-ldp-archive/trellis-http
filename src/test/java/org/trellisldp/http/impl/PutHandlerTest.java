@@ -132,7 +132,7 @@ public class PutHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getBaseUrl(any())).thenReturn(baseUrl);
         when(mockLdpRequest.getSession()).thenReturn(new HttpSession());
-        when(mockResourceService.toInternal(any(RDFTerm.class))).thenAnswer(inv -> {
+        when(mockResourceService.toInternal(any(RDFTerm.class), any())).thenAnswer(inv -> {
             final RDFTerm term = (RDFTerm) inv.getArgument(0);
             if (term instanceof IRI) {
                 final String iri = ((IRI) term).getIRIString();

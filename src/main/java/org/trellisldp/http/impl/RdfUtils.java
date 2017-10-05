@@ -13,9 +13,11 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Stream.concat;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -26,12 +28,15 @@ import static org.trellisldp.vocabulary.JSONLD.expanded;
 import static org.trellisldp.vocabulary.Trellis.DeletedResource;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.core.MediaType;
@@ -61,6 +66,32 @@ public final class RdfUtils {
     private static final RDF rdf = getInstance();
 
     /**
+     * A mapping of LDP types to their supertype
+     */
+    public static final Map<IRI, IRI> superClassOf;
+
+    static {
+        final Map<IRI, IRI> data = new HashMap<>();
+        data.put(LDP.NonRDFSource, LDP.Resource);
+        data.put(LDP.RDFSource, LDP.Resource);
+        data.put(LDP.Container, LDP.RDFSource);
+        data.put(LDP.BasicContainer, LDP.Container);
+        data.put(LDP.DirectContainer, LDP.Container);
+        data.put(LDP.IndirectContainer, LDP.Container);
+        superClassOf = unmodifiableMap(data);
+    }
+
+    /**
+     * Get all of the LDP resource (super) types for the given LDP interaction model
+     * @param interactionModel the interaction model
+     * @return a stream of types
+     */
+    public static Stream<IRI> ldpResourceTypes(final IRI interactionModel) {
+        return Stream.of(interactionModel).filter(type -> superClassOf.containsKey(type) || LDP.Resource.equals(type))
+            .flatMap(type -> concat(ldpResourceTypes(superClassOf.get(type)), Stream.of(type)));
+    }
+
+    /**
      * Create a filter based on a Prefer header
      * @param prefer the Prefer header
      * @return a suitable predicate for filtering a stream of quads
@@ -78,43 +109,47 @@ public final class RdfUtils {
     /**
      * Convert triples from a skolemized form to an externa form
      * @param svc the resourceService
+     * @param baseUrl the base URL
      * @return a mapping function
      */
-    public static Function<Triple, Triple> unskolemizeTriples(final ResourceService svc) {
-        return triple -> rdf.createTriple((BlankNodeOrIRI) svc.toExternal(svc.unskolemize(triple.getSubject())),
-                    triple.getPredicate(), svc.toExternal(svc.unskolemize(triple.getObject())));
+    public static Function<Triple, Triple> unskolemizeTriples(final ResourceService svc, final String baseUrl) {
+        return triple -> rdf.createTriple((BlankNodeOrIRI) svc.toExternal(svc.unskolemize(triple.getSubject()),
+                    baseUrl), triple.getPredicate(), svc.toExternal(svc.unskolemize(triple.getObject()), baseUrl));
     }
 
     /**
      * Convert triples from an external form to a skolemized form
      * @param svc the resourceService
+     * @param baseUrl the base URL
      * @return a mapping function
      */
-    public static Function<Triple, Triple> skolemizeTriples(final ResourceService svc) {
-        return triple -> rdf.createTriple((BlankNodeOrIRI) svc.toInternal(svc.skolemize(triple.getSubject())),
-                triple.getPredicate(), svc.toInternal(svc.skolemize(triple.getObject())));
+    public static Function<Triple, Triple> skolemizeTriples(final ResourceService svc, final String baseUrl) {
+        return triple -> rdf.createTriple((BlankNodeOrIRI) svc.toInternal(svc.skolemize(triple.getSubject()), baseUrl),
+                triple.getPredicate(), svc.toInternal(svc.skolemize(triple.getObject()), baseUrl));
     }
 
     /**
      * Convert quads from a skolemized form to an external form
      * @param svc the resource service
+     * @param baseUrl the base URL
      * @return a mapping function
      */
-    public static Function<Quad, Quad> unskolemizeQuads(final ResourceService svc) {
+    public static Function<Quad, Quad> unskolemizeQuads(final ResourceService svc, final String baseUrl) {
         return quad -> rdf.createQuad(quad.getGraphName().orElse(PreferUserManaged),
-                    (BlankNodeOrIRI) svc.toExternal(svc.unskolemize(quad.getSubject())),
-                    quad.getPredicate(), svc.toExternal(svc.unskolemize(quad.getObject())));
+                    (BlankNodeOrIRI) svc.toExternal(svc.unskolemize(quad.getSubject()), baseUrl),
+                    quad.getPredicate(), svc.toExternal(svc.unskolemize(quad.getObject()), baseUrl));
     }
 
     /**
      * Convert quads from an external form to a skolemized form
      * @param svc the resource service
+     * @param baseUrl the base URL
      * @return a mapping function
      */
-    public static Function<Quad, Quad> skolemizeQuads(final ResourceService svc) {
+    public static Function<Quad, Quad> skolemizeQuads(final ResourceService svc, final String baseUrl) {
         return quad -> rdf.createQuad(quad.getGraphName().orElse(PreferUserManaged),
-                (BlankNodeOrIRI) svc.toInternal(svc.skolemize(quad.getSubject())), quad.getPredicate(),
-                svc.toInternal(svc.skolemize(quad.getObject())));
+                (BlankNodeOrIRI) svc.toInternal(svc.skolemize(quad.getSubject()), baseUrl), quad.getPredicate(),
+                svc.toInternal(svc.skolemize(quad.getObject()), baseUrl));
     }
 
     /**

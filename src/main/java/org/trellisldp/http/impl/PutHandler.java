@@ -28,8 +28,8 @@ import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.api.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
+import static org.trellisldp.http.impl.RdfUtils.ldpResourceTypes;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
@@ -173,10 +173,10 @@ public class PutHandler extends ContentBearingHandler {
 
             // Add audit quads
             if (nonNull(res)) {
-                audit.update(internalId, session).stream().map(skolemizeQuads(resourceService))
+                audit.update(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
                     .forEach(dataset::add);
             } else {
-                audit.creation(internalId, session).stream().map(skolemizeQuads(resourceService))
+                audit.creation(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
                     .forEach(dataset::add);
             }
 

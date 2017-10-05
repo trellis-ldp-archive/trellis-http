@@ -111,12 +111,13 @@ public class DeleteHandlerTest {
         when(mockSession.getCreated()).thenReturn(time);
         when(mockSession.getAgent()).thenReturn(Trellis.AnonymousUser);
         when(mockSession.getDelegatedBy()).thenReturn(empty());
-        when(mockResourceService.toInternal(any(RDFTerm.class))).thenAnswer(inv -> {
+        when(mockResourceService.toInternal(any(RDFTerm.class), any())).thenAnswer(inv -> {
             final RDFTerm term = (RDFTerm) inv.getArgument(0);
+            final String base = (String) inv.getArgument(1);
             if (term instanceof IRI) {
                 final String iriString = ((IRI) term).getIRIString();
-                if (iriString.startsWith(baseUrl)) {
-                    return rdf.createIRI(TRELLIS_PREFIX + iriString.substring(baseUrl.length()));
+                if (iriString.startsWith(base)) {
+                    return rdf.createIRI(TRELLIS_PREFIX + iriString.substring(base.length()));
                 }
             }
             return term;

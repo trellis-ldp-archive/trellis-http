@@ -27,6 +27,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.trellisldp.api.RDFUtils.TRELLIS_BNODE_PREFIX;
 import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
@@ -144,7 +145,7 @@ public class RdfUtilsTest {
                 }
                 return (IRI) inv.getArgument(0);
             });
-        when(mockResourceService.toExternal(any(RDFTerm.class))).thenAnswer(inv -> {
+        when(mockResourceService.toExternal(any(RDFTerm.class), eq(baseUrl))).thenAnswer(inv -> {
             final RDFTerm term = (RDFTerm) inv.getArgument(0);
             if (term instanceof IRI) {
                 final String iriString = ((IRI) term).getIRIString();
@@ -154,7 +155,7 @@ public class RdfUtilsTest {
             }
             return term;
         });
-        when(mockResourceService.toInternal(any(RDFTerm.class))).thenAnswer(inv -> {
+        when(mockResourceService.toInternal(any(RDFTerm.class), eq(baseUrl))).thenAnswer(inv -> {
             final RDFTerm term = (RDFTerm) inv.getArgument(0);
             if (term instanceof IRI) {
                 final String iriString = ((IRI) term).getIRIString();
@@ -174,7 +175,7 @@ public class RdfUtilsTest {
         graph.add(rdf.createTriple(bnode, DC.title, literal));
 
         final List<Triple> triples = graph.stream()
-            .map(RdfUtils.skolemizeTriples(mockResourceService))
+            .map(RdfUtils.skolemizeTriples(mockResourceService, "http://example.org/"))
             .collect(toList());
 
         assertTrue(triples.stream().anyMatch(t -> t.getSubject().equals(iri)));
@@ -182,7 +183,7 @@ public class RdfUtilsTest {
         assertTrue(triples.stream().anyMatch(t -> t.getSubject().ntriplesString()
                     .startsWith("<" + TRELLIS_BNODE_PREFIX)));
 
-        triples.stream().map(RdfUtils.unskolemizeTriples(mockResourceService))
+        triples.stream().map(RdfUtils.unskolemizeTriples(mockResourceService, "http://example.org/"))
             .forEach(t -> assertTrue(graph.contains(t)));
     }
 

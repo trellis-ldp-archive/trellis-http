@@ -28,7 +28,7 @@ import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.api.RDFUtils.ldpResourceTypes;
+import static org.trellisldp.http.impl.RdfUtils.ldpResourceTypes;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.vocabulary.Trellis.PreferServerManaged;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
@@ -118,7 +118,7 @@ public class PostHandler extends ContentBearingHandler {
         try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
 
             // Add Audit quads
-            audit.creation(internalId, session).stream().map(skolemizeQuads(resourceService))
+            audit.creation(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
                 .forEach(dataset::add);
 
             dataset.add(rdf.createQuad(PreferServerManaged, internalId, RDF.type, ldpType));

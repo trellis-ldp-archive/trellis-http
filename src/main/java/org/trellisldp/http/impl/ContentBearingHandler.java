@@ -80,7 +80,7 @@ class ContentBearingHandler extends BaseLdpHandler {
             final RDFSyntax syntax, final TrellisDataset dataset) {
         try (final InputStream input = new FileInputStream(entity)) {
             ioService.read(input, identifier, syntax)
-                .map(skolemizeTriples(resourceService))
+                .map(skolemizeTriples(resourceService, baseUrl))
                 .map(triple -> rdf.createQuad(graphName, triple.getSubject(), triple.getPredicate(),
                             triple.getObject()))
                 .forEach(dataset::add);

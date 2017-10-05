@@ -253,7 +253,7 @@ public class MultipartUploader implements ContainerRequestFilter, ContainerRespo
 
                     // Add Audit quads
                     audit.creation(identifier, upload.getSession()).stream()
-                        .map(skolemizeQuads(resourceService)).forEach(dataset::add);
+                        .map(skolemizeQuads(resourceService, upload.getBaseUrl())).forEach(dataset::add);
                     dataset.add(rdf.createQuad(PreferServerManaged, identifier, type, NonRDFSource));
                     dataset.add(rdf.createQuad(PreferServerManaged, identifier, DC.hasPart,
                                 upload.getBinary().getIdentifier()));

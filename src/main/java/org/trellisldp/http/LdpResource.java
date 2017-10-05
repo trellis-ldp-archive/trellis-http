@@ -28,9 +28,9 @@ import static javax.ws.rs.core.Response.seeOther;
 import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
 import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.api.RDFUtils.ldpResourceTypes;
+import static org.trellisldp.http.domain.HttpConstants.TIMEMAP;
+import static org.trellisldp.http.impl.RdfUtils.ldpResourceTypes;
 
 import com.codahale.metrics.annotation.Timed;
 

@@ -212,7 +212,7 @@ public class CORSResourceTest extends JerseyTest {
         when(mockResource.getAnnotationService()).thenReturn(empty());
         when(mockResource.getTypes()).thenReturn(emptyList());
 
-        when(mockResourceService.toInternal(any(RDFTerm.class))).thenAnswer(inv -> {
+        when(mockResourceService.toInternal(any(RDFTerm.class), any())).thenAnswer(inv -> {
             final RDFTerm term = (RDFTerm) inv.getArgument(0);
             if (term instanceof IRI) {
                 final String iri = ((IRI) term).getIRIString();
@@ -222,7 +222,7 @@ public class CORSResourceTest extends JerseyTest {
             }
             return term;
         });
-        when(mockResourceService.toExternal(any(RDFTerm.class))).thenAnswer(inv -> {
+        when(mockResourceService.toExternal(any(RDFTerm.class), any())).thenAnswer(inv -> {
             final RDFTerm term = (RDFTerm) inv.getArgument(0);
             if (term instanceof IRI) {
                 final String iri = ((IRI) term).getIRIString();

@@ -26,13 +26,13 @@ import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
-import static org.trellisldp.api.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
 import static org.trellisldp.http.domain.Prefer.PREFER_REPRESENTATION;
 import static org.trellisldp.http.impl.RdfUtils.getDefaultProfile;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.http.impl.RdfUtils.getSyntax;
+import static org.trellisldp.http.impl.RdfUtils.ldpResourceTypes;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeTriples;
@@ -152,12 +152,12 @@ public class PatchHandler extends BaseLdpHandler {
 
         try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
 
-            triples.stream().map(skolemizeTriples(resourceService))
+            triples.stream().map(skolemizeTriples(resourceService, baseUrl))
                 .map(t -> rdf.createQuad(graphName, t.getSubject(), t.getPredicate(), t.getObject()))
                 .forEach(dataset::add);
 
             // Add audit-related triples
-            audit.update(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService))
+            audit.update(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
                 .forEach(dataset::add);
 
             // Add existing LDP type
@@ -195,7 +195,7 @@ public class PatchHandler extends BaseLdpHandler {
                         final StreamingOutput stream = new StreamingOutput() {
                             @Override
                             public void write(final OutputStream out) throws IOException {
-                                ioService.write(triples.stream().map(unskolemizeTriples(resourceService)),
+                                ioService.write(triples.stream().map(unskolemizeTriples(resourceService, baseUrl)),
                                         out, syntax, profile);
                             }
                         };

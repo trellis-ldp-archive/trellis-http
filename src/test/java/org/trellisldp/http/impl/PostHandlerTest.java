@@ -130,7 +130,7 @@ public class PostHandlerTest {
         when(mockRequest.getPartition()).thenReturn("partition");
         when(mockRequest.getPath()).thenReturn("");
         when(mockRequest.getBaseUrl(any())).thenReturn(baseUrl);
-        when(mockResourceService.toInternal(any(RDFTerm.class))).thenAnswer(inv -> {
+        when(mockResourceService.toInternal(any(RDFTerm.class), any())).thenAnswer(inv -> {
             final RDFTerm term = (RDFTerm) inv.getArgument(0);
             if (term instanceof IRI) {
                 final String iri = ((IRI) term).getIRIString();

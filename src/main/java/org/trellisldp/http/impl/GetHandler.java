@@ -36,7 +36,6 @@ import static javax.ws.rs.core.Response.ok;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.trellisldp.api.RDFUtils.ldpResourceTypes;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
@@ -58,6 +57,7 @@ import static org.trellisldp.http.impl.RdfUtils.filterWithPrefer;
 import static org.trellisldp.http.impl.RdfUtils.getDefaultProfile;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
 import static org.trellisldp.http.impl.RdfUtils.getSyntax;
+import static org.trellisldp.http.impl.RdfUtils.ldpResourceTypes;
 import static org.trellisldp.http.impl.RdfUtils.unskolemizeQuads;
 import static org.trellisldp.vocabulary.OA.annotationService;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
@@ -211,9 +211,10 @@ public class GetHandler extends BaseLdpHandler {
         final StreamingOutput stream = new StreamingOutput() {
             @Override
             public void write(final OutputStream out) throws IOException {
+                final String baseUrl = req.getBaseUrl(partitions);
                 try (final Stream<? extends Quad> stream = res.stream()) {
                     ioService.write(stream.filter(filterWithPrefer(prefer))
-                        .map(unskolemizeQuads(resourceService)).map(Quad::asTriple), out,
+                        .map(unskolemizeQuads(resourceService, baseUrl)).map(Quad::asTriple), out,
                         syntax, ofNullable(profile).orElseGet(() -> getDefaultProfile(syntax, identifier)));
                 }
             }

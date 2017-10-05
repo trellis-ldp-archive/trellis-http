@@ -329,7 +329,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
                 }
                 return (IRI) inv.getArgument(0);
             });
-        when(mockResourceService.toInternal(any(RDFTerm.class))).thenAnswer(inv -> {
+        when(mockResourceService.toInternal(any(RDFTerm.class), any())).thenAnswer(inv -> {
             final RDFTerm term = (RDFTerm) inv.getArgument(0);
             if (term instanceof IRI) {
                 final String iri = ((IRI) term).getIRIString();
@@ -339,7 +339,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
             }
             return term;
         });
-        when(mockResourceService.toExternal(any(RDFTerm.class))).thenAnswer(inv -> {
+        when(mockResourceService.toExternal(any(RDFTerm.class), any())).thenAnswer(inv -> {
             final RDFTerm term = (RDFTerm) inv.getArgument(0);
             if (term instanceof IRI) {
                 final String iri = ((IRI) term).getIRIString();

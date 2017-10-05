@@ -133,12 +133,13 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getBaseUrl(any())).thenReturn(baseUrl);
         when(mockLdpRequest.getHeaders()).thenReturn(mockHttpHeaders);
         when(mockHttpHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(TEXT_TURTLE_TYPE));
-        when(mockResourceService.toInternal(any(RDFTerm.class))).thenAnswer(inv -> {
+        when(mockResourceService.toInternal(any(RDFTerm.class), any())).thenAnswer(inv -> {
             final RDFTerm term = (RDFTerm) inv.getArgument(0);
+            final String base = (String) inv.getArgument(1);
             if (term instanceof IRI) {
                 final String iri = ((IRI) term).getIRIString();
-                if (iri.startsWith(baseUrl)) {
-                    return rdf.createIRI(TRELLIS_PREFIX + iri.substring(baseUrl.length()));
+                if (iri.startsWith(base)) {
+                    return rdf.createIRI(TRELLIS_PREFIX + iri.substring(base.length()));
                 }
             }
             return term;
