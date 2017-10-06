@@ -61,7 +61,6 @@ import org.trellisldp.api.AccessControlService;
 import org.trellisldp.api.AgentService;
 import org.trellisldp.api.Binary;
 import org.trellisldp.api.BinaryService;
-import org.trellisldp.api.ConstraintService;
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.ResourceService;
@@ -129,9 +128,6 @@ public class CORSResourceTest extends JerseyTest {
     protected ResourceService mockResourceService;
 
     @Mock
-    protected ConstraintService mockConstraintService;
-
-    @Mock
     protected BinaryService mockBinaryService;
 
     @Mock
@@ -160,8 +156,7 @@ public class CORSResourceTest extends JerseyTest {
         final String origin = baseUri.substring(0, baseUri.length() - 1);
 
         final ResourceConfig config = new ResourceConfig();
-        config.register(new LdpResource(mockResourceService, ioService, mockConstraintService, mockBinaryService,
-                    partitions));
+        config.register(new LdpResource(mockResourceService, ioService, mockBinaryService, partitions));
         config.register(new CrossOriginResourceSharingFilter(asList("*"),
                     asList("PATCH", "POST", "PUT"), asList("Link", "Content-Type", "Accept", "Accept-Datetime"),
                     emptyList(), false, 0));

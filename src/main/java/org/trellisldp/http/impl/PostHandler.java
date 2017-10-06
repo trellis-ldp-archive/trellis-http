@@ -46,7 +46,6 @@ import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.slf4j.Logger;
 import org.trellisldp.api.BinaryService;
-import org.trellisldp.api.ConstraintService;
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.ResourceService;
 import org.trellisldp.api.Session;
@@ -76,14 +75,11 @@ public class PostHandler extends ContentBearingHandler {
      * @param entity the entity
      * @param resourceService the resource service
      * @param ioService the serialization service
-     * @param constraintService the RDF constraint service
      * @param binaryService the datastream service
      */
-    public PostHandler(final Map<String, String> partitions, final LdpRequest req,
-            final String id, final File entity,
-            final ResourceService resourceService, final IOService ioService,
-            final ConstraintService constraintService, final BinaryService binaryService) {
-        super(partitions, req, entity, resourceService, ioService, constraintService, binaryService);
+    public PostHandler(final Map<String, String> partitions, final LdpRequest req, final String id, final File entity,
+            final ResourceService resourceService, final IOService ioService, final BinaryService binaryService) {
+        super(partitions, req, entity, resourceService, ioService, binaryService);
         this.id = id;
     }
 

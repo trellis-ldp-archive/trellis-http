@@ -25,6 +25,7 @@ import static org.trellisldp.api.RDFUtils.getInstance;
 import static org.trellisldp.vocabulary.LDP.Resource;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -38,9 +39,10 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.trellisldp.api.AuditService;
+import org.trellisldp.api.ConstraintService;
 import org.trellisldp.api.Resource;
-import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.api.ResourceService;
+import org.trellisldp.http.domain.LdpRequest;
 
 /**
  * @author acoburn
@@ -50,6 +52,12 @@ public class BaseLdpHandler {
     protected static final RDF rdf = getInstance();
 
     protected static AuditService audit = ServiceLoader.load(AuditService.class).iterator().next();
+
+    protected static final List<ConstraintService> constraintServices = new ArrayList<>();
+
+    static {
+        ServiceLoader.load(ConstraintService.class).forEach(constraintServices::add);
+    }
 
     protected static final List<RDFSyntax> SUPPORTED_RDF_TYPES = asList(TURTLE, JSONLD, NTRIPLES);
 

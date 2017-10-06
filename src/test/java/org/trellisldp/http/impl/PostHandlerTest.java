@@ -16,7 +16,6 @@ package org.trellisldp.http.impl;
 import static java.net.URI.create;
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Collections.emptyMap;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.Link.fromUri;
@@ -37,7 +36,6 @@ import static org.mockito.Mockito.verify;
 import static org.trellisldp.api.RDFUtils.TRELLIS_BNODE_PREFIX;
 import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.api.RDFUtils.getInstance;
-import static org.trellisldp.vocabulary.RDF.type;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,7 +52,6 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.BlankNode;
 import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
@@ -70,8 +67,6 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import org.trellisldp.api.BinaryService;
-import org.trellisldp.api.ConstraintService;
-import org.trellisldp.api.ConstraintViolation;
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.ResourceService;
@@ -79,7 +74,6 @@ import org.trellisldp.http.domain.Digest;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -101,9 +95,6 @@ public class PostHandlerTest {
 
     @Mock
     private BinaryService mockBinaryService;
-
-    @Mock
-    private ConstraintService mockConstraintService;
 
     @Mock
     private Resource mockResource;
@@ -148,7 +139,7 @@ public class PostHandlerTest {
 
         final File entity = new File(getClass().getResource("/emptyData.txt").getFile());
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -163,7 +154,7 @@ public class PostHandlerTest {
     public void testDefaultType1() throws IOException {
         final File entity = new File(getClass().getResource("/emptyData.txt").getFile());
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -180,7 +171,7 @@ public class PostHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -197,7 +188,7 @@ public class PostHandlerTest {
 
         final File entity = new File(getClass().getResource("/emptyData.txt").getFile());
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -215,7 +206,7 @@ public class PostHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -232,7 +223,7 @@ public class PostHandlerTest {
         final File entity = new File(getClass().getResource("/emptyData.txt").getFile());
 
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -255,7 +246,7 @@ public class PostHandlerTest {
         when(mockRequest.getContentType()).thenReturn("text/turtle");
 
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -269,8 +260,6 @@ public class PostHandlerTest {
 
         verify(mockIoService).read(any(InputStream.class), eq(baseUrl + path), eq(TURTLE));
 
-        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq("trellis:partition"), any(Graph.class));
-
         verify(mockResourceService).put(eq(identifier), any(Dataset.class));
     }
 
@@ -281,7 +270,7 @@ public class PostHandlerTest {
         when(mockRequest.getContentType()).thenReturn("text/plain");
 
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -292,7 +281,6 @@ public class PostHandlerTest {
         assertEquals(create(baseUrl + "partition/newresource"), res.getLocation());
 
         verify(mockIoService, never()).read(any(), any(), any());
-        verify(mockConstraintService, never()).constrainedBy(any(), eq(baseUrl), any());
 
         verify(mockBinaryService).setContent(eq("partition"), iriArgument.capture(), any(InputStream.class),
                 metadataArgument.capture());
@@ -310,7 +298,7 @@ public class PostHandlerTest {
         when(mockRequest.getDigest()).thenReturn(new Digest("md5", "1VOyRwUXW1CPdC5nelt7GQ=="));
 
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(CREATED, res.getStatusInfo());
@@ -321,7 +309,6 @@ public class PostHandlerTest {
         assertEquals(create(baseUrl + "partition/newresource"), res.getLocation());
 
         verify(mockIoService, never()).read(any(), any(), any());
-        verify(mockConstraintService, never()).constrainedBy(any(), eq(baseUrl), any());
 
         verify(mockBinaryService).setContent(eq("partition"), iriArgument.capture(), any(InputStream.class),
                 metadataArgument.capture());
@@ -338,7 +325,7 @@ public class PostHandlerTest {
         when(mockRequest.getDigest()).thenReturn(new Digest("md5", "blahblah"));
 
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         assertEquals(BAD_REQUEST, postHandler.createResource().build().getStatusInfo());
     }
@@ -350,7 +337,7 @@ public class PostHandlerTest {
         when(mockRequest.getDigest()).thenReturn(new Digest("foo", "blahblah"));
 
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         postHandler.createResource();
     }
@@ -362,7 +349,7 @@ public class PostHandlerTest {
         final File entity = new File(new File(getClass().getResource("/simpleData.txt").getFile()).getParent());
 
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         postHandler.createResource();
     }
@@ -374,26 +361,7 @@ public class PostHandlerTest {
         when(mockRequest.getContentType()).thenReturn("text/plain");
 
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
-
-        postHandler.createResource();
-    }
-
-    @Test(expected = WebApplicationException.class)
-    public void testConstraint() {
-        final IRI identifier = rdf.createIRI("trellis:partition/resource");
-        when(mockIoService.read(any(), any(), eq(TURTLE))).thenAnswer(x -> Stream.of(
-                    rdf.createTriple(rdf.createIRI("http://example.org/repository/newresource"), DC.title,
-                        rdf.createLiteral("A title"))));
-        when(mockConstraintService.constrainedBy(eq(LDP.RDFSource), eq("trellis:partition"), any()))
-            .thenReturn(of(new ConstraintViolation(Trellis.InvalidRange,
-                            rdf.createTriple(identifier, type, rdf.createLiteral("Some literal")))));
-        final File entity = new File(getClass().getResource("/simpleTriple.ttl").getFile());
-
-        when(mockRequest.getContentType()).thenReturn("text/turtle");
-
-        final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         postHandler.createResource();
     }
@@ -406,7 +374,7 @@ public class PostHandlerTest {
 
         final File entity = new File(getClass().getResource("/emptyData.txt").getFile());
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
-                mockResourceService, mockIoService, mockConstraintService, mockBinaryService);
+                mockResourceService, mockIoService, mockBinaryService);
 
         final Response res = postHandler.createResource().build();
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());

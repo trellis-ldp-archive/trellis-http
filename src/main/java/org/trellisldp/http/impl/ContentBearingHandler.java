@@ -25,17 +25,20 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 
 import org.trellisldp.api.BinaryService;
-import org.trellisldp.api.ConstraintService;
+import org.trellisldp.api.ConstraintViolation;
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.ResourceService;
 import org.trellisldp.api.RuntimeRepositoryException;
@@ -51,7 +54,6 @@ import org.trellisldp.vocabulary.LDP;
 class ContentBearingHandler extends BaseLdpHandler {
 
     protected final BinaryService binaryService;
-    protected final ConstraintService constraintService;
     protected final IOService ioService;
     protected final File entity;
 
@@ -62,15 +64,11 @@ class ContentBearingHandler extends BaseLdpHandler {
      * @param entity the entity
      * @param resourceService the resource service
      * @param ioService the serialization service
-     * @param constraintService the RDF constraint service
      * @param binaryService the binary service
      */
     protected ContentBearingHandler(final Map<String, String> partitions, final LdpRequest req, final File entity,
-            final ResourceService resourceService, final IOService ioService,
-            final ConstraintService constraintService, final BinaryService binaryService) {
-
+            final ResourceService resourceService, final IOService ioService, final BinaryService binaryService) {
         super(partitions, req, resourceService);
-        this.constraintService = constraintService;
         this.binaryService = binaryService;
         this.ioService = ioService;
         this.entity = entity;
@@ -93,17 +91,24 @@ class ContentBearingHandler extends BaseLdpHandler {
 
     protected void checkConstraint(final TrellisDataset dataset, final IRI graphName, final IRI type,
             final String baseUrl, final RDFSyntax syntax) {
-        dataset.getGraph(graphName).flatMap(g -> constraintService.constrainedBy(type, baseUrl, g)).ifPresent(v -> {
+        final List<ConstraintViolation> violations = new ArrayList<>();
+        constraintServices.forEach(svc ->
+            dataset.getGraph(graphName).ifPresent(g -> {
+                System.out.println("Graph: " + g);
+                svc.constrainedBy(type, baseUrl, g).forEach(violations::add);
+        }));
+
+        if (!violations.isEmpty()) {
+            final ResponseBuilder err = status(CONFLICT);
+            violations.forEach(v -> err.link(v.getConstraint().getIRIString(), LDP.constrainedBy.getIRIString()));
             final StreamingOutput stream = new StreamingOutput() {
                 @Override
                 public void write(final OutputStream out) throws IOException {
-                    ioService.write(v.getTriples().stream(), out, syntax);
+                    ioService.write(violations.stream().flatMap(v2 -> v2.getTriples().stream()), out, syntax);
                 }
             };
-
-            throw new WebApplicationException(status(CONFLICT)
-                .entity(stream).link(v.getConstraint().getIRIString(), LDP.constrainedBy.getIRIString()).build());
-        });
+            throw new WebApplicationException(err.entity(stream).build());
+        }
     }
 
     protected String getDigestForEntity(final Digest digest) {

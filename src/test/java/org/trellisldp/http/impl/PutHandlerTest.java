@@ -14,7 +14,6 @@
 package org.trellisldp.http.impl;
 
 import static java.time.Instant.ofEpochSecond;
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Date.from;
 import static java.util.Optional.empty;
@@ -56,7 +55,6 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.BlankNode;
 import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
@@ -71,15 +69,11 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import org.trellisldp.api.Binary;
 import org.trellisldp.api.BinaryService;
-import org.trellisldp.api.ConstraintService;
-import org.trellisldp.api.ConstraintViolation;
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.ResourceService;
 import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.vocabulary.LDP;
-import org.trellisldp.vocabulary.SKOS;
-import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
@@ -102,9 +96,6 @@ public class PutHandlerTest {
 
     @Mock
     private BinaryService mockBinaryService;
-
-    @Mock
-    private ConstraintService mockConstraintService;
 
     @Mock
     private Resource mockResource;
@@ -152,7 +143,7 @@ public class PutHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleTriple.ttl").getFile());
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+                mockIoService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
         assertEquals(CONFLICT, res.getStatusInfo());
@@ -165,7 +156,7 @@ public class PutHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleTriple.ttl").getFile());
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+                mockIoService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -185,7 +176,7 @@ public class PutHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleTriple.ttl").getFile());
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+                mockIoService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -205,7 +196,7 @@ public class PutHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleTriple.ttl").getFile() + ".non-existent-file");
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+                mockIoService, mockBinaryService);
 
         putHandler.setResource(mockResource);
     }
@@ -218,7 +209,7 @@ public class PutHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+                mockIoService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -229,7 +220,6 @@ public class PutHandlerTest {
 
         verify(mockBinaryService).setContent(eq("partition"), any(IRI.class), any(InputStream.class), any());
         verify(mockIoService, never()).read(any(InputStream.class), anyString(), any(RDFSyntax.class));
-        verify(mockConstraintService, never()).constrainedBy(any(IRI.class), anyString(), any(Graph.class));
     }
 
     @Test
@@ -241,7 +231,7 @@ public class PutHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+                mockIoService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -252,7 +242,6 @@ public class PutHandlerTest {
 
         verify(mockBinaryService).setContent(eq("partition"), any(IRI.class), any(InputStream.class), any());
         verify(mockIoService, never()).read(any(InputStream.class), anyString(), any(RDFSyntax.class));
-        verify(mockConstraintService, never()).constrainedBy(any(IRI.class), anyString(), any(Graph.class));
     }
 
     @Test
@@ -263,7 +252,7 @@ public class PutHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleLiteral.ttl").getFile());
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+                mockIoService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -274,7 +263,6 @@ public class PutHandlerTest {
 
         verify(mockBinaryService, never()).setContent(eq("partition"), any(IRI.class), any(InputStream.class));
         verify(mockIoService).read(any(InputStream.class), anyString(), any(RDFSyntax.class));
-        verify(mockConstraintService).constrainedBy(any(IRI.class), anyString(), any(Graph.class));
     }
 
     @Test
@@ -284,7 +272,7 @@ public class PutHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleLiteral.ttl").getFile());
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+                mockIoService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -295,14 +283,13 @@ public class PutHandlerTest {
 
         verify(mockBinaryService, never()).setContent(eq("partition"), any(IRI.class), any(InputStream.class));
         verify(mockIoService).read(any(InputStream.class), anyString(), any(RDFSyntax.class));
-        verify(mockConstraintService).constrainedBy(any(IRI.class), anyString(), any(Graph.class));
     }
 
     @Test
     public void testPutLdpResourceEmpty() {
         final File entity = new File(getClass().getResource("/emptyData.txt").getFile());
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+                mockIoService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -313,24 +300,6 @@ public class PutHandlerTest {
 
         verify(mockBinaryService, never()).setContent(eq("partition"), any(IRI.class), any(InputStream.class));
         verify(mockIoService, never()).read(any(InputStream.class), anyString(), any(RDFSyntax.class));
-        verify(mockConstraintService, never()).constrainedBy(any(IRI.class), anyString(), any(Graph.class));
-    }
-
-    @Test(expected = WebApplicationException.class)
-    public void testConstraint() {
-        final IRI identifier = rdf.createIRI("ex:subject");
-        when(mockConstraintService.constrainedBy(eq(LDP.Container), eq(baseUrl), any(Graph.class)))
-            .thenReturn(of(new ConstraintViolation(Trellis.InvalidCardinality, asList(
-                            rdf.createTriple(identifier, SKOS.prefLabel, rdf.createLiteral("Some literal")),
-                            rdf.createTriple(identifier, SKOS.prefLabel, rdf.createLiteral("Some literal"))))));
-        when(mockLdpRequest.getContentType()).thenReturn(TEXT_TURTLE);
-        when(mockLdpRequest.getLink()).thenReturn(fromUri(LDP.Container.getIRIString()).rel("type").build());
-
-        final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
-        final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
-
-        putHandler.setResource(mockResource);
     }
 
     @Test(expected = WebApplicationException.class)
@@ -341,7 +310,7 @@ public class PutHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+                mockIoService, mockBinaryService);
 
         putHandler.setResource(mockResource);
     }
@@ -354,7 +323,7 @@ public class PutHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleTriple.ttl").getFile());
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+                mockIoService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -374,7 +343,7 @@ public class PutHandlerTest {
 
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
-                mockIoService, mockConstraintService, mockBinaryService);
+                mockIoService, mockBinaryService);
 
         final Response res = putHandler.setResource(mockResource).build();
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());

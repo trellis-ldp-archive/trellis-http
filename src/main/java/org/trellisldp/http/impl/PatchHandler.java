@@ -16,6 +16,7 @@ package org.trellisldp.http.impl;
 import static java.util.Objects.isNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
@@ -59,7 +60,7 @@ import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.Triple;
 import org.slf4j.Logger;
 
-import org.trellisldp.api.ConstraintService;
+import org.trellisldp.api.ConstraintViolation;
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.ResourceService;
@@ -80,7 +81,6 @@ public class PatchHandler extends BaseLdpHandler {
     private static final Logger LOGGER = getLogger(PatchHandler.class);
 
     private final IOService ioService;
-    private final ConstraintService constraintService;
     private final String sparqlUpdate;
 
     /**
@@ -90,15 +90,12 @@ public class PatchHandler extends BaseLdpHandler {
      * @param sparqlUpdate the sparql update body
      * @param resourceService the resource service
      * @param ioService the serialization service
-     * @param constraintService the RDF constraint service
      */
     public PatchHandler(final Map<String, String> partitions, final LdpRequest req,
             final String sparqlUpdate,
-            final ResourceService resourceService, final IOService ioService,
-            final ConstraintService constraintService) {
+            final ResourceService resourceService, final IOService ioService) {
         super(partitions, req, resourceService);
         this.ioService = ioService;
-        this.constraintService = constraintService;
         this.sparqlUpdate = sparqlUpdate;
     }
 
@@ -164,12 +161,16 @@ public class PatchHandler extends BaseLdpHandler {
             dataset.add(rdf.createQuad(PreferServerManaged, res.getIdentifier(), RDF.type, res.getInteractionModel()));
 
             // Check any constraints
-            dataset.getGraph(graphName)
-                .flatMap(g -> constraintService.constrainedBy(res.getInteractionModel(), baseUrl, g))
-                .ifPresent(constraint -> {
-                        throw new WebApplicationException(status(CONFLICT)
-                            .link(constraint.getConstraint().getIRIString(), LDP.constrainedBy.getIRIString()).build());
-                });
+            final List<ConstraintViolation> violations = constraintServices.stream()
+                .flatMap(svc -> dataset.getGraph(graphName).map(Stream::of).orElseGet(Stream::empty)
+                    .flatMap(g -> svc.constrainedBy(res.getInteractionModel(), baseUrl, g)))
+                .collect(toList());
+
+            if (!violations.isEmpty()) {
+                final ResponseBuilder err = status(CONFLICT);
+                violations.forEach(v -> err.link(v.getConstraint().getIRIString(), LDP.constrainedBy.getIRIString()));
+                throw new WebApplicationException(err.build());
+            }
 
             // When updating User or ACL triples, be sure to add the other category to the dataset
             try (final Stream<? extends Triple> remaining = res.stream(otherGraph)) {

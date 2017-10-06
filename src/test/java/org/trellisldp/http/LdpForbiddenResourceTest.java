@@ -52,7 +52,6 @@ import org.mockito.Mock;
 import org.trellisldp.api.AccessControlService;
 import org.trellisldp.api.AgentService;
 import org.trellisldp.api.BinaryService;
-import org.trellisldp.api.ConstraintService;
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.ResourceService;
@@ -82,9 +81,6 @@ public class LdpForbiddenResourceTest extends JerseyTest {
 
     @Mock
     private ResourceService mockResourceService;
-
-    @Mock
-    private ConstraintService mockConstraintService;
 
     @Mock
     private BinaryService mockBinaryService;
@@ -117,8 +113,7 @@ public class LdpForbiddenResourceTest extends JerseyTest {
         config.register(new TestAuthenticationFilter("testUser", "group"));
         config.register(new AgentAuthorizationFilter(mockAgentService, "admin"));
         config.register(new WebAcFilter(partitions, emptyList(), mockAccessControlService));
-        config.register(new LdpResource(mockResourceService, ioService, mockConstraintService, mockBinaryService,
-                    partitions));
+        config.register(new LdpResource(mockResourceService, ioService, mockBinaryService, partitions));
         return config;
     }
 

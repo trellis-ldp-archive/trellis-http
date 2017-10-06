@@ -16,7 +16,7 @@ package org.trellisldp.http.impl;
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
-import static java.util.Optional.of;
+import static java.util.stream.Stream.of;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
@@ -41,12 +41,10 @@ import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
 import static org.trellisldp.api.RDFUtils.TRELLIS_BNODE_PREFIX;
 import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.api.RDFUtils.getInstance;
-import static org.trellisldp.vocabulary.RDF.type;
 
 import java.time.Instant;
 import java.util.Date;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
@@ -72,8 +70,6 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import org.trellisldp.api.ConstraintService;
-import org.trellisldp.api.ConstraintViolation;
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.ResourceService;
@@ -101,9 +97,6 @@ public class PatchHandlerTest {
 
     @Mock
     private IOService mockIoService;
-
-    @Mock
-    private ConstraintService mockConstraintService;
 
     @Mock
     private Resource mockResource;
@@ -149,14 +142,14 @@ public class PatchHandlerTest {
     @Test(expected = WebApplicationException.class)
     public void testPatchNoSparql() {
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, null,
-                mockResourceService, mockIoService, mockConstraintService);
+                mockResourceService, mockIoService);
         patchHandler.updateResource(mockResource).build();
     }
 
     @Test
     public void testPatchLdprs() {
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
-                mockResourceService, mockIoService, mockConstraintService);
+                mockResourceService, mockIoService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -166,19 +159,17 @@ public class PatchHandlerTest {
     public void testEntity() {
         final Triple triple = rdf.createTriple(identifier, RDFS.label, rdf.createLiteral("A label"));
 
-        when(mockResource.stream(eq(Trellis.PreferUserManaged))).thenAnswer(x -> Stream.of(triple));
+        when(mockResource.stream(eq(Trellis.PreferUserManaged))).thenAnswer(x -> of(triple));
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
-                mockResourceService, mockIoService, mockConstraintService);
+                mockResourceService, mockIoService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
 
         verify(mockIoService).update(any(Graph.class), eq(insert), eq(identifier.getIRIString()));
-
-        verify(mockConstraintService).constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any(Graph.class));
 
         verify(mockResourceService).put(eq(identifier), any(Dataset.class));
     }
@@ -190,7 +181,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getPrefer()).thenReturn(Prefer.valueOf("return=representation"));
 
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
-                mockResourceService, mockIoService, mockConstraintService);
+                mockResourceService, mockIoService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
 
@@ -214,7 +205,7 @@ public class PatchHandlerTest {
             .thenReturn(singletonList(MediaType.valueOf(RDFA_HTML.mediaType)));
 
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
-                mockResourceService, mockIoService, mockConstraintService);
+                mockResourceService, mockIoService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
 
@@ -230,18 +221,6 @@ public class PatchHandlerTest {
     }
 
     @Test(expected = WebApplicationException.class)
-    public void testConstraint() {
-        when(mockConstraintService.constrainedBy(eq(LDP.RDFSource), eq(baseUrl), any()))
-            .thenReturn(of(new ConstraintViolation(Trellis.InvalidRange,
-                            rdf.createTriple(identifier, type, rdf.createLiteral("Some literal")))));
-
-        final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
-                mockResourceService, mockIoService, mockConstraintService);
-
-        patchHandler.updateResource(mockResource);
-    }
-
-    @Test(expected = WebApplicationException.class)
     public void testDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenReturn(singletonList(Trellis.DeletedResource));
@@ -249,7 +228,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
-                mockResourceService, mockIoService, mockConstraintService);
+                mockResourceService, mockIoService);
 
         patchHandler.updateResource(mockResource);
     }
@@ -262,7 +241,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
-                mockResourceService, mockIoService, mockConstraintService);
+                mockResourceService, mockIoService);
 
         patchHandler.updateResource(mockResource);
     }
@@ -275,7 +254,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
-                mockResourceService, mockIoService, mockConstraintService);
+                mockResourceService, mockIoService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
@@ -289,7 +268,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
-                mockResourceService, mockIoService, mockConstraintService);
+                mockResourceService, mockIoService);
 
         patchHandler.updateResource(mockResource);
     }

@@ -29,7 +29,7 @@ ext {
     license = 'Apache 2'
 
     /* Dependencies */
-    trellisApiVersion = '0.2.1'
+    trellisApiVersion = '0.3.0'
     trellisVocabularyVersion = '0.1.0'
     commonsRdfVersion = '0.3.0-incubating'
     commonsCodecVersion = '1.10'
@@ -47,6 +47,7 @@ ext {
     trellisJenaIOVersion = '0.2.0'
     trellisAuditVersion = '0.1.0'
     trellisEventVersion = '0.1.0'
+    trellisConstraintVersion = '0.2.1'
     jerseyVersion = '2.26'
     logbackVersion = '1.2.3'
     jsonVersion = '1.1'
@@ -87,6 +88,7 @@ dependencies {
     testImplementation group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisJenaIOVersion
     testImplementation group: 'org.trellisldp', name: 'trellis-audit', version: trellisAuditVersion
     testImplementation group: 'org.trellisldp', name: 'trellis-event-serialization', version: trellisEventVersion
+    testImplementation group: 'org.trellisldp', name: 'trellis-constraint-rules', version: trellisConstraintVersion
 
     testRuntimeClasspath group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
 

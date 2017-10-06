@@ -62,7 +62,6 @@ import org.apache.commons.rdf.api.IRI;
 import org.slf4j.Logger;
 
 import org.trellisldp.api.BinaryService;
-import org.trellisldp.api.ConstraintService;
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.ResourceService;
@@ -101,26 +100,21 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
 
     protected final BinaryService binaryService;
 
-    protected final ConstraintService constraintService;
-
     private static final List<String> MUTATING_METHODS = asList("POST", "PUT", "DELETE", "PATCH");
 
     /**
      * Create a LdpResource
      * @param resourceService the resource service
      * @param ioService the i/o service
-     * @param constraintService the RDF constraint enforcing service
      * @param binaryService the datastream service
      * @param partitions a map of partitions for use with custom hostnames
      */
     public LdpResource(final ResourceService resourceService, final IOService ioService,
-            final ConstraintService constraintService, final BinaryService binaryService,
-            final Map<String, String> partitions) {
+            final BinaryService binaryService, final Map<String, String> partitions) {
         super(partitions);
         this.resourceService = resourceService;
         this.ioService = ioService;
         this.binaryService = binaryService;
-        this.constraintService = constraintService;
     }
 
     @Override
@@ -276,8 +270,7 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     public Response updateResource(@BeanParam final LdpRequest req, final String body) {
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-        final PatchHandler patchHandler = new PatchHandler(partitions, req, body, resourceService, ioService,
-                constraintService);
+        final PatchHandler patchHandler = new PatchHandler(partitions, req, body, resourceService, ioService);
 
         return resourceService.get(identifier, MAX).map(patchHandler::updateResource)
             .orElseGet(() -> status(NOT_FOUND)).build();
@@ -314,7 +307,7 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
             .orElseGet(resourceService.getIdentifierSupplier());
 
         final PostHandler postHandler = new PostHandler(partitions, req, identifier, body, resourceService,
-                ioService, constraintService, binaryService);
+                ioService, binaryService);
 
         // First check if this is a container
         final Optional<Resource> parent = resourceService.get(rdf.createIRI(TRELLIS_PREFIX + path));
@@ -343,7 +336,7 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
         final PutHandler putHandler = new PutHandler(partitions, req, body, resourceService, ioService,
-                constraintService, binaryService);
+                binaryService);
 
         return resourceService.get(identifier, MAX).filter(res -> !RdfUtils.isDeleted(res))
             .map(putHandler::setResource).orElseGet(putHandler::createResource).build();

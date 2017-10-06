@@ -58,7 +58,6 @@ import org.mockito.Mock;
 
 import org.trellisldp.api.AccessControlService;
 import org.trellisldp.api.BinaryService;
-import org.trellisldp.api.ConstraintService;
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.ResourceService;
@@ -90,9 +89,6 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
     private ResourceService mockResourceService;
 
     @Mock
-    private ConstraintService mockConstraintService;
-
-    @Mock
     private BinaryService mockBinaryService;
 
     @Mock
@@ -120,8 +116,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
         initMocks(this);
 
         final ResourceConfig config = new ResourceConfig();
-        config.register(new LdpResource(mockResourceService, ioService, mockConstraintService, mockBinaryService,
-                    partitions));
+        config.register(new LdpResource(mockResourceService, ioService, mockBinaryService, partitions));
         config.register(new TestAuthenticationFilter("testUser", "group"));
         config.register(new WebAcFilter(partitions, asList(BASIC_AUTH, DIGEST_AUTH), mockAccessControlService));
         config.register(new CrossOriginResourceSharingFilter(asList(origin),

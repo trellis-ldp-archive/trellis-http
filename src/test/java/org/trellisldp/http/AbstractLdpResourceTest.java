@@ -113,8 +113,6 @@ import org.trellisldp.api.AccessControlService;
 import org.trellisldp.api.AgentService;
 import org.trellisldp.api.Binary;
 import org.trellisldp.api.BinaryService;
-import org.trellisldp.api.ConstraintService;
-import org.trellisldp.api.ConstraintViolation;
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.ResourceService;
@@ -187,9 +185,6 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Mock
     protected ResourceService mockResourceService;
-
-    @Mock
-    protected ConstraintService mockConstraintService;
 
     @Mock
     protected BinaryService mockBinaryService;
@@ -1755,12 +1750,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + RESOURCE_PATH + "/" + RANDOM_VALUE)), eq(MAX)))
             .thenReturn(empty());
 
-        when(mockConstraintService.constrainedBy(any(), any(), any()))
-            .thenReturn(of(new ConstraintViolation(Trellis.InvalidRange,
-                            rdf.createTriple(identifier, type, rdf.createLiteral("Some literal")))));
-
         final Response res = target(RESOURCE_PATH).request()
-            .post(entity("<> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> \"Some literal\" .",
+            .post(entity("<> <http://www.w3.org/ns/ldp#inbox> \"Some literal\" .",
                     TEXT_TURTLE_TYPE));
 
         assertEquals(CONFLICT, res.getStatusInfo());
@@ -1930,10 +1921,6 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPutConstraint() {
-        when(mockConstraintService.constrainedBy(any(), any(), any()))
-            .thenReturn(of(new ConstraintViolation(Trellis.InvalidRange,
-                            rdf.createTriple(identifier, type, rdf.createLiteral("Some literal")))));
-
         final Response res = target(RESOURCE_PATH).request()
             .put(entity("<> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> \"Some literal\" .",
                     TEXT_TURTLE_TYPE));
@@ -2252,10 +2239,6 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
 
     @Test
     public void testPatchConstraint() {
-        when(mockConstraintService.constrainedBy(any(), any(), any()))
-            .thenReturn(of(new ConstraintViolation(Trellis.InvalidRange,
-                            rdf.createTriple(identifier, type, rdf.createLiteral("Some literal")))));
-
         final Response res = target(RESOURCE_PATH).request()
             .method("PATCH", entity("INSERT { <> a \"Some literal\" } WHERE {}",
                         APPLICATION_SPARQL_UPDATE));
