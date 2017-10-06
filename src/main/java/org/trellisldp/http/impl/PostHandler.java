@@ -114,8 +114,9 @@ public class PostHandler extends ContentBearingHandler {
         try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
 
             // Add Audit quads
-            audit.creation(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
-                .forEach(dataset::add);
+            audit.ifPresent(svc ->
+                    svc.creation(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
+                .forEach(dataset::add));
 
             dataset.add(rdf.createQuad(PreferServerManaged, internalId, RDF.type, ldpType));
 

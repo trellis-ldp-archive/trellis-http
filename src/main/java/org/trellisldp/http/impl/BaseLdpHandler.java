@@ -16,6 +16,8 @@ package org.trellisldp.http.impl;
 import static java.util.Arrays.asList;
 import static java.util.Date.from;
 import static java.util.Objects.nonNull;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
@@ -26,8 +28,10 @@ import static org.trellisldp.vocabulary.LDP.Resource;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ServiceLoader;
 
 import javax.ws.rs.WebApplicationException;
@@ -51,7 +55,7 @@ public class BaseLdpHandler {
 
     protected static final RDF rdf = getInstance();
 
-    protected static AuditService audit = ServiceLoader.load(AuditService.class).iterator().next();
+    protected static Optional<AuditService> audit = loadFirst(AuditService.class);
 
     protected static final List<ConstraintService> constraintServices = new ArrayList<>();
 
@@ -104,5 +108,14 @@ public class BaseLdpHandler {
         if (nonNull(builder)) {
             throw new WebApplicationException(builder.build());
         }
+    }
+
+    // TODO - JDK9 replace with ServiceLoader::loadFirst
+    private static <T> Optional<T> loadFirst(final Class<T> service) {
+        final Iterator<T> iter = ServiceLoader.load(service).iterator();
+        if (iter.hasNext()) {
+            return of(iter.next());
+        }
+        return empty();
     }
 }

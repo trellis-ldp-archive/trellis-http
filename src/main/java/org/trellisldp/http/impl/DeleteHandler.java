@@ -79,8 +79,8 @@ public class DeleteHandler extends BaseLdpHandler {
         try (final TrellisDataset dataset = TrellisDataset.createDataset()) {
 
             // Add the audit quads
-            audit.deletion(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
-                .forEach(dataset::add);
+            audit.ifPresent(svc -> svc.deletion(res.getIdentifier(), session).stream()
+                    .map(skolemizeQuads(resourceService, baseUrl)).forEach(dataset::add));
 
             // When deleting just the ACL graph, keep the user managed triples in tact
             if (ACL.equals(req.getExt())) {

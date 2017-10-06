@@ -169,13 +169,15 @@ public class PutHandler extends ContentBearingHandler {
             final IRI otherGraph = getInactiveGraphName();
 
             // Add audit quads
-            if (nonNull(res)) {
-                audit.update(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
-                    .forEach(dataset::add);
-            } else {
-                audit.creation(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
-                    .forEach(dataset::add);
-            }
+            audit.ifPresent(svc -> {
+                if (nonNull(res)) {
+                    svc.update(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
+                        .forEach(dataset::add);
+                } else {
+                    svc.creation(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
+                        .forEach(dataset::add);
+                }
+            });
 
             // Add LDP type
             dataset.add(rdf.createQuad(PreferServerManaged, internalId, RDF.type, ldpType));

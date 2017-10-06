@@ -154,8 +154,8 @@ public class PatchHandler extends BaseLdpHandler {
                 .forEach(dataset::add);
 
             // Add audit-related triples
-            audit.update(res.getIdentifier(), session).stream().map(skolemizeQuads(resourceService, baseUrl))
-                .forEach(dataset::add);
+            audit.ifPresent(svc -> svc.update(res.getIdentifier(), session).stream()
+                    .map(skolemizeQuads(resourceService, baseUrl)).forEach(dataset::add));
 
             // Add existing LDP type
             dataset.add(rdf.createQuad(PreferServerManaged, res.getIdentifier(), RDF.type, res.getInteractionModel()));
