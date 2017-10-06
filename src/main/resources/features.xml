@@ -11,7 +11,12 @@
     <feature>trellis-vocabulary</feature>
 
     <bundle dependency="true">mvn:commons-codec/commons-codec/${commonsCodecVersion}</bundle>
+    <bundle dependency="true">mvn:commons-io/commons-io/${commonsIoVersion}</bundle>
+    <bundle dependency="true">mvn:io.dropwizard.metrics/metrics-annotation/${metricsVersion}</bundle>
+    <bundle dependency="true">mvn:javax.inject/javax.inject/${javaxInjectVersion}</bundle>
+    <bundle dependency="true">mvn:javax.json/javax.json-api/${javaxJsonVersion}</bundle>
     <bundle dependency="true">mvn:javax.ws.rs/javax.ws.rs-api/${jaxrsVersion}</bundle>
+
     <bundle>mvn:org.trellisldp/trellis-http/${project.version}</bundle>
   </feature>
 </features>
