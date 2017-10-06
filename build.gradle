@@ -47,7 +47,7 @@ ext {
     trellisJenaIOVersion = '0.2.0'
     trellisAuditVersion = '0.1.0'
     trellisEventVersion = '0.1.0'
-    trellisConstraintVersion = '0.2.1'
+    trellisConstraintVersion = '0.2.2'
     jerseyVersion = '2.26'
     logbackVersion = '1.2.3'
     jsonVersion = '1.1'
