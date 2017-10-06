@@ -55,6 +55,7 @@ ext {
     jacocoVersion = "0.7.9"
 
     /* OSGi */
+    spiflyVersion = '1.0.8'
     projectOsgiVersion = project.version.replaceAll("-SNAPSHOT", ".SNAPSHOT")
 }
 
@@ -135,6 +136,15 @@ jar {
         instruction 'Automatic-Module-Name', 'org.trellisldp.http'
         instruction 'Import-Package', '*'
         instruction 'Export-Package', "org.trellisldp.http;version=${projectOsgiVersion}"
+        instruction 'Require-Capability', '''\
+            osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)",
+            osgi.serviceloader;
+                filter:="(osgi.serviceloader=org.trellisldp.api.AuditService)";
+                resolution:=optional; cardinality:=optional,
+            osgi.serviceloader;
+                filter:="(osgi.serviceloader=org.trellisldp.api.ConstraintService)";
+                resolution:=optional; cardinality:=multiple
+            '''
     }
 }
 
