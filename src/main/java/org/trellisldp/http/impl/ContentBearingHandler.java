@@ -93,10 +93,8 @@ class ContentBearingHandler extends BaseLdpHandler {
             final String baseUrl, final RDFSyntax syntax) {
         final List<ConstraintViolation> violations = new ArrayList<>();
         constraintServices.forEach(svc ->
-            dataset.getGraph(graphName).ifPresent(g -> {
-                System.out.println("Graph: " + g);
-                svc.constrainedBy(type, baseUrl, g).forEach(violations::add);
-        }));
+            dataset.getGraph(graphName).ifPresent(g ->
+                svc.constrainedBy(type, baseUrl, g).forEach(violations::add)));
 
         if (!violations.isEmpty()) {
             final ResponseBuilder err = status(CONFLICT);
