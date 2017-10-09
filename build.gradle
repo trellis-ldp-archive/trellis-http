@@ -112,6 +112,8 @@ gradle.projectsEvaluated {
 }
 
 test {
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+
     if (org.gradle.internal.jvm.Jvm.current().getJavaVersion().isJava9Compatible()) {
         jvmArgs '--add-modules', 'java.xml.bind'
     }
