@@ -56,7 +56,7 @@ public class HttpResolverTest {
     private final static RDF rdf = new SimpleRDF();
 
     private final static IRI resource = rdf.createIRI("http://www.trellisldp.org/ns/trellis.ttl");
-    private final static IRI sslResource = rdf.createIRI("https://acdc.amherst.edu/ontology/relationships.rdf");
+    private final static IRI sslResource = rdf.createIRI("https://s3.amazonaws.com/www.trellisldp.org/ns/trellis.ttl");
     private final static String partition = "partition";
 
     @Mock
@@ -93,7 +93,7 @@ public class HttpResolverTest {
 
         assertTrue(resolver.exists(partition, resource));
         assertTrue(resolver.exists(partition, sslResource));
-        assertFalse(resolver.exists(partition, rdf.createIRI("http://acdc.amherst.edu/ontology/foo.bar")));
+        assertFalse(resolver.exists(partition, rdf.createIRI("http://www.trellisldp.org/ns/non-existent.ttl")));
     }
 
     @Test
