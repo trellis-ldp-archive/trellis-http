@@ -38,8 +38,10 @@ import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 import java.io.File;
 import java.net.URI;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.ws.rs.core.EntityTag;
@@ -47,10 +49,12 @@ import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.Triple;
 
 import org.slf4j.Logger;
+import org.trellisldp.api.AuditService;
 import org.trellisldp.api.Binary;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.BinaryService;
@@ -169,15 +173,8 @@ public class PutHandler extends ContentBearingHandler {
             final IRI otherGraph = getInactiveGraphName();
 
             // Add audit quads
-            audit.ifPresent(svc -> {
-                if (nonNull(res)) {
-                    svc.update(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
-                        .forEach(dataset::add);
-                } else {
-                    svc.creation(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
-                        .forEach(dataset::add);
-                }
-            });
+            audit.map(addAuditQuads(res, internalId, session)).ifPresent(q ->
+                    q.stream().map(skolemizeQuads(resourceService, baseUrl)).forEach(dataset::add));
 
             // Add LDP type
             dataset.add(rdf.createQuad(PreferServerManaged, internalId, RDF.type, ldpType));
@@ -228,5 +225,10 @@ public class PutHandler extends ContentBearingHandler {
         LOGGER.error("Unable to persist data to location at {}", internalId.getIRIString());
         return serverError().type(TEXT_PLAIN)
             .entity("Unable to persist data. Please consult the logs for more information");
+    }
+
+    private static Function<AuditService, List<Quad>> addAuditQuads(final Resource res, final IRI internalId,
+            final Session session) {
+        return svc -> nonNull(res) ? svc.update(internalId, session) : svc.creation(internalId, session);
     }
 }
