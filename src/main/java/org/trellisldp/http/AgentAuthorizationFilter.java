@@ -14,48 +14,54 @@
 package org.trellisldp.http;
 
 import static java.util.Objects.isNull;
-import static javax.ws.rs.Priorities.AUTHENTICATION;
+import static javax.ws.rs.Priorities.AUTHORIZATION;
+import static org.slf4j.LoggerFactory.getLogger;
 import static org.trellisldp.http.domain.HttpConstants.SESSION_PROPERTY;
 import static org.trellisldp.vocabulary.Trellis.RepositoryAdministrator;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.annotation.Priority;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.core.SecurityContext;
 
+import org.slf4j.Logger;
 import org.trellisldp.api.AgentService;
 import org.trellisldp.http.impl.HttpSession;
 
 /**
  * @author acoburn
  */
-@PreMatching
-@Priority(AUTHENTICATION - 100)
+@Priority(AUTHORIZATION - 200)
 public class AgentAuthorizationFilter implements ContainerRequestFilter {
 
+    private static final Logger LOGGER = getLogger(AgentAuthorizationFilter.class);
+
     private final AgentService agentService;
-    private final String adminRole;
+    private final List<String> adminUsers;
 
     /**
      * Create an authorization filter
      * @param agentService the agent service
-     * @param adminRole the admin role
+     * @param adminUsers users that should be treated as repository administrators
      */
-    public AgentAuthorizationFilter(final AgentService agentService, final String adminRole) {
+    public AgentAuthorizationFilter(final AgentService agentService, final List<String> adminUsers) {
         this.agentService = agentService;
-        this.adminRole = adminRole;
+        this.adminUsers = adminUsers;
     }
 
     @Override
     public void filter(final ContainerRequestContext ctx) throws IOException {
         final SecurityContext sec = ctx.getSecurityContext();
+        LOGGER.info("Checking security context: {}", sec.getUserPrincipal());
         if (isNull(sec.getUserPrincipal())) {
             ctx.setProperty(SESSION_PROPERTY, new HttpSession());
-        } else if (sec.isUserInRole(adminRole)) {
+        } else if (adminUsers.contains(sec.getUserPrincipal().getName())) {
             ctx.setProperty(SESSION_PROPERTY, new HttpSession(RepositoryAdministrator));
+        } else if (sec.getUserPrincipal().getName().isEmpty()) {
+            ctx.setProperty(SESSION_PROPERTY, new HttpSession());
         } else {
             ctx.setProperty(SESSION_PROPERTY, new HttpSession(agentService.asAgent(sec.getUserPrincipal().getName())));
         }

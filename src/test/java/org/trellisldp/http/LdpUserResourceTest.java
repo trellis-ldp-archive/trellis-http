@@ -39,7 +39,7 @@ public class LdpUserResourceTest extends AbstractLdpResourceTest {
         config.register(new LdpResource(mockResourceService, ioService, mockBinaryService, partitions));
         config.register(new TestAuthenticationFilter("testUser", "group"));
         config.register(new WebAcFilter(partitions, emptyList(), mockAccessControlService));
-        config.register(new AgentAuthorizationFilter(mockAgentService, "admin"));
+        config.register(new AgentAuthorizationFilter(mockAgentService, emptyList()));
         config.register(new MultipartUploader(mockResourceService, mockBinaryService, partitions));
         config.register(new CacheControlFilter(86400));
         config.register(new CrossOriginResourceSharingFilter(asList(origin), asList("PATCH", "POST", "PUT"),
