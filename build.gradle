@@ -42,7 +42,7 @@ ext {
     metricsVersion = '3.2.5'
 
     /* Testing */
-    junitVersion = '4.12'
+    junitVersion = '4.12.1'
     mockitoVersion = '2.11.0'
     trellisJenaIOVersion = '0.2.0'
     trellisAuditVersion = '0.1.0'
@@ -82,11 +82,11 @@ dependencies {
 
     testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jacksonVersion
     testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersion
-    testImplementation group: 'junit', name: 'junit', version: junitVersion
     testImplementation group: 'org.glassfish', name: 'javax.json', version: jsonVersion
     testImplementation group: 'org.glassfish.jersey.core', name: 'jersey-server', version: jerseyVersion
     testImplementation group: 'org.glassfish.jersey.test-framework.providers', name: 'jersey-test-framework-provider-inmemory', version: jerseyVersion
     testImplementation group: 'org.glassfish.jersey.inject', name: 'jersey-hk2', version: jerseyVersion
+    testImplementation group: 'org.junit.vintage', name: 'junit-vintage-engine', version: junitVersion
     testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
     testImplementation group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisJenaIOVersion
     testImplementation group: 'org.trellisldp', name: 'trellis-audit', version: trellisAuditVersion
