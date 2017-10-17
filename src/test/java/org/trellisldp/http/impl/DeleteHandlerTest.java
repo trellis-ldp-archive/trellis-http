@@ -23,10 +23,12 @@ import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.PRECONDITION_FAILED;
 import static javax.ws.rs.core.Response.status;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.trellisldp.api.RDFUtils.TRELLIS_BNODE_PREFIX;
 import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.api.RDFUtils.getInstance;
@@ -44,11 +46,11 @@ import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFTerm;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.ResourceService;
 import org.trellisldp.api.Session;
@@ -62,7 +64,7 @@ import org.trellisldp.vocabulary.XSD;
 /**
  * @author acoburn
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 public class DeleteHandlerTest {
 
     private final static RDF rdf = getInstance();
@@ -85,8 +87,9 @@ public class DeleteHandlerTest {
     @Mock
     private LdpRequest mockLdpRequest;
 
-    @Before
+    @BeforeEach
     public void setUp() {
+        initMocks(this);
         final IRI iri = rdf.createIRI("trellis:repo");
         when(mockResource.getModified()).thenReturn(time);
         when(mockResource.getIdentifier()).thenReturn(iri);
@@ -141,22 +144,22 @@ public class DeleteHandlerTest {
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testCache() {
         when(mockRequest.evaluatePreconditions(eq(from(time)), any(EntityTag.class)))
                 .thenReturn(status(PRECONDITION_FAILED));
         final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
 
-        handler.deleteResource(mockResource);
+        assertThrows(WebApplicationException.class, () -> handler.deleteResource(mockResource));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testGetDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenReturn(singletonList(Trellis.DeletedResource));
 
         final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
 
-        handler.deleteResource(mockResource);
+        assertThrows(WebApplicationException.class, () -> handler.deleteResource(mockResource));
     }
 }

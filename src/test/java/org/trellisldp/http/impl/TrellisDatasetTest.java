@@ -13,39 +13,42 @@
  */
 package org.trellisldp.http.impl;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.io.IOException;
 
 import javax.ws.rs.WebApplicationException;
 
 import org.apache.commons.rdf.api.Dataset;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
-
-
 
 /**
  * @author acoburn
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 public class TrellisDatasetTest {
 
     @Mock
     private Dataset mockDataset;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
+        initMocks(this);
         doThrow(new IOException()).when(mockDataset).close();
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testCloseDatasetError() {
-        try (final TrellisDataset dataset = new TrellisDataset(mockDataset)) {
-            // nothing here
-        }
+        assertThrows(WebApplicationException.class, () -> {
+            try (final TrellisDataset dataset = new TrellisDataset(mockDataset)) {
+                // nothing here
+            }
+        });
     }
 }

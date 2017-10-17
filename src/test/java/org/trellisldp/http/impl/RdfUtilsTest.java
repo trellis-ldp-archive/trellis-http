@@ -21,14 +21,16 @@ import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.trellisldp.api.RDFUtils.TRELLIS_BNODE_PREFIX;
 import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.api.RDFUtils.getInstance;
@@ -51,21 +53,27 @@ import org.trellisldp.api.ResourceService;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.Trellis;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 /**
  * @author acoburn
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 public class RdfUtilsTest {
 
     private static final RDF rdf = getInstance();
 
     @Mock
     private ResourceService mockResourceService;
+
+    @BeforeEach
+    public void setUp() {
+        initMocks(this);
+    }
 
     @Test
     public void testGetSyntax() {
@@ -93,13 +101,13 @@ public class RdfUtilsTest {
         assertFalse(RdfUtils.getSyntax(types, of("application/json")).isPresent());
     }
 
-    @Test(expected = NotAcceptableException.class)
+    @Test
     public void testGetSyntaxError() {
         final List<MediaType> types = asList(
                 new MediaType("application", "json"),
                 new MediaType("text", "xml"));
 
-        RdfUtils.getSyntax(types, empty());
+        assertThrows(NotAcceptableException.class, () -> RdfUtils.getSyntax(types, empty()));
     }
 
     @Test

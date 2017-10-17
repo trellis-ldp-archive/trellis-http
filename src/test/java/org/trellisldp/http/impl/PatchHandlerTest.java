@@ -24,16 +24,18 @@ import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_RANGES;
 import static org.trellisldp.http.domain.HttpConstants.PREFERENCE_APPLIED;
@@ -64,11 +66,11 @@ import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFTerm;
 import org.apache.commons.rdf.api.Triple;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
@@ -83,7 +85,7 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 public class PatchHandlerTest {
 
     private final static Instant time = ofEpochSecond(1496262729);
@@ -110,8 +112,9 @@ public class PatchHandlerTest {
     @Mock
     private HttpHeaders mockHttpHeaders;
 
-    @Before
+    @BeforeEach
     public void setUp() {
+        initMocks(this);
         when(mockResource.getModified()).thenReturn(time);
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockResource.getIdentifier()).thenReturn(identifier);
@@ -139,11 +142,11 @@ public class PatchHandlerTest {
         });
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testPatchNoSparql() {
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, null,
                 mockResourceService, mockIoService);
-        patchHandler.updateResource(mockResource).build();
+        assertThrows(WebApplicationException.class, () -> patchHandler.updateResource(mockResource).build());
     }
 
     @Test
@@ -220,7 +223,7 @@ public class PatchHandlerTest {
         assertTrue(res.getMediaType().isCompatible(TEXT_HTML_TYPE));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenReturn(singletonList(Trellis.DeletedResource));
@@ -230,10 +233,10 @@ public class PatchHandlerTest {
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
                 mockResourceService, mockIoService);
 
-        patchHandler.updateResource(mockResource);
+        assertThrows(WebApplicationException.class, () -> patchHandler.updateResource(mockResource));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testConflict() {
         when(mockRequest.evaluatePreconditions(any(Date.class), any(EntityTag.class)))
             .thenReturn(status(CONFLICT));
@@ -243,7 +246,7 @@ public class PatchHandlerTest {
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
                 mockResourceService, mockIoService);
 
-        patchHandler.updateResource(mockResource);
+        assertThrows(WebApplicationException.class, () -> patchHandler.updateResource(mockResource));
     }
 
     @Test
@@ -260,7 +263,7 @@ public class PatchHandlerTest {
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test
     public void testError2() {
         doThrow(RuntimeRepositoryException.class).when(mockIoService)
             .update(any(Graph.class), eq(insert), eq(identifier.getIRIString()));
@@ -270,7 +273,7 @@ public class PatchHandlerTest {
         final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
                 mockResourceService, mockIoService);
 
-        patchHandler.updateResource(mockResource);
+        assertThrows(BadRequestException.class, () -> patchHandler.updateResource(mockResource));
     }
 
     private static Predicate<Link> hasLink(final IRI iri, final String rel) {

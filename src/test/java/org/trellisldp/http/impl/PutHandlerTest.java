@@ -27,9 +27,10 @@ import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.PRECONDITION_FAILED;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -37,6 +38,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE;
 import static org.trellisldp.api.RDFUtils.TRELLIS_BNODE_PREFIX;
 import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
@@ -61,11 +63,11 @@ import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
 import org.apache.commons.rdf.api.RDFTerm;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import org.trellisldp.api.Binary;
 import org.trellisldp.api.BinaryService;
@@ -78,7 +80,7 @@ import org.trellisldp.vocabulary.LDP;
 /**
  * @author acoburn
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 public class PutHandlerTest {
 
     private final static Instant time = ofEpochSecond(1496262729);
@@ -106,8 +108,9 @@ public class PutHandlerTest {
     @Mock
     private LdpRequest mockLdpRequest;
 
-    @Before
+    @BeforeEach
     public void setUp() {
+        initMocks(this);
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockResource.getBinary()).thenReturn(empty());
         when(mockResource.getModified()).thenReturn(time);
@@ -189,7 +192,7 @@ public class PutHandlerTest {
         verify(mockIoService).read(any(InputStream.class), eq(baseUrl + "partition/resource"), eq(TURTLE));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testPutError() {
         when(mockLdpRequest.getLink()).thenReturn(fromUri(LDP.Container.getIRIString()).rel("type").build());
         when(mockLdpRequest.getContentType()).thenReturn(TEXT_TURTLE);
@@ -198,7 +201,7 @@ public class PutHandlerTest {
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
                 mockIoService, mockBinaryService);
 
-        putHandler.setResource(mockResource);
+        assertThrows(WebApplicationException.class, () -> putHandler.setResource(mockResource));
     }
 
     @Test
@@ -302,7 +305,7 @@ public class PutHandlerTest {
         verify(mockIoService, never()).read(any(InputStream.class), anyString(), any(RDFSyntax.class));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testCache() {
         when(mockRequest.evaluatePreconditions(eq(from(binaryTime)), any(EntityTag.class)))
                 .thenReturn(status(PRECONDITION_FAILED));
@@ -312,7 +315,7 @@ public class PutHandlerTest {
         final PutHandler putHandler = new PutHandler(emptyMap(), mockLdpRequest, entity, mockResourceService,
                 mockIoService, mockBinaryService);
 
-        putHandler.setResource(mockResource);
+        assertThrows(WebApplicationException.class, () -> putHandler.setResource(mockResource));
     }
 
     @Test

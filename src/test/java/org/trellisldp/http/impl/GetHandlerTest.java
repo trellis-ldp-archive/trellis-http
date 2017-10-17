@@ -40,14 +40,16 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.notModified;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.trellisldp.api.RDFUtils.getInstance;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
@@ -82,11 +84,11 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import org.trellisldp.api.Binary;
 import org.trellisldp.api.BinaryService;
@@ -103,7 +105,7 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 public class GetHandlerTest {
 
     private final static Instant time = ofEpochSecond(1496262729);
@@ -134,8 +136,9 @@ public class GetHandlerTest {
     @Mock
     private LdpRequest mockLdpRequest;
 
-    @Before
+    @BeforeEach
     public void setUp() {
+        initMocks(this);
         when(mockResource.getMementos()).thenReturn(emptyList());
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
         when(mockResource.getModified()).thenReturn(time);
@@ -257,7 +260,7 @@ public class GetHandlerTest {
         assertTrue(varies.contains(PREFER));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testCache() {
         when(mockRequest.evaluatePreconditions(eq(from(time)), any(EntityTag.class)))
                 .thenReturn(notModified());
@@ -266,10 +269,10 @@ public class GetHandlerTest {
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
                 mockIoService, mockBinaryService);
 
-        getHandler.getRepresentation(mockResource);
+        assertThrows(WebApplicationException.class, () -> getHandler.getRepresentation(mockResource));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testCacheLdpNr() {
         when(mockResource.getBinary()).thenReturn(of(testBinary));
         when(mockResource.getInteractionModel()).thenReturn(LDP.NonRDFSource);
@@ -280,7 +283,7 @@ public class GetHandlerTest {
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
                 mockIoService, mockBinaryService);
 
-        getHandler.getRepresentation(mockResource);
+        assertThrows(WebApplicationException.class, () -> getHandler.getRepresentation(mockResource));
     }
 
     @Test
@@ -304,14 +307,14 @@ public class GetHandlerTest {
                         OA.annotationService.getIRIString())));
     }
 
-    @Test(expected = NotAcceptableException.class)
+    @Test
     public void testNotAcceptableLdprs() {
         when(mockHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(APPLICATION_JSON_TYPE));
 
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
                 mockIoService, mockBinaryService);
 
-        getHandler.getRepresentation(mockResource);
+        assertThrows(NotAcceptableException.class, () -> getHandler.getRepresentation(mockResource));
     }
 
     @Test
@@ -493,7 +496,7 @@ public class GetHandlerTest {
         assertFalse(allow.contains(POST));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testGetDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenReturn(singletonList(Trellis.DeletedResource));
@@ -501,7 +504,7 @@ public class GetHandlerTest {
         final GetHandler getHandler = new GetHandler(emptyMap(), mockLdpRequest, mockResourceService,
                 mockIoService, mockBinaryService);
 
-        getHandler.getRepresentation(mockResource);
+        assertThrows(WebApplicationException.class, () -> getHandler.getRepresentation(mockResource));
     }
 
     private static Predicate<Link> hasLink(final IRI iri, final String rel) {

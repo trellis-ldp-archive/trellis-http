@@ -25,13 +25,15 @@ import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.trellisldp.api.RDFUtils.getInstance;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_PATCH;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
@@ -47,11 +49,11 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.rdf.api.RDF;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import org.trellisldp.api.Binary;
 import org.trellisldp.api.Resource;
@@ -63,7 +65,7 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 public class OptionsHandlerTest {
 
     private final static Instant time = ofEpochSecond(1496262729);
@@ -82,8 +84,9 @@ public class OptionsHandlerTest {
     @Mock
     private LdpRequest mockRequest;
 
-    @Before
+    @BeforeEach
     public void setUp() {
+        initMocks(this);
         when(mockResource.getMementos()).thenReturn(emptyList());
         when(mockResource.isMemento()).thenReturn(false);
         when(mockResource.getTypes()).thenReturn(emptyList());
@@ -201,13 +204,13 @@ public class OptionsHandlerTest {
         assertFalse(allow.contains(POST));
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testOptionsDeleted() {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenReturn(asList(Trellis.DeletedResource));
 
         final OptionsHandler optionsHandler = new OptionsHandler(emptyMap(), mockRequest, mockResourceService);
 
-        optionsHandler.ldpOptions(mockResource);
+        assertThrows(WebApplicationException.class, () -> optionsHandler.ldpOptions(mockResource));
     }
 }

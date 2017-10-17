@@ -23,9 +23,10 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -33,6 +34,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.trellisldp.api.RDFUtils.TRELLIS_BNODE_PREFIX;
 import static org.trellisldp.api.RDFUtils.TRELLIS_PREFIX;
 import static org.trellisldp.api.RDFUtils.getInstance;
@@ -58,13 +60,13 @@ import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFTerm;
 import org.apache.commons.rdf.api.Triple;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import org.trellisldp.api.BinaryService;
 import org.trellisldp.api.IOService;
@@ -78,7 +80,7 @@ import org.trellisldp.vocabulary.LDP;
 /**
  * @author acoburn
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 public class PostHandlerTest {
 
     private final static Instant time = ofEpochSecond(1496262729);
@@ -108,8 +110,9 @@ public class PostHandlerTest {
     @Captor
     private ArgumentCaptor<Map<String, String>> metadataArgument;
 
-    @Before
+    @BeforeEach
     public void setUp() {
+        initMocks(this);
         when(mockBinaryService.getIdentifierSupplier(anyString())).thenReturn(() -> "file:" + randomUUID());
         when(mockResourceService.put(any(IRI.class), any(Dataset.class))).thenReturn(true);
         when(mockResourceService.skolemize(any(Literal.class))).then(returnsFirstArg());
@@ -330,7 +333,7 @@ public class PostHandlerTest {
         assertEquals(BAD_REQUEST, postHandler.createResource().build().getStatusInfo());
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test
     public void testBadDigest2() {
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile());
         when(mockRequest.getContentType()).thenReturn("text/plain");
@@ -339,10 +342,10 @@ public class PostHandlerTest {
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
                 mockResourceService, mockIoService, mockBinaryService);
 
-        postHandler.createResource();
+        assertThrows(BadRequestException.class, postHandler::createResource);
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testBadEntityDigest() {
         when(mockRequest.getContentType()).thenReturn("text/plain");
         when(mockRequest.getDigest()).thenReturn(new Digest("md5", "blahblah"));
@@ -351,10 +354,10 @@ public class PostHandlerTest {
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
                 mockResourceService, mockIoService, mockBinaryService);
 
-        postHandler.createResource();
+        assertThrows(WebApplicationException.class, postHandler::createResource);
     }
 
-    @Test(expected = WebApplicationException.class)
+    @Test
     public void testEntityError() {
         final IRI identifier = rdf.createIRI("trellis:partition/newresource");
         final File entity = new File(getClass().getResource("/simpleData.txt").getFile() + ".nonexistent-suffix");
@@ -363,7 +366,7 @@ public class PostHandlerTest {
         final PostHandler postHandler = new PostHandler(partitions, mockRequest, "/newresource", entity,
                 mockResourceService, mockIoService, mockBinaryService);
 
-        postHandler.createResource();
+        assertThrows(WebApplicationException.class, postHandler::createResource);
     }
 
     @Test

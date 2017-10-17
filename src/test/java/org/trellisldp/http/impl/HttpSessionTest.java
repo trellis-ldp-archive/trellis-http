@@ -14,20 +14,23 @@
 package org.trellisldp.http.impl;
 
 import static java.time.Instant.now;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 import org.trellisldp.api.Session;
 import org.trellisldp.vocabulary.Trellis;
 
 /**
  * @author acoburn
  */
+@RunWith(JUnitPlatform.class)
 public class HttpSessionTest {
 
     @Test
