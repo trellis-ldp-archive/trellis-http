@@ -302,7 +302,7 @@ task docs(type: Javadoc) {
         links "http://docs.oracle.com/javase/8/docs/api/"
         links "http://docs.oracle.com/javaee/7/api/"
         links "https://commons.apache.org/proper/commons-rdf/apidocs/"
-        links "http://www.trellisldp.org/apidocs/"
+        links "https://trellis-ldp.github.io/trellis/apidocs/"
     }
 }
 
