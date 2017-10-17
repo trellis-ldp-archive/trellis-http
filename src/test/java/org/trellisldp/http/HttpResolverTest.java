@@ -17,13 +17,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyMap;
 import static javax.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -39,18 +41,18 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.simple.SimpleRDF;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.junit.Before;
-import org.junit.Test;
 import org.trellisldp.api.BinaryService.Resolver;
 import org.trellisldp.api.RuntimeRepositoryException;
 
 /**
  * @author acoburn
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 public class HttpResolverTest {
 
     private final static RDF rdf = new SimpleRDF();
@@ -74,8 +76,9 @@ public class HttpResolverTest {
     @Mock
     private Response.StatusType mockStatusType;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException {
+        initMocks(this);
         when(mockClient.target(anyString())).thenReturn(mockWebTarget);
         when(mockWebTarget.request()).thenReturn(mockInvocationBuilder);
         when(mockInvocationBuilder.put(any(Entity.class))).thenReturn(mockResponse);
@@ -114,13 +117,14 @@ public class HttpResolverTest {
                 .contains("owl:Ontology"));
     }
 
-    @Test(expected = RuntimeRepositoryException.class)
+    @Test
     public void testSetContent() {
         final String contents = "A new resource";
         final Resolver resolver = new HttpResolver();
 
         final InputStream inputStream = new ByteArrayInputStream(contents.getBytes(UTF_8));
-        resolver.setContent(partition, sslResource, inputStream);
+        assertThrows(RuntimeRepositoryException.class, () ->
+                resolver.setContent(partition, sslResource, inputStream));
     }
 
     @Test
@@ -141,12 +145,13 @@ public class HttpResolverTest {
         verify(mockInvocationBuilder).delete();
     }
 
-    @Test(expected = RuntimeRepositoryException.class)
+    @Test
     public void testMockedDeleteiException() {
         when(mockStatusType.getFamily()).thenReturn(CLIENT_ERROR);
         when(mockStatusType.toString()).thenReturn("BAD REQUEST");
         final Resolver resolver = new HttpResolver(mockClient);
-        resolver.purgeContent(partition, sslResource);
+        assertThrows(RuntimeRepositoryException.class, () ->
+                resolver.purgeContent(partition, sslResource));
     }
 
     @Test
@@ -163,52 +168,58 @@ public class HttpResolverTest {
         assertFalse(resolver.supportsMultipartUpload());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testIniateMultipart() {
         final Resolver resolver = new HttpResolver();
-        resolver.initiateUpload(partition, resource, "text/plain");
+        assertThrows(UnsupportedOperationException.class, () ->
+                resolver.initiateUpload(partition, resource, "text/plain"));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testMultipartAbort() {
         final Resolver resolver = new HttpResolver();
-        resolver.abortUpload("test-identifier");
+        assertThrows(UnsupportedOperationException.class, () ->
+                resolver.abortUpload("test-identifier"));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testMultipartComplete() {
         final Resolver resolver = new HttpResolver();
-        resolver.completeUpload("test-identifier", emptyMap());
+        assertThrows(UnsupportedOperationException.class, () ->
+                resolver.completeUpload("test-identifier", emptyMap()));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testMultipartUpload() {
         final String contents = "A new resource";
         final InputStream inputStream = new ByteArrayInputStream(contents.getBytes(UTF_8));
         final Resolver resolver = new HttpResolver();
-        resolver.uploadPart("test-identifier", 1, inputStream);
+        assertThrows(UnsupportedOperationException.class, () ->
+                resolver.uploadPart("test-identifier", 1, inputStream));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testMultipartSessionExists() {
         final Resolver resolver = new HttpResolver();
-        resolver.uploadSessionExists("test-identifier");
+        assertThrows(UnsupportedOperationException.class, () ->
+                resolver.uploadSessionExists("test-identifier"));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testMultipartInitiate() {
         final Resolver resolver = new HttpResolver();
-        resolver.initiateUpload(partition, resource, "text/plain");
+        assertThrows(UnsupportedOperationException.class, () ->
+                resolver.initiateUpload(partition, resource, "text/plain"));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testMultipartList() {
         final Resolver resolver = new HttpResolver();
-        resolver.listParts("foo");
+        assertThrows(UnsupportedOperationException.class, () -> resolver.listParts("foo"));
     }
 
 
-    @Test(expected = RuntimeRepositoryException.class)
+    @Test
     public void testExceptedPut() throws IOException {
         when(mockStatusType.getFamily()).thenReturn(CLIENT_ERROR);
         when(mockStatusType.toString()).thenReturn("BAD REQUEST");
@@ -216,21 +227,22 @@ public class HttpResolverTest {
         final Resolver resolver = new HttpResolver(mockClient);
         final InputStream inputStream = new ByteArrayInputStream(contents.getBytes(UTF_8));
 
-        resolver.setContent(partition, resource, inputStream);
+        assertThrows(RuntimeRepositoryException.class, () ->
+                resolver.setContent(partition, resource, inputStream));
     }
 
-    @Test(expected = RuntimeRepositoryException.class)
+    @Test
     public void testExceptedDelete() throws IOException {
         when(mockStatusType.getFamily()).thenReturn(CLIENT_ERROR);
         when(mockStatusType.toString()).thenReturn("BAD REQUEST");
         final Resolver resolver = new HttpResolver(mockClient);
 
-        resolver.purgeContent(partition, resource);
+        assertThrows(RuntimeRepositoryException.class, () ->
+            resolver.purgeContent(partition, resource));
     }
 
     @Test
     public void testGetNoEntity() throws IOException {
-        //when(mockResponse.hasEntity()).thenReturn(false);
         final Resolver resolver = new HttpResolver(mockClient);
         assertFalse(resolver.getContent(partition, resource).isPresent());
     }

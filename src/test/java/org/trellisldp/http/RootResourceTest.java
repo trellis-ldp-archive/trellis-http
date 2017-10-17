@@ -17,8 +17,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
 import static javax.ws.rs.core.Response.Status.OK;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_LD_JSON_TYPE;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_N_TRIPLES_TYPE;
 import static org.trellisldp.http.domain.RdfMediaType.TEXT_TURTLE_TYPE;
@@ -37,7 +37,12 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.io.IOUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 
@@ -49,6 +54,8 @@ import org.trellisldp.vocabulary.LDP;
 /**
  * @author acoburn
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@RunWith(JUnitPlatform.class)
 public class RootResourceTest extends JerseyTest {
 
     final static ObjectMapper MAPPER = new ObjectMapper();
@@ -71,6 +78,16 @@ public class RootResourceTest extends JerseyTest {
         final ResourceConfig config = new ResourceConfig();
         config.register(new RootResource(ioService, partitions, properties));
         return config;
+    }
+
+    @BeforeAll
+    public void before() throws Exception {
+        super.setUp();
+    }
+
+    @AfterAll
+    public void after() throws Exception {
+        super.tearDown();
     }
 
     @Test

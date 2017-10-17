@@ -29,7 +29,6 @@ public class LdpResourceTest extends AbstractLdpResourceTest {
     @Override
     public Application configure() {
 
-        // Junit runner doesn't seem to work very well with JerseyTest
         initMocks(this);
 
         final String baseUri = getBaseUri().toString();

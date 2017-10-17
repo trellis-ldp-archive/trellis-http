@@ -14,14 +14,18 @@
 package org.trellisldp.http;
 
 import static java.util.Collections.singletonMap;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 
 /**
  * @author acoburn
  */
+@RunWith(JUnitPlatform.class)
 public class BaseLdpResourceTest {
 
     static class MyLdpResource extends BaseLdpResource {
@@ -30,13 +34,15 @@ public class BaseLdpResourceTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReservedPartitionName1() {
-        new MyLdpResource(singletonMap("bnode", "http://bnode.example.org"));
+        assertThrows(IllegalArgumentException.class, () ->
+                new MyLdpResource(singletonMap("bnode", "http://bnode.example.org")));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReservedPartitionName2() {
-        new MyLdpResource(singletonMap("admin", "http://admin.example.org"));
+        assertThrows(IllegalArgumentException.class, () ->
+                new MyLdpResource(singletonMap("admin", "http://admin.example.org")));
     }
 }

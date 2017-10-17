@@ -22,9 +22,9 @@ import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -53,8 +53,13 @@ import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFTerm;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
 
 import org.trellisldp.api.AccessControlService;
@@ -76,6 +81,8 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@RunWith(JUnitPlatform.class)
 public class CORSResourceTest extends JerseyTest {
 
     protected final static IOService ioService = new JenaIOService(null);
@@ -149,7 +156,6 @@ public class CORSResourceTest extends JerseyTest {
     @Override
     public Application configure() {
 
-        // Junit runner doesn't seem to work very well with JerseyTest
         initMocks(this);
 
         final String baseUri = getBaseUri().toString();
@@ -163,7 +169,17 @@ public class CORSResourceTest extends JerseyTest {
         return config;
     }
 
-    @Before
+    @BeforeAll
+    public void before() throws Exception {
+        super.setUp();
+    }
+
+    @AfterAll
+    public void after() throws Exception {
+        super.tearDown();
+    }
+
+    @BeforeEach
     public void setUpMocks() {
         when(mockResourceService.get(any(IRI.class), any(Instant.class)))
             .thenReturn(of(mockVersionedResource));

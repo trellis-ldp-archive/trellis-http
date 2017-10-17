@@ -24,9 +24,9 @@ import static javax.ws.rs.core.HttpHeaders.WWW_AUTHENTICATE;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
 import static javax.ws.rs.core.SecurityContext.DIGEST_AUTH;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -52,8 +52,13 @@ import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
 
 import org.trellisldp.api.AccessControlService;
@@ -71,6 +76,8 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@RunWith(JUnitPlatform.class)
 public class LdpUnauthorizedResourceTest extends JerseyTest {
 
     private final static IOService ioService = new JenaIOService(null);
@@ -126,7 +133,17 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
         return config;
     }
 
-    @Before
+    @BeforeAll
+    public void before() throws Exception {
+        super.setUp();
+    }
+
+    @AfterAll
+    public void after() throws Exception {
+        super.tearDown();
+    }
+
+    @BeforeEach
     public void setUpMocks() {
         when(mockResourceService.get(any(IRI.class), any(Instant.class))).thenReturn(of(mockVersionedResource));
         when(mockResourceService.get(any(IRI.class))).thenReturn(of(mockResource));

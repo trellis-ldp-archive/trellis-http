@@ -44,11 +44,11 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.Status.PRECONDITION_FAILED;
 import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -105,8 +105,13 @@ import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFTerm;
 import org.glassfish.jersey.test.JerseyTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
 
 import org.trellisldp.api.AccessControlService;
@@ -129,6 +134,8 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@RunWith(JUnitPlatform.class)
 abstract class AbstractLdpResourceTest extends JerseyTest {
 
     protected final static IOService ioService = new JenaIOService(null);
@@ -208,7 +215,17 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Mock
     private InputStream mockInputStream;
 
-    @Before
+    @BeforeAll
+    public void before() throws Exception {
+        super.setUp();
+    }
+
+    @AfterAll
+    public void after() throws Exception {
+        super.tearDown();
+    }
+
+    @BeforeEach
     public void setUpMocks() {
         when(mockResourceService.get(any(IRI.class), any(Instant.class)))
             .thenReturn(of(mockVersionedResource));
@@ -285,6 +302,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockBinaryService.getResolver(eq(binaryInternalIdentifier))).thenReturn(of(mockBinaryResolver));
         when(mockBinaryService.getResolverForPartition(eq(REPO1))).thenReturn(of(mockBinaryResolver));
         when(mockBinaryService.getIdentifierSupplier(eq(REPO1))).thenReturn(() -> RANDOM_VALUE);
+
+        when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(false);
 
         when(mockResource.getMementos()).thenReturn(emptyList());
         when(mockResource.getInteractionModel()).thenReturn(LDP.RDFSource);
@@ -2489,6 +2508,7 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testMultipartDeleteNotFound() {
         when(mockBinaryResolver.supportsMultipartUpload()).thenReturn(true);
+        when(mockBinaryResolver.uploadSessionExists(eq(UPLOAD_SESSION_ID))).thenReturn(false);
 
         final Response res = target("upload/" + REPO1 + "/" + UPLOAD_SESSION_ID).request().delete();
         assertEquals(NOT_FOUND, res.getStatusInfo());
