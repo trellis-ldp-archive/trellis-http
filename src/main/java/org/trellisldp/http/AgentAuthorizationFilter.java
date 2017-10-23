@@ -55,7 +55,7 @@ public class AgentAuthorizationFilter implements ContainerRequestFilter {
     @Override
     public void filter(final ContainerRequestContext ctx) throws IOException {
         final SecurityContext sec = ctx.getSecurityContext();
-        LOGGER.info("Checking security context: {}", sec.getUserPrincipal());
+        LOGGER.debug("Checking security context: {}", sec.getUserPrincipal());
         if (isNull(sec.getUserPrincipal())) {
             ctx.setProperty(SESSION_PROPERTY, new HttpSession());
         } else if (adminUsers.contains(sec.getUserPrincipal().getName())) {
