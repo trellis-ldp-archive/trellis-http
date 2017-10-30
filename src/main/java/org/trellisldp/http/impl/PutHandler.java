@@ -13,6 +13,7 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.time.Instant.now;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
@@ -201,6 +202,8 @@ public class PutHandler extends ContentBearingHandler {
                 persistContent(binaryLocation, metadata);
 
                 dataset.add(rdf.createQuad(PreferServerManaged, internalId, DC.hasPart, binaryLocation));
+                dataset.add(rdf.createQuad(PreferServerManaged, binaryLocation, DC.modified,
+                            rdf.createLiteral(now().toString(), XSD.dateTime)));
                 dataset.add(rdf.createQuad(PreferServerManaged, binaryLocation, DC.format,
                             rdf.createLiteral(ofNullable(req.getContentType()).orElse(APPLICATION_OCTET_STREAM))));
                 dataset.add(rdf.createQuad(PreferServerManaged, binaryLocation, DC.extent,
