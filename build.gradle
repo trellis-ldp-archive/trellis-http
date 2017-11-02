@@ -1,5 +1,5 @@
 plugins {
-    id 'com.github.ben-manes.versions' version '0.15.0'
+    id 'com.github.ben-manes.versions' version '0.17.0'
     id 'com.github.hierynomus.license' version '0.14.0'
     id 'net.researchgate.release' version '2.6.0'
 	id 'com.github.kt3k.coveralls' version '2.8.2'
@@ -46,7 +46,7 @@ ext {
     junitPlatformVersion = '1.0.1'
     apiguardianVersion = '1.0.0'
     mockitoVersion = '2.11.0'
-    trellisJenaIOVersion = '0.2.0'
+    trellisJenaIOVersion = '0.2.1'
     trellisAuditVersion = '0.1.0'
     trellisEventVersion = '0.1.0'
     trellisConstraintVersion = '0.2.2'
