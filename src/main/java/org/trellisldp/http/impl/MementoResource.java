@@ -92,6 +92,8 @@ public final class MementoResource {
 
     private static final String DATETIME = "datetime";
 
+    private static final String TIMEMAP_PARAM = "?ext=timemap";
+
     private final Resource resource;
 
     /**
@@ -124,23 +126,19 @@ public final class MementoResource {
         if (nonNull(syntax)) {
             final IRI profile = ofNullable(getProfile(acceptableTypes, syntax)).orElse(expanded);
 
+            final List<Triple> extraData = getExtraTriples(identifier);
+            for (final Link l : links) {
+                if (l.getRels().contains(MEMENTO)) {
+                    extraData.add(rdf.createTriple(rdf.createIRI(identifier), Memento.memento,
+                                    rdf.createIRI(l.getUri().toString())));
+                }
+            }
+
             final StreamingOutput stream = new StreamingOutput() {
                 @Override
                 public void write(final OutputStream out) throws IOException {
-                    final Stream<Triple> linkStream = links.stream().flatMap(linkToTriples);
-                    final IRI originalResource = rdf.createIRI(identifier);
-                    final List<Triple> extraData = new ArrayList<>();
-                    extraData.add(rdf.createTriple(originalResource, type, Memento.OriginalResource));
-                    extraData.add(rdf.createTriple(originalResource, type, Memento.TimeGate));
-                    extraData.add(rdf.createTriple(originalResource, timegate, originalResource));
-                    extraData.add(rdf.createTriple(originalResource, timemap,
-                                rdf.createIRI(identifier + "?ext=timemap")));
-
-                    links.stream().filter(l -> l.getRels().contains(MEMENTO)).forEach(l -> {
-                        extraData.add(rdf.createTriple(rdf.createIRI(identifier), Memento.memento,
-                                        rdf.createIRI(l.getUri().toString())));
-                    });
-                    serializer.write(concat(linkStream, extraData.stream()), out, syntax, profile);
+                    serializer.write(concat(links.stream().flatMap(linkToTriples), extraData.stream()), out, syntax,
+                            profile);
                 }
             };
 
@@ -149,6 +147,19 @@ public final class MementoResource {
 
         return builder.type(APPLICATION_LINK_FORMAT)
             .entity(links.stream().map(Link::toString).collect(joining(",\n")) + "\n");
+    }
+
+    private static List<Triple> getExtraTriples(final String identifier) {
+        final IRI originalResource = rdf.createIRI(identifier);
+        final List<Triple> extraData = new ArrayList<>();
+
+        extraData.add(rdf.createTriple(originalResource, type, Memento.OriginalResource));
+        extraData.add(rdf.createTriple(originalResource, type, Memento.TimeGate));
+        extraData.add(rdf.createTriple(originalResource, timegate, originalResource));
+        extraData.add(rdf.createTriple(originalResource, timemap,
+                    rdf.createIRI(identifier + TIMEMAP_PARAM)));
+
+        return extraData;
     }
 
     /**
@@ -196,7 +207,7 @@ public final class MementoResource {
         // Quads for Mementos
         if (MEMENTO.equals(link.getRel()) && link.getParams().containsKey(DATETIME)) {
             final IRI original = rdf.createIRI(linkUri.split("\\?")[0]);
-            final IRI timemapUrl = rdf.createIRI(linkUri.split("\\?")[0] + "?ext=timemap");
+            final IRI timemapUrl = rdf.createIRI(linkUri.split("\\?")[0] + TIMEMAP_PARAM);
             buffer.add(rdf.createTriple(iri, type, Memento.Memento));
             buffer.add(rdf.createTriple(iri, Memento.original, original));
             buffer.add(rdf.createTriple(iri, timegate, original));
@@ -211,7 +222,7 @@ public final class MementoResource {
 
     private static Stream<Link> getTimeMap(final String identifier, final Stream<VersionRange> mementos) {
         return mementos.reduce((acc, x) -> new VersionRange(acc.getFrom(), x.getUntil()))
-            .map(x -> Link.fromUri(identifier + "?ext=timemap").rel(TIMEMAP)
+            .map(x -> Link.fromUri(identifier + TIMEMAP_PARAM).rel(TIMEMAP)
                     .type(APPLICATION_LINK_FORMAT)
                     .param(FROM, ofInstant(x.getFrom().minusNanos(1L).plusSeconds(1L), UTC).format(RFC_1123_DATE_TIME))
                     .param(UNTIL, ofInstant(x.getUntil(), UTC).format(RFC_1123_DATE_TIME)).build())
