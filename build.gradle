@@ -29,8 +29,8 @@ ext {
     license = 'Apache 2'
 
     /* Dependencies */
-    trellisApiVersion = '0.3.0'
-    trellisVocabularyVersion = '0.1.0'
+    trellisApiVersion = '0.4.0-SNAPSHOT'
+    trellisVocabularyVersion = '0.2.0-SNAPSHOT'
     commonsRdfVersion = '0.3.0-incubating'
     commonsCodecVersion = '1.11'
     commonsIoVersion = '2.6'
@@ -106,6 +106,10 @@ repositories {
     jcenter()
     mavenCentral()
     mavenLocal()
+    // TODO remove this when appropriate
+	maven {
+        url "https://oss.sonatype.org/content/repositories/snapshots"
+    }
 }
 
 gradle.projectsEvaluated {

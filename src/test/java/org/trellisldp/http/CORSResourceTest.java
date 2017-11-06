@@ -38,8 +38,10 @@ import static org.trellisldp.vocabulary.RDF.type;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.ws.rs.core.Application;
@@ -131,6 +133,15 @@ public class CORSResourceTest extends JerseyTest {
         put(REPO4, BASE_URL);
     }};
 
+    protected final static Set<IRI> allModes = new HashSet<>();
+
+    static {
+        allModes.add(ACL.Append);
+        allModes.add(ACL.Read);
+        allModes.add(ACL.Write);
+        allModes.add(ACL.Control);
+    }
+
     @Mock
     protected ResourceService mockResourceService;
 
@@ -195,10 +206,8 @@ public class CORSResourceTest extends JerseyTest {
         when(mockResourceService.getIdentifierSupplier()).thenReturn(() -> RANDOM_VALUE);
 
         when(mockAgentService.asAgent(anyString())).thenReturn(agent);
-        when(mockAccessControlService.anyMatch(any(Session.class), any(IRI.class), any())).thenReturn(true);
-        when(mockAccessControlService.canRead(any(Session.class), any(IRI.class))).thenReturn(true);
-        when(mockAccessControlService.canWrite(any(Session.class), any(IRI.class))).thenReturn(true);
-        when(mockAccessControlService.canControl(any(Session.class), any(IRI.class))).thenReturn(true);
+
+        when(mockAccessControlService.getAccessModes(any(IRI.class), any(Session.class))).thenReturn(allModes);
 
         when(mockVersionedResource.getMementos()).thenReturn(asList(
                 new VersionRange(ofEpochSecond(timestamp - 2000), ofEpochSecond(timestamp - 1000)),

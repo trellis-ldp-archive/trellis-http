@@ -17,6 +17,7 @@ import static java.lang.String.join;
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static javax.ws.rs.client.Entity.entity;
@@ -148,7 +149,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
         when(mockResourceService.get(any(IRI.class), any(Instant.class))).thenReturn(of(mockVersionedResource));
         when(mockResourceService.get(any(IRI.class))).thenReturn(of(mockResource));
 
-        when(mockAccessControlService.anyMatch(any(Session.class), any(IRI.class), any())).thenReturn(false);
+        when(mockAccessControlService.getAccessModes(any(IRI.class), any(Session.class))).thenReturn(emptySet());
 
         when(mockVersionedResource.getMementos()).thenReturn(emptyList());
         when(mockVersionedResource.getInteractionModel()).thenReturn(LDP.RDFSource);

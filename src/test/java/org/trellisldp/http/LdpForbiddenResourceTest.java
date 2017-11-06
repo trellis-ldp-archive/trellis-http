@@ -15,6 +15,7 @@ package org.trellisldp.http;
 
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static javax.ws.rs.client.Entity.entity;
@@ -139,9 +140,7 @@ public class LdpForbiddenResourceTest extends JerseyTest {
         when(mockResourceService.get(any(IRI.class), any(Instant.class))).thenReturn(of(mockVersionedResource));
         when(mockResourceService.get(any(IRI.class))).thenReturn(of(mockResource));
 
-        when(mockAccessControlService.canRead(any(Session.class), any(IRI.class))).thenReturn(false);
-        when(mockAccessControlService.canControl(any(Session.class), any(IRI.class))).thenReturn(false);
-        when(mockAccessControlService.anyMatch(any(Session.class), any(IRI.class), any())).thenReturn(false);
+        when(mockAccessControlService.getAccessModes(any(IRI.class), any(Session.class))).thenReturn(emptySet());
 
         when(mockAgentService.asAgent("testUser")).thenReturn(agent);
 

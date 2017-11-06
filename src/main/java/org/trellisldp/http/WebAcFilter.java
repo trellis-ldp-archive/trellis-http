@@ -98,14 +98,15 @@ public class WebAcFilter implements ContainerRequestFilter, ContainerResponseFil
         final String partition = path.split("/")[0];
 
         if (partitions.containsKey(partition)) {
+            final Set<IRI> modes = accessService.getAccessModes(rdf.createIRI(TRELLIS_PREFIX + path), s);
             if (ctx.getUriInfo().getQueryParameters().getOrDefault("ext", emptyList()).contains(HttpConstants.ACL)) {
-                verifyCanControl(s, path);
+                verifyCanControl(modes, s, path);
             } else if (readable.contains(method)) {
-                verifyCanRead(s, path);
+                verifyCanRead(modes, s, path);
             } else if (writable.contains(method)) {
-                verifyCanWrite(s, path);
+                verifyCanWrite(modes, s, path);
             } else if (appendable.contains(method)) {
-                verifyCanAppend(s, path);
+                verifyCanAppend(modes, s, path);
             } else {
                 throw new NotAllowedException(status(METHOD_NOT_ALLOWED).build());
             }
@@ -121,9 +122,8 @@ public class WebAcFilter implements ContainerRequestFilter, ContainerResponseFil
         }
     }
 
-    private void verifyCanAppend(final Session session, final String path) {
-        final IRI iri = rdf.createIRI(TRELLIS_PREFIX + path);
-        if (!accessService.anyMatch(session, iri, x -> ACL.Append.equals(x) || ACL.Write.equals(x))) {
+    private void verifyCanAppend(final Set<IRI> modes, final Session session, final String path) {
+        if (!modes.contains(ACL.Append) && !modes.contains(ACL.Write)) {
             LOGGER.warn("User: {} cannot Append to {}", session.getAgent(), path);
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
                 throw new NotAuthorizedException(challenges.get(0),
@@ -133,8 +133,8 @@ public class WebAcFilter implements ContainerRequestFilter, ContainerResponseFil
         }
     }
 
-    private void verifyCanControl(final Session session, final String path) {
-        if (!accessService.canControl(session, rdf.createIRI(TRELLIS_PREFIX + path))) {
+    private void verifyCanControl(final Set<IRI> modes, final Session session, final String path) {
+        if (!modes.contains(ACL.Control)) {
             LOGGER.warn("User: {} cannot Control {}", session.getAgent(), path);
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
                 throw new NotAuthorizedException(challenges.get(0),
@@ -144,8 +144,8 @@ public class WebAcFilter implements ContainerRequestFilter, ContainerResponseFil
         }
     }
 
-    private void verifyCanWrite(final Session session, final String path) {
-        if (!accessService.canWrite(session, rdf.createIRI(TRELLIS_PREFIX + path))) {
+    private void verifyCanWrite(final Set<IRI> modes, final Session session, final String path) {
+        if (!modes.contains(ACL.Write)) {
             LOGGER.warn("User: {} cannot Write to {}", session.getAgent(), path);
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
                 throw new NotAuthorizedException(challenges.get(0),
@@ -155,8 +155,8 @@ public class WebAcFilter implements ContainerRequestFilter, ContainerResponseFil
         }
     }
 
-    private void verifyCanRead(final Session session, final String path) {
-        if (!accessService.canRead(session, rdf.createIRI(TRELLIS_PREFIX + path))) {
+    private void verifyCanRead(final Set<IRI> modes, final Session session, final String path) {
+        if (!modes.contains(ACL.Read)) {
             LOGGER.warn("User: {} cannot Read from {}", session.getAgent(), path);
             if (Trellis.AnonymousUser.equals(session.getAgent())) {
                 throw new NotAuthorizedException(challenges.get(0),
