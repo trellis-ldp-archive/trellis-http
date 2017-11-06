@@ -39,10 +39,10 @@ import static org.trellisldp.http.impl.RdfUtils.getSyntax;
 import static org.trellisldp.vocabulary.JSONLD.expanded;
 import static org.trellisldp.vocabulary.LDP.RDFSource;
 import static org.trellisldp.vocabulary.LDP.Resource;
-import static org.trellisldp.vocabulary.PROV.atTime;
-import static org.trellisldp.vocabulary.PROV.endedAtTime;
-import static org.trellisldp.vocabulary.PROV.startedAtTime;
-import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
+import static org.trellisldp.vocabulary.Memento.mementoDatetime;
+import static org.trellisldp.vocabulary.Memento.timegate;
+import static org.trellisldp.vocabulary.Memento.timemap;
+import static org.trellisldp.vocabulary.RDF.type;
 import static org.trellisldp.vocabulary.XSD.dateTime;
 
 import java.io.IOException;
@@ -60,14 +60,16 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
+import org.apache.commons.rdf.api.Triple;
 
 import org.trellisldp.api.IOService;
 import org.trellisldp.api.Resource;
 import org.trellisldp.api.VersionRange;
 import org.trellisldp.http.domain.LdpRequest;
+import org.trellisldp.vocabulary.Memento;
+import org.trellisldp.vocabulary.Time;
 
 /**
  * @author acoburn
@@ -125,7 +127,20 @@ public final class MementoResource {
             final StreamingOutput stream = new StreamingOutput() {
                 @Override
                 public void write(final OutputStream out) throws IOException {
-                    serializer.write(links.stream().flatMap(linkToQuads).map(Quad::asTriple), out, syntax, profile);
+                    final Stream<Triple> linkStream = links.stream().flatMap(linkToTriples);
+                    final IRI originalResource = rdf.createIRI(identifier);
+                    final List<Triple> extraData = new ArrayList<>();
+                    extraData.add(rdf.createTriple(originalResource, type, Memento.OriginalResource));
+                    extraData.add(rdf.createTriple(originalResource, type, Memento.TimeGate));
+                    extraData.add(rdf.createTriple(originalResource, timegate, originalResource));
+                    extraData.add(rdf.createTriple(originalResource, timemap,
+                                rdf.createIRI(identifier + "?ext=timemap")));
+
+                    links.stream().filter(l -> l.getRels().contains(MEMENTO)).forEach(l -> {
+                        extraData.add(rdf.createTriple(rdf.createIRI(identifier), Memento.memento,
+                                        rdf.createIRI(l.getUri().toString())));
+                    });
+                    serializer.write(concat(linkStream, extraData.stream()), out, syntax, profile);
                 }
             };
 
@@ -161,19 +176,34 @@ public final class MementoResource {
         return concat(getTimeMap(identifier, mementos.stream()), mementos.stream().map(mementoToLink(identifier)));
     }
 
-    private static final Function<Link, Stream<Quad>> linkToQuads = link -> {
-        final IRI iri = rdf.createIRI(link.getUri().toString());
-        final List<Quad> buffer = new ArrayList<>();
+    private static final Function<Link, Stream<Triple>> linkToTriples = link -> {
+        final String linkUri = link.getUri().toString();
+        final IRI iri = rdf.createIRI(linkUri);
+        final List<Triple> buffer = new ArrayList<>();
+        final String timeIriPrefix = "http://reference.data.gov.uk/id/gregorian-instant/";
+
+        // TimeMap quads
         if (link.getParams().containsKey(FROM)) {
-            buffer.add(rdf.createQuad(PreferUserManaged, iri, startedAtTime, rdf.createLiteral(parse(
-                                link.getParams().get(FROM), RFC_1123_DATE_TIME).toString(), dateTime)));
+            buffer.add(rdf.createTriple(iri, type, Memento.TimeMap));
+            buffer.add(rdf.createTriple(iri, Time.hasBeginning, rdf.createIRI(timeIriPrefix +
+                            parse(link.getParams().get(FROM), RFC_1123_DATE_TIME).toString())));
         }
         if (link.getParams().containsKey(UNTIL)) {
-            buffer.add(rdf.createQuad(PreferUserManaged, iri, endedAtTime, rdf.createLiteral(parse(
-                                link.getParams().get(UNTIL), RFC_1123_DATE_TIME).toString(), dateTime)));
+            buffer.add(rdf.createTriple(iri, Time.hasEnd, rdf.createIRI(timeIriPrefix +
+                            parse(link.getParams().get(UNTIL), RFC_1123_DATE_TIME).toString())));
         }
+
+        // Quads for Mementos
         if (MEMENTO.equals(link.getRel()) && link.getParams().containsKey(DATETIME)) {
-            buffer.add(rdf.createQuad(PreferUserManaged, iri, atTime, rdf.createLiteral(parse(
+            final IRI original = rdf.createIRI(linkUri.split("\\?")[0]);
+            final IRI timemapUrl = rdf.createIRI(linkUri.split("\\?")[0] + "?ext=timemap");
+            buffer.add(rdf.createTriple(iri, type, Memento.Memento));
+            buffer.add(rdf.createTriple(iri, Memento.original, original));
+            buffer.add(rdf.createTriple(iri, timegate, original));
+            buffer.add(rdf.createTriple(iri, timemap, timemapUrl));
+            buffer.add(rdf.createTriple(iri, Time.hasTime, rdf.createIRI(timeIriPrefix +
+                            parse(link.getParams().get(DATETIME), RFC_1123_DATE_TIME).toString())));
+            buffer.add(rdf.createTriple(iri, mementoDatetime, rdf.createLiteral(parse(
                                 link.getParams().get(DATETIME), RFC_1123_DATE_TIME).toString(), dateTime)));
         }
         return buffer.stream();

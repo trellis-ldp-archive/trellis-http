@@ -1049,20 +1049,23 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> graph = (List<Map<String, Object>>) obj.get("@graph");
 
-        assertEquals(4L, graph.size());
+        assertEquals(5L, graph.size());
+        assertTrue(graph.stream().anyMatch(x -> x.containsKey("@id") &&
+                    x.get("@id").equals(BASE_URL + RESOURCE_PATH) &&
+                    x.containsKey("timegate") && x.containsKey("timemap") && x.containsKey("memento")));
         assertTrue(graph.stream().anyMatch(x -> x.containsKey("@id") &&
                     x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?ext=timemap") &&
-                    x.containsKey("startedAtTime") &&
-                    x.containsKey("endedAtTime")));
+                    x.containsKey("hasBeginning") &&
+                    x.containsKey("hasEnd")));
         assertTrue(graph.stream().anyMatch(x -> x.containsKey("@id") &&
                     x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?version=1496260729000") &&
-                    x.containsKey("atTime")));
+                    x.containsKey("hasTime")));
         assertTrue(graph.stream().anyMatch(x -> x.containsKey("@id") &&
                     x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?version=1496261729000") &&
-                    x.containsKey("atTime")));
+                    x.containsKey("hasTime")));
         assertTrue(graph.stream().anyMatch(x -> x.containsKey("@id") &&
                     x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?version=1496262729000") &&
-                    x.containsKey("atTime")));
+                    x.containsKey("hasTime")));
     }
 
     @Test
@@ -1125,20 +1128,25 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         final List<Map<String, Object>> obj = MAPPER.readValue(entity,
                 new TypeReference<List<Map<String, Object>>>(){});
 
-        assertEquals(4L, obj.size());
+        assertEquals(5L, obj.size());
+        assertTrue(obj.stream().anyMatch(x -> x.containsKey("@id") &&
+                    x.get("@id").equals(BASE_URL + RESOURCE_PATH) &&
+                    x.containsKey("http://mementoweb.org/ns#timegate") &&
+                    x.containsKey("http://mementoweb.org/ns#timemap") &&
+                    x.containsKey("http://mementoweb.org/ns#memento")));
         assertTrue(obj.stream().anyMatch(x -> x.containsKey("@id") &&
                     x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?ext=timemap") &&
-                    x.containsKey("http://www.w3.org/ns/prov#startedAtTime") &&
-                    x.containsKey("http://www.w3.org/ns/prov#endedAtTime")));
+                    x.containsKey("http://www.w3.org/2006/time#hasBeginning") &&
+                    x.containsKey("http://www.w3.org/2006/time#hasEnd")));
         assertTrue(obj.stream().anyMatch(x -> x.containsKey("@id") &&
                     x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?version=1496260729000") &&
-                    x.containsKey("http://www.w3.org/ns/prov#atTime")));
+                    x.containsKey("http://www.w3.org/2006/time#hasTime")));
         assertTrue(obj.stream().anyMatch(x -> x.containsKey("@id") &&
                     x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?version=1496261729000") &&
-                    x.containsKey("http://www.w3.org/ns/prov#atTime")));
+                    x.containsKey("http://www.w3.org/2006/time#hasTime")));
         assertTrue(obj.stream().anyMatch(x -> x.containsKey("@id") &&
                     x.get("@id").equals(BASE_URL + RESOURCE_PATH + "?version=1496262729000") &&
-                    x.containsKey("http://www.w3.org/ns/prov#atTime")));
+                    x.containsKey("http://www.w3.org/2006/time#hasTime")));
     }
 
     @Test
