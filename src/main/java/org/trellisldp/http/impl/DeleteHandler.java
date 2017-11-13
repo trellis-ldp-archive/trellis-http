@@ -80,13 +80,13 @@ public class DeleteHandler extends BaseLdpHandler {
 
             // Add the audit quads
             audit.ifPresent(svc -> svc.deletion(res.getIdentifier(), session).stream()
-                    .map(skolemizeQuads(resourceService, baseUrl)).forEach(dataset::add));
+                    .map(skolemizeQuads(resourceService, baseUrl)).forEachOrdered(dataset::add));
 
             // When deleting just the ACL graph, keep the user managed triples in tact
             if (ACL.equals(req.getExt())) {
                 try (final Stream<? extends Triple> triples = res.stream(PreferUserManaged)) {
                     triples.map(t -> rdf.createQuad(PreferUserManaged, t.getSubject(), t.getPredicate(), t.getObject()))
-                        .forEach(dataset::add);
+                        .forEachOrdered(dataset::add);
                 }
             }
 
