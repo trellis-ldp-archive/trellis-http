@@ -13,6 +13,8 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.empty;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.codec.binary.Base64.encodeBase64String;
@@ -25,15 +27,16 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.StreamingOutput;
 
+import org.apache.commons.rdf.api.Graph;
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDFSyntax;
 
@@ -81,7 +84,7 @@ class ContentBearingHandler extends BaseLdpHandler {
                 .map(skolemizeTriples(resourceService, baseUrl))
                 .map(triple -> rdf.createQuad(graphName, triple.getSubject(), triple.getPredicate(),
                             triple.getObject()))
-                .forEach(dataset::add);
+                .forEachOrdered(dataset::add);
         } catch (final RuntimeRepositoryException ex) {
             throw new BadRequestException("Invalid RDF content: " + ex.getMessage());
         } catch (final IOException ex) {
@@ -91,10 +94,13 @@ class ContentBearingHandler extends BaseLdpHandler {
 
     protected void checkConstraint(final TrellisDataset dataset, final IRI graphName, final IRI type,
             final String baseUrl, final RDFSyntax syntax) {
-        final List<ConstraintViolation> violations = new ArrayList<>();
-        constraintServices.forEach(svc ->
-            dataset.getGraph(graphName).ifPresent(g ->
-                svc.constrainedBy(type, baseUrl, g).forEach(violations::add)));
+        final List<ConstraintViolation> violations = constraintServices.stream().parallel().flatMap(svc -> {
+                final Optional<Graph> g = dataset.getGraph(graphName);
+                if (g.isPresent()) {
+                    return svc.constrainedBy(type, baseUrl, g.get());
+                }
+                return empty();
+            }).collect(toList());
 
         if (!violations.isEmpty()) {
             final ResponseBuilder err = status(CONFLICT);

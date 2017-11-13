@@ -116,7 +116,7 @@ public class PostHandler extends ContentBearingHandler {
             // Add Audit quads
             audit.ifPresent(svc ->
                     svc.creation(internalId, session).stream().map(skolemizeQuads(resourceService, baseUrl))
-                .forEach(dataset::add));
+                .forEachOrdered(dataset::add));
 
             dataset.add(rdf.createQuad(PreferServerManaged, internalId, RDF.type, ldpType));
 

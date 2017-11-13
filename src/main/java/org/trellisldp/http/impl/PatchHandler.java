@@ -43,7 +43,6 @@ import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -100,15 +99,15 @@ public class PatchHandler extends BaseLdpHandler {
     }
 
     private List<Triple> updateGraph(final Resource res, final IRI graphName) {
-        final List<Triple> triples = new ArrayList<>();
+        final List<Triple> triples;
         // Update existing graph
         try (final TrellisGraph graph = TrellisGraph.createGraph()) {
             try (final Stream<? extends Triple> stream = res.stream(graphName)) {
-                stream.forEach(graph::add);
+                stream.forEachOrdered(graph::add);
             }
             ioService.update(graph.asGraph(), sparqlUpdate, TRELLIS_PREFIX + req.getPartition() + req.getPath() +
                     (ACL.equals(req.getExt()) ? "?ext=acl" : ""));
-            graph.stream().forEach(triples::add);
+            triples = graph.stream().collect(toList());
         } catch (final RuntimeRepositoryException ex) {
             LOGGER.warn(ex.getMessage());
             throw new BadRequestException("Invalid RDF: " + ex.getMessage());
@@ -151,11 +150,11 @@ public class PatchHandler extends BaseLdpHandler {
 
             triples.stream().map(skolemizeTriples(resourceService, baseUrl))
                 .map(t -> rdf.createQuad(graphName, t.getSubject(), t.getPredicate(), t.getObject()))
-                .forEach(dataset::add);
+                .forEachOrdered(dataset::add);
 
             // Add audit-related triples
             audit.ifPresent(svc -> svc.update(res.getIdentifier(), session).stream()
-                    .map(skolemizeQuads(resourceService, baseUrl)).forEach(dataset::add));
+                    .map(skolemizeQuads(resourceService, baseUrl)).forEachOrdered(dataset::add));
 
             // Add existing LDP type
             dataset.add(rdf.createQuad(PreferServerManaged, res.getIdentifier(), RDF.type, res.getInteractionModel()));
@@ -175,7 +174,7 @@ public class PatchHandler extends BaseLdpHandler {
             // When updating User or ACL triples, be sure to add the other category to the dataset
             try (final Stream<? extends Triple> remaining = res.stream(otherGraph)) {
                 remaining.map(t -> rdf.createQuad(otherGraph, t.getSubject(), t.getPredicate(), t.getObject()))
-                    .forEach(dataset::add);
+                    .forEachOrdered(dataset::add);
             }
 
             // Save new dataset

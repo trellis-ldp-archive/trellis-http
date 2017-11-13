@@ -175,7 +175,7 @@ public class PutHandler extends ContentBearingHandler {
 
             // Add audit quads
             audit.map(addAuditQuads(res, internalId, session)).ifPresent(q ->
-                    q.stream().map(skolemizeQuads(resourceService, baseUrl)).forEach(dataset::add));
+                    q.stream().map(skolemizeQuads(resourceService, baseUrl)).forEachOrdered(dataset::add));
 
             // Add LDP type
             dataset.add(rdf.createQuad(PreferServerManaged, internalId, RDF.type, ldpType));
@@ -213,7 +213,7 @@ public class PutHandler extends ContentBearingHandler {
             if (nonNull(res)) {
                 try (final Stream<? extends Triple> remaining = res.stream(otherGraph)) {
                     remaining.map(t -> rdf.createQuad(otherGraph, t.getSubject(), t.getPredicate(), t.getObject()))
-                        .forEach(dataset::add);
+                        .forEachOrdered(dataset::add);
                 }
             }
 
