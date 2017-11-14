@@ -39,7 +39,6 @@ public class PreferTest {
         assertFalse(prefer.getHandling().isPresent());
         assertFalse(prefer.getWait().isPresent());
         assertFalse(prefer.getRespondAsync());
-        assertFalse(prefer.getDepthNoroot());
     }
 
     @Test
@@ -52,7 +51,6 @@ public class PreferTest {
         assertFalse(prefer.getHandling().isPresent());
         assertFalse(prefer.getWait().isPresent());
         assertFalse(prefer.getRespondAsync());
-        assertFalse(prefer.getDepthNoroot());
     }
 
     @Test
@@ -65,7 +63,6 @@ public class PreferTest {
         assertFalse(prefer.getHandling().isPresent());
         assertFalse(prefer.getWait().isPresent());
         assertFalse(prefer.getRespondAsync());
-        assertFalse(prefer.getDepthNoroot());
     }
 
     @Test
@@ -78,7 +75,6 @@ public class PreferTest {
         assertFalse(prefer.getHandling().isPresent());
         assertFalse(prefer.getWait().isPresent());
         assertFalse(prefer.getRespondAsync());
-        assertFalse(prefer.getDepthNoroot());
     }
 
     @Test
@@ -90,7 +86,6 @@ public class PreferTest {
         assertFalse(prefer.getHandling().isPresent());
         assertFalse(prefer.getWait().isPresent());
         assertFalse(prefer.getRespondAsync());
-        assertFalse(prefer.getDepthNoroot());
     }
 
     @Test
@@ -102,7 +97,6 @@ public class PreferTest {
         assertFalse(prefer.getHandling().isPresent());
         assertFalse(prefer.getWait().isPresent());
         assertFalse(prefer.getRespondAsync());
-        assertFalse(prefer.getDepthNoroot());
     }
 
     @Test
@@ -115,7 +109,6 @@ public class PreferTest {
         assertFalse(prefer.getHandling().isPresent());
         assertFalse(prefer.getWait().isPresent());
         assertFalse(prefer.getRespondAsync());
-        assertFalse(prefer.getDepthNoroot());
     }
 
     @Test
@@ -128,7 +121,6 @@ public class PreferTest {
         assertFalse(prefer.getHandling().isPresent());
         assertFalse(prefer.getWait().isPresent());
         assertFalse(prefer.getRespondAsync());
-        assertFalse(prefer.getDepthNoroot());
     }
 
     @Test
@@ -140,19 +132,17 @@ public class PreferTest {
         assertEquals(of("lenient"), prefer.getHandling());
         assertFalse(prefer.getWait().isPresent());
         assertFalse(prefer.getRespondAsync());
-        assertFalse(prefer.getDepthNoroot());
     }
 
     @Test
     public void testPrefer7() {
-        final Prefer prefer = Prefer.valueOf("respond-async; depth-noroot");
+        final Prefer prefer = Prefer.valueOf("respond-async; random-param");
         assertTrue(prefer.getInclude().isEmpty());
         assertTrue(prefer.getOmit().isEmpty());
         assertFalse(prefer.getPreference().isPresent());
         assertFalse(prefer.getHandling().isPresent());
         assertFalse(prefer.getWait().isPresent());
         assertTrue(prefer.getRespondAsync());
-        assertTrue(prefer.getDepthNoroot());
     }
 
     @Test
@@ -164,7 +154,6 @@ public class PreferTest {
         assertEquals(of("strict"), prefer.getHandling());
         assertFalse(prefer.getWait().isPresent());
         assertFalse(prefer.getRespondAsync());
-        assertFalse(prefer.getDepthNoroot());
     }
 
     @Test
@@ -176,7 +165,6 @@ public class PreferTest {
         assertFalse(prefer.getHandling().isPresent());
         assertFalse(prefer.getWait().isPresent());
         assertFalse(prefer.getRespondAsync());
-        assertFalse(prefer.getDepthNoroot());
     }
 
     @Test
@@ -188,7 +176,6 @@ public class PreferTest {
         assertFalse(prefer.getHandling().isPresent());
         assertEquals((Integer)4, prefer.getWait().get());
         assertFalse(prefer.getRespondAsync());
-        assertFalse(prefer.getDepthNoroot());
     }
 
     @Test

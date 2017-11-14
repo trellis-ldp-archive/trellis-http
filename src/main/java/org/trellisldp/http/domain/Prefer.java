@@ -161,14 +161,6 @@ public class Prefer {
     }
 
     /**
-     * Identify whether the depth-noroot parameter was set
-     * @return true if the depth-noroot parameter was set; false otherwise
-     */
-    public Boolean getDepthNoroot() {
-        return params.contains("depth-noroot");
-    }
-
-    /**
      * Get the preferred include IRIs
      * @return the list of IRIs to be included in the representation
      */
