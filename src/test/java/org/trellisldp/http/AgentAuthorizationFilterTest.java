@@ -14,6 +14,7 @@
 package org.trellisldp.http;
 
 import static java.util.Collections.emptyList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -31,6 +32,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 
 import org.trellisldp.api.AgentService;
@@ -56,6 +59,9 @@ public class AgentAuthorizationFilterTest {
     @Mock
     private Principal mockPrincipal;
 
+    @Captor
+    private ArgumentCaptor<Session> sessionArgument;
+
     @BeforeEach
     public void setUp() {
         initMocks(this);
@@ -70,6 +76,7 @@ public class AgentAuthorizationFilterTest {
         final AgentAuthorizationFilter filter = new AgentAuthorizationFilter(mockAgentService, emptyList());
 
         filter.filter(mockContext);
-        verify(mockContext).setProperty(eq(SESSION_PROPERTY), any(Session.class));
+        verify(mockContext).setProperty(eq(SESSION_PROPERTY), sessionArgument.capture());
+        assertEquals(Trellis.AnonymousUser, sessionArgument.getValue().getAgent());
     }
 }
