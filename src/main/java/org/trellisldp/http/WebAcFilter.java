@@ -42,6 +42,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.container.PreMatching;
 
 import org.apache.commons.rdf.api.IRI;
 import org.apache.commons.rdf.api.RDF;
@@ -56,6 +57,7 @@ import org.trellisldp.vocabulary.Trellis;
 /**
  * @author acoburn
  */
+@PreMatching
 @Priority(AUTHORIZATION - 100)
 public class WebAcFilter implements ContainerRequestFilter, ContainerResponseFilter {
 
