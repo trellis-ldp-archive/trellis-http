@@ -16,7 +16,6 @@ package org.trellisldp.http.impl;
 import static java.util.Arrays.asList;
 import static java.util.Date.from;
 import static java.util.Objects.nonNull;
-import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.status;
@@ -112,10 +111,6 @@ public class BaseLdpHandler {
 
     // TODO - JDK9 replace with ServiceLoader::loadFirst
     private static <T> Optional<T> loadFirst(final Class<T> service) {
-        final Iterator<T> iter = ServiceLoader.load(service).iterator();
-        if (iter.hasNext()) {
-            return of(iter.next());
-        }
-        return empty();
+        return of(ServiceLoader.load(service).iterator()).filter(Iterator::hasNext).map(Iterator::next);
     }
 }
