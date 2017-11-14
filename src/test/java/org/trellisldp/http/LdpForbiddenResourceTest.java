@@ -20,6 +20,7 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static javax.ws.rs.client.Entity.entity;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
@@ -337,4 +338,14 @@ public class LdpForbiddenResourceTest extends JerseyTest {
 
         assertEquals(FORBIDDEN, res.getStatusInfo());
     }
+
+    @Test
+    public void testUnknown() {
+        final Response res = target("repo1/resource").request()
+            .method("FOO", entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
+                        APPLICATION_SPARQL_UPDATE_TYPE));
+
+        assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+    }
+
 }
