@@ -125,6 +125,12 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
             ctx.abortWith(seeOther(fromUri(path.substring(0, path.length() - 1)).build()).build());
         }
 
+        final String partition = path.split("/")[0];
+        if (isInvalidPartition(partition)) {
+            LOGGER.warn("Partition {} not defined in configuration", partition);
+            ctx.abortWith(status(NOT_FOUND).build());
+        }
+
         // Validate header/query parameters
         ofNullable(ctx.getHeaderString("Accept-Datetime")).ifPresent(x -> {
             if (isNull(AcceptDatetime.valueOf(x))) {

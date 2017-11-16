@@ -2129,6 +2129,15 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
+    @Test
+    public void testInvalidPartitionPut() {
+        final Response res = target("/foo/bar").request()
+            .put(entity("<> <http://purl.org/dc/terms/title> \"A title\" .", TEXT_TURTLE_TYPE));
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
+    }
+
+
     /* ******************************* *
      *            DELETE Tests
      * ******************************* */
@@ -2228,6 +2237,13 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
         assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
+    }
+
+    @Test
+    public void testInvalidPartitionDelete() {
+        final Response res = target("/foo/bar").request().delete();
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
     }
 
     /* ********************* *
@@ -2341,6 +2357,15 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
                         APPLICATION_SPARQL_UPDATE));
 
         assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
+    }
+
+    @Test
+    public void testInvalidPartitionPatch() {
+        final Response res = target("/foo/bar").request().method("PATCH",
+                entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
+                    APPLICATION_SPARQL_UPDATE));
+
+        assertEquals(NOT_FOUND, res.getStatusInfo());
     }
 
     /**
