@@ -16,10 +16,8 @@ package org.trellisldp.http;
 import static java.util.Arrays.asList;
 import static org.trellisldp.api.RDFUtils.getInstance;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.rdf.api.RDF;
 
@@ -32,8 +30,6 @@ class BaseLdpResource {
 
     protected final Map<String, String> partitions;
 
-    private final Set<String> specialPartitions;
-
     private final List<String> reservedPartitionNames = asList("bnode", "admin");
 
     protected BaseLdpResource(final Map<String, String> partitions) {
@@ -41,11 +37,5 @@ class BaseLdpResource {
             throw new IllegalArgumentException("Invalid partition name: " + partition);
         });
         this.partitions = partitions;
-        this.specialPartitions = new HashSet<>(reservedPartitionNames);
-        this.specialPartitions.add("upload");
-    }
-
-    protected Boolean isInvalidPartition(final String partition) {
-        return !specialPartitions.contains(partition) && !partitions.containsKey(partition);
     }
 }

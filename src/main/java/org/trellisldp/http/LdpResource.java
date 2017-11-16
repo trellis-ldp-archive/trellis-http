@@ -125,12 +125,6 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
             ctx.abortWith(seeOther(fromUri(path.substring(0, path.length() - 1)).build()).build());
         }
 
-        final String partition = path.split("/")[0];
-        if (isInvalidPartition(partition)) {
-            LOGGER.warn("Partition {} not defined in configuration", partition);
-            ctx.abortWith(status(NOT_FOUND).build());
-        }
-
         // Validate header/query parameters
         ofNullable(ctx.getHeaderString("Accept-Datetime")).ifPresent(x -> {
             if (isNull(AcceptDatetime.valueOf(x))) {
@@ -339,6 +333,10 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     @PUT
     @Timed
     public Response setResource(@BeanParam final LdpRequest req, final File body) {
+        if (!partitions.containsKey(req.getPartition())) {
+            LOGGER.warn("Partition {} not defined in configuration", req.getPartition());
+            return status(NOT_FOUND).build();
+        }
 
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
         final PutHandler putHandler = new PutHandler(partitions, req, body, resourceService, ioService,

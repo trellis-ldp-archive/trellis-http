@@ -2239,13 +2239,6 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertNull(res.getHeaderString(MEMENTO_DATETIME));
     }
 
-    @Test
-    public void testInvalidPartitionDelete() {
-        final Response res = target("/foo/bar").request().delete();
-
-        assertEquals(NOT_FOUND, res.getStatusInfo());
-    }
-
     /* ********************* *
      *      PATCH tests
      * ********************* */
@@ -2357,15 +2350,6 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
                         APPLICATION_SPARQL_UPDATE));
 
         assertEquals(METHOD_NOT_ALLOWED, res.getStatusInfo());
-    }
-
-    @Test
-    public void testInvalidPartitionPatch() {
-        final Response res = target("/foo/bar").request().method("PATCH",
-                entity("INSERT { <> <http://purl.org/dc/terms/title> \"A title\" } WHERE {}",
-                    APPLICATION_SPARQL_UPDATE));
-
-        assertEquals(NOT_FOUND, res.getStatusInfo());
     }
 
     /**
