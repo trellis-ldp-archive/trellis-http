@@ -13,10 +13,10 @@
  */
 package org.trellisldp.http.impl;
 
+import static java.util.Base64.getEncoder;
 import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.status;
-import static org.apache.commons.codec.binary.Base64.encodeBase64String;
 import static org.apache.commons.codec.digest.DigestUtils.getDigest;
 import static org.apache.commons.codec.digest.DigestUtils.updateDigest;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeTriples;
@@ -111,7 +111,7 @@ class ContentBearingHandler extends BaseLdpHandler {
 
     protected String getDigestForEntity(final Digest digest) {
         try (final InputStream input = new FileInputStream(entity)) {
-            return encodeBase64String(updateDigest(getDigest(digest.getAlgorithm()), input).digest());
+            return getEncoder().encodeToString(updateDigest(getDigest(digest.getAlgorithm()), input).digest());
         } catch (final IllegalArgumentException ex) {
             throw new BadRequestException("Invalid algorithm provided for digest. " + digest.getAlgorithm() +
                     " is not supported: " + ex.getMessage());
