@@ -235,7 +235,7 @@ public final class RdfUtils {
      * @return a graph
      */
     public static Collector<Triple, ?, TrellisGraph> toGraph() {
-        return Collector.of(() -> new TrellisGraph(rdf.createGraph()), TrellisGraph::add, (left, right) -> {
+        return Collector.of(TrellisGraph::createGraph, TrellisGraph::add, (left, right) -> {
             for (final Triple t : right.asGraph().iterate()) {
                 left.add(t);
             }
@@ -248,7 +248,7 @@ public final class RdfUtils {
      * @return a dataset
      */
     public static Collector<Quad, ?, TrellisDataset> toDataset() {
-        return Collector.of(() -> new TrellisDataset(rdf.createDataset()), TrellisDataset::add, (left, right) -> {
+        return Collector.of(TrellisDataset::createDataset, TrellisDataset::add, (left, right) -> {
             for (final Quad q : right.asDataset().iterate()) {
                 left.add(q);
             }
