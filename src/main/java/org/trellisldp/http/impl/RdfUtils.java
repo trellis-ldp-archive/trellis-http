@@ -17,6 +17,7 @@ import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collector.Characteristics.UNORDERED;
 import static java.util.stream.Stream.concat;
 import static org.apache.commons.rdf.api.RDFSyntax.RDFA_HTML;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
@@ -36,6 +37,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import javax.ws.rs.NotAcceptableException;
@@ -226,6 +228,32 @@ public final class RdfUtils {
      */
     public static IRI getDefaultProfile(final RDFSyntax syntax, final IRI identifier) {
         return RDFA_HTML.equals(syntax) ? identifier : expanded;
+    }
+
+    /**
+     * Collect a stream of Triples into a Graph
+     * @return a graph
+     */
+    public static Collector<Triple, ?, TrellisGraph> toGraph() {
+        return Collector.of(() -> new TrellisGraph(rdf.createGraph()), TrellisGraph::add, (left, right) -> {
+            for (final Triple t : right.asGraph().iterate()) {
+                left.add(t);
+            }
+            return left;
+        }, UNORDERED);
+    }
+
+    /**
+     * Collect a stream of Quads into a Dataset
+     * @return a dataset
+     */
+    public static Collector<Quad, ?, TrellisDataset> toDataset() {
+        return Collector.of(() -> new TrellisDataset(rdf.createDataset()), TrellisDataset::add, (left, right) -> {
+            for (final Quad q : right.asDataset().iterate()) {
+                left.add(q);
+            }
+            return left;
+        }, UNORDERED);
     }
 
     private RdfUtils() {

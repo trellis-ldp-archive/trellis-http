@@ -19,6 +19,7 @@ import static java.util.Collections.singletonMap;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.generate;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
 import static org.apache.commons.rdf.api.RDFSyntax.TURTLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,6 +50,7 @@ import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFTerm;
 import org.apache.commons.rdf.api.Triple;
+import org.apache.commons.text.RandomStringGenerator;
 import org.trellisldp.api.ResourceService;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.vocabulary.DC;
@@ -66,6 +68,9 @@ import org.mockito.Mock;
 public class RdfUtilsTest {
 
     private static final RDF rdf = getInstance();
+    private static final Long size = 10000L;
+    private static final RandomStringGenerator generator = new RandomStringGenerator.Builder()
+        .withinRange('a', 'z').build();
 
     @Mock
     private ResourceService mockResourceService;
@@ -220,5 +225,25 @@ public class RdfUtilsTest {
                 new MediaType("text", "xml"),
                 new MediaType("application", "ld+json"));
         assertNull(RdfUtils.getProfile(types, JSONLD));
+    }
+
+    @Test
+    public void testCollectGraph() {
+        final TrellisGraph graph = generate(() -> rdf.createTriple(getIRI(), getIRI(), getIRI()))
+            .parallel().limit(size).collect(RdfUtils.toGraph());
+
+        assertTrue(size >= graph.asGraph().size());
+    }
+
+    @Test
+    public void testCollectDataset() {
+        final TrellisDataset dataset = generate(() -> rdf.createQuad(getIRI(), getIRI(), getIRI(), getIRI()))
+            .parallel().limit(size).collect(RdfUtils.toDataset());
+
+        assertTrue(size >= dataset.asDataset().size());
+    }
+
+    private IRI getIRI() {
+        return rdf.createIRI("ex:" + generator.generate(5));
     }
 }

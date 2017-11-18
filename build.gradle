@@ -55,6 +55,7 @@ ext {
     jsonVersion = '1.1.2'
     jacksonVersion = '2.9.2'
     jacocoVersion = "0.7.9"
+    commonsTextVersion = '1.1'
 
     /* OSGi */
     trellisApiVersionRange = '[0.3,1)'
@@ -96,6 +97,7 @@ dependencies {
     testImplementation group: 'org.trellisldp', name: 'trellis-audit', version: trellisAuditVersion
     testImplementation group: 'org.trellisldp', name: 'trellis-event-serialization', version: trellisEventVersion
     testImplementation group: 'org.trellisldp', name: 'trellis-constraint-rules', version: trellisConstraintVersion
+    testImplementation group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
 
     testRuntimeClasspath group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
 
