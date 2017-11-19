@@ -17,6 +17,7 @@ import static java.util.Arrays.asList;
 import static java.util.Date.from;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.Response.Status.GONE;
 import static javax.ws.rs.core.Response.status;
 import static org.apache.commons.rdf.api.RDFSyntax.JSONLD;
@@ -97,10 +98,7 @@ public class BaseLdpHandler {
      * @return the baseUrl
      */
     protected String getBaseUrl() {
-        if (nonNull(baseUrl)) {
-            return baseUrl;
-        }
-        return req.getBaseUrl();
+        return ofNullable(baseUrl).orElseGet(req::getBaseUrl);
     }
 
     /**

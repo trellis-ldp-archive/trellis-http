@@ -240,6 +240,8 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockResourceService.get(any(IRI.class), any(Instant.class)))
             .thenReturn(of(mockVersionedResource));
         when(mockResourceService.get(eq(identifier))).thenReturn(of(mockResource));
+        when(mockResourceService.get(eq(rdf.createIRI(TRELLIS_PREFIX + "partition/resource"))))
+            .thenReturn(of(mockResource));
         when(mockResourceService.get(eq(root))).thenReturn(of(mockResource));
         when(mockResourceService.get(eq(childIdentifier))).thenReturn(empty());
         when(mockResourceService.get(eq(childIdentifier), any(Instant.class))).thenReturn(empty());
@@ -447,6 +449,15 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     @Test
     public void testGetDefaultType() {
         final Response res = target(RESOURCE_PATH).request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(TEXT_TURTLE_TYPE.isCompatible(res.getMediaType()));
+        assertTrue(res.getMediaType().isCompatible(TEXT_TURTLE_TYPE));
+    }
+
+    @Test
+    public void testGetDefaultType2() {
+        final Response res = target("partition/resource").request().get();
 
         assertEquals(OK, res.getStatusInfo());
         assertTrue(TEXT_TURTLE_TYPE.isCompatible(res.getMediaType()));
@@ -909,6 +920,16 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
 
         final Response res = target(RESOURCE_PATH).queryParam("ext", "timemap").request().get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertEquals(MediaType.valueOf(APPLICATION_LINK_FORMAT), res.getMediaType());
+    }
+
+    @Test
+    public void testGetTimeMapLinkDefaultFormat2() throws IOException {
+        when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
+
+        final Response res = target("partition/resource").queryParam("ext", "timemap").request().get();
 
         assertEquals(OK, res.getStatusInfo());
         assertEquals(MediaType.valueOf(APPLICATION_LINK_FORMAT), res.getMediaType());

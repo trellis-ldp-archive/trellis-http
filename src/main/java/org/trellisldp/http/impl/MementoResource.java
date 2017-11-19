@@ -187,10 +187,7 @@ public final class MementoResource {
     }
 
     private String getBaseUrl(final String baseUrl, final LdpRequest req) {
-        if (nonNull(baseUrl)) {
-            return baseUrl;
-        }
-        return req.getBaseUrl();
+        return ofNullable(baseUrl).orElseGet(req::getBaseUrl);
     }
 
     private static final Function<Link, Stream<Triple>> linkToTriples = link -> {
