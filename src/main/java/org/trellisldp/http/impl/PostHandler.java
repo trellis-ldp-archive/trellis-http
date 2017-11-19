@@ -69,7 +69,7 @@ public class PostHandler extends ContentBearingHandler {
 
     /**
      * Create a builder for an LDP POST response
-     * @param partitions the partitions
+     * @param baseUrl the base URL
      * @param req the LDP request
      * @param id the new resource's identifier
      * @param entity the entity
@@ -77,9 +77,9 @@ public class PostHandler extends ContentBearingHandler {
      * @param ioService the serialization service
      * @param binaryService the datastream service
      */
-    public PostHandler(final Map<String, String> partitions, final LdpRequest req, final String id, final File entity,
+    public PostHandler(final String baseUrl, final LdpRequest req, final String id, final File entity,
             final ResourceService resourceService, final IOService ioService, final BinaryService binaryService) {
-        super(partitions, req, entity, resourceService, ioService, binaryService);
+        super(baseUrl, req, entity, resourceService, ioService, binaryService);
         this.id = id;
     }
 
@@ -88,7 +88,7 @@ public class PostHandler extends ContentBearingHandler {
      * @return the response builder
      */
     public ResponseBuilder createResource() {
-        final String baseUrl = req.getBaseUrl(partitions);
+        final String baseUrl = getBaseUrl();
         final String identifier = baseUrl + req.getPartition() + req.getPath() + id;
         final String contentType = req.getContentType();
         final Session session = ofNullable(req.getSession()).orElseGet(HttpSession::new);

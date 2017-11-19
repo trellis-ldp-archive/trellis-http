@@ -67,9 +67,9 @@ class ContentBearingHandler extends BaseLdpHandler {
      * @param ioService the serialization service
      * @param binaryService the binary service
      */
-    protected ContentBearingHandler(final Map<String, String> partitions, final LdpRequest req, final File entity,
+    protected ContentBearingHandler(final String baseUrl, final LdpRequest req, final File entity,
             final ResourceService resourceService, final IOService ioService, final BinaryService binaryService) {
-        super(partitions, req, resourceService);
+        super(baseUrl, req, resourceService);
         this.binaryService = binaryService;
         this.ioService = ioService;
         this.entity = entity;

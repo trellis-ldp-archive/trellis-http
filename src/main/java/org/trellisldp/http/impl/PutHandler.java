@@ -80,16 +80,16 @@ public class PutHandler extends ContentBearingHandler {
 
     /**
      * Create a builder for an LDP POST response
-     * @param partitions the partitions
+     * @param baseUrl the base URL
      * @param req the LDP request
      * @param entity the entity
      * @param resourceService the resource service
      * @param ioService the serialization service
      * @param binaryService the binary service
      */
-    public PutHandler(final Map<String, String> partitions, final LdpRequest req, final File entity,
+    public PutHandler(final String baseUrl, final LdpRequest req, final File entity,
             final ResourceService resourceService, final IOService ioService, final BinaryService binaryService) {
-        super(partitions, req, entity, resourceService, ioService, binaryService);
+        super(baseUrl, req, entity, resourceService, ioService, binaryService);
     }
 
     private void checkResourceCache(final String identifier, final Resource res) {
@@ -135,7 +135,7 @@ public class PutHandler extends ContentBearingHandler {
      * @return the response builder
      */
     public ResponseBuilder setResource(final Resource res) {
-        final String baseUrl = req.getBaseUrl(partitions);
+        final String baseUrl = getBaseUrl();
         final String identifier = baseUrl + req.getPartition() + req.getPath() +
             (ACL.equals(req.getExt()) ? "?ext=acl" : "");
 

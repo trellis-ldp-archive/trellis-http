@@ -67,7 +67,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -109,16 +108,16 @@ public class GetHandler extends BaseLdpHandler {
 
     /**
      * A GET response builder
-     * @param partitions the partitions
+     * @param baseUrl the base URL
      * @param req the LDP request
      * @param resourceService the resource service
      * @param ioService the serialization service
      * @param binaryService the binary service
      */
-    public GetHandler(final Map<String, String> partitions, final LdpRequest req,
+    public GetHandler(final String baseUrl, final LdpRequest req,
             final ResourceService resourceService, final IOService ioService,
             final BinaryService binaryService) {
-        super(partitions, req, resourceService);
+        super(baseUrl, req, resourceService);
         this.ioService = ioService;
         this.binaryService = binaryService;
     }
@@ -129,7 +128,7 @@ public class GetHandler extends BaseLdpHandler {
      * @return the response builder
      */
     public ResponseBuilder getRepresentation(final Resource res) {
-        final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
+        final String identifier = getBaseUrl() + req.getPartition() + req.getPath();
 
         // Check if this is already deleted
         checkDeleted(res, identifier);
@@ -211,10 +210,9 @@ public class GetHandler extends BaseLdpHandler {
         final StreamingOutput stream = new StreamingOutput() {
             @Override
             public void write(final OutputStream out) throws IOException {
-                final String baseUrl = req.getBaseUrl(partitions);
                 try (final Stream<? extends Quad> stream = res.stream()) {
                     ioService.write(stream.filter(filterWithPrefer(prefer))
-                        .map(unskolemizeQuads(resourceService, baseUrl)).map(Quad::asTriple), out,
+                        .map(unskolemizeQuads(resourceService, getBaseUrl())).map(Quad::asTriple), out,
                         syntax, ofNullable(profile).orElseGet(() -> getDefaultProfile(syntax, identifier)));
                 }
             }

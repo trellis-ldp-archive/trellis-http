@@ -44,7 +44,6 @@ import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import javax.ws.rs.BadRequestException;
@@ -84,16 +83,15 @@ public class PatchHandler extends BaseLdpHandler {
 
     /**
      * Create a handler for PATCH operations
-     * @param partitions the partitions
+     * @param baseUrl the base URL
      * @param req the LDP request
      * @param sparqlUpdate the sparql update body
      * @param resourceService the resource service
      * @param ioService the serialization service
      */
-    public PatchHandler(final Map<String, String> partitions, final LdpRequest req,
-            final String sparqlUpdate,
+    public PatchHandler(final String baseUrl, final LdpRequest req, final String sparqlUpdate,
             final ResourceService resourceService, final IOService ioService) {
-        super(partitions, req, resourceService);
+        super(baseUrl, req, resourceService);
         this.ioService = ioService;
         this.sparqlUpdate = sparqlUpdate;
     }
@@ -122,7 +120,7 @@ public class PatchHandler extends BaseLdpHandler {
      * @return the Response builder
      */
     public ResponseBuilder updateResource(final Resource res) {
-        final String baseUrl = req.getBaseUrl(partitions);
+        final String baseUrl = getBaseUrl();
         final String identifier = baseUrl + req.getPartition() + req.getPath() +
             (ACL.equals(req.getExt()) ? "?ext=acl" : "");
 

@@ -39,8 +39,6 @@ import static org.trellisldp.vocabulary.LDP.RDFSource;
 import static org.trellisldp.vocabulary.Trellis.PreferAccessControl;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
-import java.util.Map;
-
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.rdf.api.IRI;
@@ -61,13 +59,12 @@ public class OptionsHandler extends BaseLdpHandler {
 
     /**
      * An OPTIONS response builder
-     * @param partitions the partitions
+     * @param baseUrl the base URL
      * @param req the LDP request
      * @param resourceService the resource service
      */
-    public OptionsHandler(final Map<String, String> partitions, final LdpRequest req,
-            final ResourceService resourceService) {
-        super(partitions, req, resourceService);
+    public OptionsHandler(final String baseUrl, final LdpRequest req, final ResourceService resourceService) {
+        super(baseUrl, req, resourceService);
     }
 
     /**
@@ -76,7 +73,7 @@ public class OptionsHandler extends BaseLdpHandler {
      * @return the response builder
      */
     public ResponseBuilder ldpOptions(final Resource res) {
-        final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
+        final String identifier = getBaseUrl() + req.getPartition() + req.getPath();
 
         LOGGER.debug("OPTIONS request for {}", identifier);
 

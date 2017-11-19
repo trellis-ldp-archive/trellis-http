@@ -29,7 +29,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 
@@ -64,19 +63,17 @@ public class BaseLdpHandler {
 
     protected static final List<RDFSyntax> SUPPORTED_RDF_TYPES = asList(TURTLE, JSONLD, NTRIPLES);
 
-    protected final Map<String, String> partitions;
+    private final String baseUrl;
     protected final LdpRequest req;
     protected final ResourceService resourceService;
 
     /**
      * A base class for response handling
-     * @param partitions the partitions
      * @param req the LDP request
      * @param resourceService the resource service
      */
-    public BaseLdpHandler(final Map<String, String> partitions, final LdpRequest req,
-            final ResourceService resourceService) {
-        this.partitions = partitions;
+    public BaseLdpHandler(final String baseUrl, final LdpRequest req, final ResourceService resourceService) {
+        this.baseUrl = baseUrl;
         this.req = req;
         this.resourceService = resourceService;
     }
@@ -93,6 +90,17 @@ public class BaseLdpHandler {
                     .links(MementoResource.getMementoLinks(identifier, res.getMementos())
                     .toArray(Link[]::new)).build());
         }
+    }
+
+    /**
+     * Get the baseUrl for the request
+     * @return the baseUrl
+     */
+    protected String getBaseUrl() {
+        if (nonNull(baseUrl)) {
+            return baseUrl;
+        }
+        return req.getBaseUrl();
     }
 
     /**

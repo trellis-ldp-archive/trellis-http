@@ -15,7 +15,6 @@ package org.trellisldp.http.impl;
 
 import static java.time.Instant.ofEpochSecond;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Date.from;
 import static java.util.Optional.empty;
@@ -106,7 +105,7 @@ public class DeleteHandlerTest {
         when(mockResourceService.put(eq(iri), any(Dataset.class))).thenReturn(true);
 
         when(mockLdpRequest.getSession()).thenReturn(mockSession);
-        when(mockLdpRequest.getBaseUrl(any())).thenReturn(baseUrl);
+        when(mockLdpRequest.getBaseUrl()).thenReturn(baseUrl);
         when(mockLdpRequest.getPath()).thenReturn("/");
         when(mockLdpRequest.getPartition()).thenReturn("");
         when(mockLdpRequest.getRequest()).thenReturn(mockRequest);
@@ -129,7 +128,7 @@ public class DeleteHandlerTest {
 
     @Test
     public void testDelete() {
-        final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
+        final DeleteHandler handler = new DeleteHandler(null, mockLdpRequest, mockResourceService);
 
         final Response res = handler.deleteResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -138,7 +137,7 @@ public class DeleteHandlerTest {
     @Test
     public void testDeleteError() {
         when(mockResourceService.put(any(IRI.class), any(Dataset.class))).thenReturn(false);
-        final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
+        final DeleteHandler handler = new DeleteHandler(baseUrl, mockLdpRequest, mockResourceService);
 
         final Response res = handler.deleteResource(mockResource).build();
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
@@ -148,7 +147,7 @@ public class DeleteHandlerTest {
     public void testCache() {
         when(mockRequest.evaluatePreconditions(eq(from(time)), any(EntityTag.class)))
                 .thenReturn(status(PRECONDITION_FAILED));
-        final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
+        final DeleteHandler handler = new DeleteHandler(baseUrl, mockLdpRequest, mockResourceService);
 
         assertThrows(WebApplicationException.class, () -> handler.deleteResource(mockResource));
     }
@@ -158,7 +157,7 @@ public class DeleteHandlerTest {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenReturn(singletonList(Trellis.DeletedResource));
 
-        final DeleteHandler handler = new DeleteHandler(emptyMap(), mockLdpRequest, mockResourceService);
+        final DeleteHandler handler = new DeleteHandler(baseUrl, mockLdpRequest, mockResourceService);
 
         assertThrows(WebApplicationException.class, () -> handler.deleteResource(mockResource));
     }

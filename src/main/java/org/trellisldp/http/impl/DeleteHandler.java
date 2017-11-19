@@ -23,7 +23,6 @@ import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.impl.RdfUtils.skolemizeQuads;
 import static org.trellisldp.vocabulary.Trellis.PreferUserManaged;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
 import javax.ws.rs.core.EntityTag;
@@ -47,13 +46,12 @@ public class DeleteHandler extends BaseLdpHandler {
 
     /**
      * Create a builder for an LDP DELETE response
-     * @param partitions the partitions
+     * @param baseUrl the base URL
      * @param req the LDP request
      * @param resourceService the resource service
      */
-    public DeleteHandler(final Map<String, String> partitions, final LdpRequest req,
-            final ResourceService resourceService) {
-        super(partitions, req, resourceService);
+    public DeleteHandler(final String baseUrl, final LdpRequest req, final ResourceService resourceService) {
+        super(baseUrl, req, resourceService);
     }
 
     /**
@@ -62,7 +60,7 @@ public class DeleteHandler extends BaseLdpHandler {
      * @return a response builder
      */
     public ResponseBuilder deleteResource(final Resource res) {
-        final String baseUrl = req.getBaseUrl(partitions);
+        final String baseUrl = getBaseUrl();
         final String identifier = baseUrl + req.getPartition() + req.getPath();
 
         final Session session = ofNullable(req.getSession()).orElseGet(HttpSession::new);

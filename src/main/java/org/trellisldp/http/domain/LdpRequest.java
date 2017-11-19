@@ -13,9 +13,8 @@
  */
 package org.trellisldp.http.domain;
 
+import static java.util.Optional.ofNullable;
 import static org.trellisldp.http.domain.HttpConstants.SESSION_PROPERTY;
-
-import java.util.Map;
 
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.PathParam;
@@ -151,7 +150,7 @@ public class LdpRequest {
      * @return the partition
      */
     public String getPartition() {
-        return partition;
+        return ofNullable(partition).orElse("");
     }
 
     /**
@@ -204,10 +203,9 @@ public class LdpRequest {
 
     /**
      * Get a base url value
-     * @param partitions the partition baseUrl configurations
      * @return the baseUrl as a string
      */
-    public String getBaseUrl(final Map<String, String> partitions) {
-        return partitions.getOrDefault(partition, uriInfo.getBaseUri().toString());
+    public String getBaseUrl() {
+        return uriInfo.getBaseUri().toString();
     }
 }

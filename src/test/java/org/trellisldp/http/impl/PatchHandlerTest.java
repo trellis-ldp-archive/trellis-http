@@ -14,7 +14,6 @@
 package org.trellisldp.http.impl;
 
 import static java.time.Instant.ofEpochSecond;
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Stream.of;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
@@ -126,7 +125,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getRequest()).thenReturn(mockRequest);
         when(mockLdpRequest.getPath()).thenReturn("resource");
         when(mockLdpRequest.getPartition()).thenReturn("");
-        when(mockLdpRequest.getBaseUrl(any())).thenReturn(baseUrl);
+        when(mockLdpRequest.getBaseUrl()).thenReturn(baseUrl);
         when(mockLdpRequest.getHeaders()).thenReturn(mockHttpHeaders);
         when(mockHttpHeaders.getAcceptableMediaTypes()).thenReturn(singletonList(TEXT_TURTLE_TYPE));
         when(mockResourceService.toInternal(any(RDFTerm.class), any())).thenAnswer(inv -> {
@@ -144,14 +143,14 @@ public class PatchHandlerTest {
 
     @Test
     public void testPatchNoSparql() {
-        final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, null,
+        final PatchHandler patchHandler = new PatchHandler(null, mockLdpRequest, null,
                 mockResourceService, mockIoService);
         assertThrows(WebApplicationException.class, () -> patchHandler.updateResource(mockResource).build());
     }
 
     @Test
     public void testPatchLdprs() {
-        final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
+        final PatchHandler patchHandler = new PatchHandler(baseUrl, mockLdpRequest, insert,
                 mockResourceService, mockIoService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
@@ -166,7 +165,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
+        final PatchHandler patchHandler = new PatchHandler(null, mockLdpRequest, insert,
                 mockResourceService, mockIoService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
@@ -183,7 +182,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getPath()).thenReturn("/resource");
         when(mockLdpRequest.getPrefer()).thenReturn(Prefer.valueOf("return=representation"));
 
-        final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
+        final PatchHandler patchHandler = new PatchHandler(null, mockLdpRequest, insert,
                 mockResourceService, mockIoService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
@@ -207,7 +206,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getHeaders().getAcceptableMediaTypes())
             .thenReturn(singletonList(MediaType.valueOf(RDFA_HTML.mediaType)));
 
-        final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
+        final PatchHandler patchHandler = new PatchHandler(null, mockLdpRequest, insert,
                 mockResourceService, mockIoService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
@@ -230,7 +229,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
+        final PatchHandler patchHandler = new PatchHandler(null, mockLdpRequest, insert,
                 mockResourceService, mockIoService);
 
         assertThrows(WebApplicationException.class, () -> patchHandler.updateResource(mockResource));
@@ -243,7 +242,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
+        final PatchHandler patchHandler = new PatchHandler(null, mockLdpRequest, insert,
                 mockResourceService, mockIoService);
 
         assertThrows(WebApplicationException.class, () -> patchHandler.updateResource(mockResource));
@@ -256,7 +255,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
+        final PatchHandler patchHandler = new PatchHandler(null, mockLdpRequest, insert,
                 mockResourceService, mockIoService);
 
         final Response res = patchHandler.updateResource(mockResource).build();
@@ -270,7 +269,7 @@ public class PatchHandlerTest {
         when(mockLdpRequest.getPartition()).thenReturn("partition");
         when(mockLdpRequest.getPath()).thenReturn("/resource");
 
-        final PatchHandler patchHandler = new PatchHandler(emptyMap(), mockLdpRequest, insert,
+        final PatchHandler patchHandler = new PatchHandler(baseUrl, mockLdpRequest, insert,
                 mockResourceService, mockIoService);
 
         assertThrows(BadRequestException.class, () -> patchHandler.updateResource(mockResource));

@@ -49,7 +49,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -106,16 +105,16 @@ public final class MementoResource {
 
     /**
      * Create a response builder for a TimeMap response
-     * @param partitions the partitions
+     * @param baseUrl the base URL
      * @param req the LDP request
      * @param serializer the serializer to use
      * @return a response builder object
      */
-    public Response.ResponseBuilder getTimeMapBuilder(final Map<String, String> partitions,
-            final LdpRequest req, final IOService serializer) {
+    public Response.ResponseBuilder getTimeMapBuilder(final String baseUrl, final LdpRequest req,
+            final IOService serializer) {
 
         final List<MediaType> acceptableTypes = req.getHeaders().getAcceptableMediaTypes();
-        final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
+        final String identifier = getBaseUrl(baseUrl, req) + req.getPartition() + req.getPath();
         final List<Link> links = getMementoLinks(identifier, resource.getMementos()).collect(toList());
 
         final Response.ResponseBuilder builder = Response.ok().link(identifier, ORIGINAL + " " + TIMEGATE);
@@ -164,12 +163,12 @@ public final class MementoResource {
 
     /**
      * Create a response builder for a TimeGate response
-     * @param partitions the partitions
+     * @param baseUrl the base URL
      * @param req the LDP request
      * @return a response builder object
      */
-    public Response.ResponseBuilder getTimeGateBuilder(final Map<String, String> partitions, final LdpRequest req) {
-        final String identifier = req.getBaseUrl(partitions) + req.getPartition() + req.getPath();
+    public Response.ResponseBuilder getTimeGateBuilder(final String baseUrl, final LdpRequest req) {
+        final String identifier = getBaseUrl(baseUrl, req) + req.getPartition() + req.getPath();
         return Response.status(FOUND)
             .location(fromUri(identifier + "?version=" + req.getDatetime().getInstant().toEpochMilli()).build())
             .link(identifier, ORIGINAL + " " + TIMEGATE)
@@ -185,6 +184,13 @@ public final class MementoResource {
      */
     public static Stream<Link> getMementoLinks(final String identifier, final List<VersionRange> mementos) {
         return concat(getTimeMap(identifier, mementos.stream()), mementos.stream().map(mementoToLink(identifier)));
+    }
+
+    private String getBaseUrl(final String baseUrl, final LdpRequest req) {
+        if (nonNull(baseUrl)) {
+            return baseUrl;
+        }
+        return req.getBaseUrl();
     }
 
     private static final Function<Link, Stream<Triple>> linkToTriples = link -> {

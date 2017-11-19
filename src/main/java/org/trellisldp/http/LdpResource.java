@@ -206,8 +206,9 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     }
 
     private Response fetchResource(final LdpRequest req) {
+        final String baseUrl = partitions.get(req.getPartition());
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-        final GetHandler getHandler = new GetHandler(partitions, req, resourceService, ioService, binaryService);
+        final GetHandler getHandler = new GetHandler(baseUrl, req, resourceService, ioService, binaryService);
 
         // Fetch a versioned resource
         if (nonNull(req.getVersion())) {
@@ -219,14 +220,14 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
         } else if (TIMEMAP.equals(req.getExt())) {
             LOGGER.info("Getting timemap resource");
             return resourceService.get(identifier).map(MementoResource::new)
-                .map(res -> res.getTimeMapBuilder(partitions, req, ioService))
+                .map(res -> res.getTimeMapBuilder(baseUrl, req, ioService))
                 .orElseGet(() -> status(NOT_FOUND)).build();
 
         // Fetch a timegate
         } else if (nonNull(req.getDatetime())) {
             LOGGER.info("Getting timegate resource: {}", req.getDatetime().getInstant());
             return resourceService.get(identifier, req.getDatetime().getInstant())
-                .map(MementoResource::new).map(res -> res.getTimeGateBuilder(partitions, req))
+                .map(MementoResource::new).map(res -> res.getTimeGateBuilder(baseUrl, req))
                 .orElseGet(() -> status(NOT_FOUND)).build();
         }
 
@@ -245,8 +246,9 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     @Timed
     public Response options(@BeanParam final LdpRequest req) {
 
+        final String baseUrl = partitions.get(req.getPartition());
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-        final OptionsHandler optionsHandler = new OptionsHandler(partitions, req, resourceService);
+        final OptionsHandler optionsHandler = new OptionsHandler(baseUrl, req, resourceService);
 
         if (nonNull(req.getVersion())) {
             return resourceService.get(identifier, req.getVersion().getInstant()).map(optionsHandler::ldpOptions)
@@ -269,8 +271,9 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     @Consumes("application/sparql-update")
     public Response updateResource(@BeanParam final LdpRequest req, final String body) {
 
+        final String baseUrl = partitions.get(req.getPartition());
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-        final PatchHandler patchHandler = new PatchHandler(partitions, req, body, resourceService, ioService);
+        final PatchHandler patchHandler = new PatchHandler(baseUrl, req, body, resourceService, ioService);
 
         return resourceService.get(identifier, MAX).map(patchHandler::updateResource)
             .orElseGet(() -> status(NOT_FOUND)).build();
@@ -285,8 +288,9 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     @Timed
     public Response deleteResource(@BeanParam final LdpRequest req) {
 
+        final String baseUrl = partitions.get(req.getPartition());
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-        final DeleteHandler deleteHandler = new DeleteHandler(partitions, req, resourceService);
+        final DeleteHandler deleteHandler = new DeleteHandler(baseUrl, req, resourceService);
 
         return resourceService.get(identifier, MAX).map(deleteHandler::deleteResource)
             .orElseGet(() -> status(NOT_FOUND)).build();
@@ -302,11 +306,12 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     @Timed
     public Response createResource(@BeanParam final LdpRequest req, final File body) {
 
+        final String baseUrl = partitions.get(req.getPartition());
         final String path = req.getPartition() + req.getPath();
         final String identifier = "/" + ofNullable(req.getSlug())
             .orElseGet(resourceService.getIdentifierSupplier());
 
-        final PostHandler postHandler = new PostHandler(partitions, req, identifier, body, resourceService,
+        final PostHandler postHandler = new PostHandler(baseUrl, req, identifier, body, resourceService,
                 ioService, binaryService);
 
         // First check if this is a container
@@ -338,8 +343,9 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
             return status(NOT_FOUND).build();
         }
 
+        final String baseUrl = partitions.get(req.getPartition());
         final IRI identifier = rdf.createIRI(TRELLIS_PREFIX + req.getPartition() + req.getPath());
-        final PutHandler putHandler = new PutHandler(partitions, req, body, resourceService, ioService,
+        final PutHandler putHandler = new PutHandler(baseUrl, req, body, resourceService, ioService,
                 binaryService);
 
         return resourceService.get(identifier, MAX).filter(res -> !RdfUtils.isDeleted(res))
