@@ -70,6 +70,7 @@ public class BaseLdpHandler {
 
     /**
      * A base class for response handling
+     * @param baseUrl the base URL
      * @param req the LDP request
      * @param resourceService the resource service
      */
