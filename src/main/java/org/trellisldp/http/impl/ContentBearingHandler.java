@@ -60,16 +60,16 @@ class ContentBearingHandler extends BaseLdpHandler {
 
     /**
      * Create a builder for an LDP POST response
-     * @param partitions the partitions
+     * @param baseUrl the base URL
      * @param req the LDP request
      * @param entity the entity
      * @param resourceService the resource service
      * @param ioService the serialization service
      * @param binaryService the binary service
      */
-    protected ContentBearingHandler(final String baseUrl, final LdpRequest req, final File entity,
-            final ResourceService resourceService, final IOService ioService, final BinaryService binaryService) {
-        super(baseUrl, req, resourceService);
+    protected ContentBearingHandler(final LdpRequest req, final File entity, final ResourceService resourceService,
+            final IOService ioService, final BinaryService binaryService, final String baseUrl) {
+        super(req, resourceService, baseUrl);
         this.binaryService = binaryService;
         this.ioService = ioService;
         this.entity = entity;

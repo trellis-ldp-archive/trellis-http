@@ -46,12 +46,12 @@ public class DeleteHandler extends BaseLdpHandler {
 
     /**
      * Create a builder for an LDP DELETE response
-     * @param baseUrl the base URL
      * @param req the LDP request
      * @param resourceService the resource service
+     * @param baseUrl the base URL
      */
-    public DeleteHandler(final String baseUrl, final LdpRequest req, final ResourceService resourceService) {
-        super(baseUrl, req, resourceService);
+    public DeleteHandler(final LdpRequest req, final ResourceService resourceService, final String baseUrl) {
+        super(req, resourceService, baseUrl);
     }
 
     /**

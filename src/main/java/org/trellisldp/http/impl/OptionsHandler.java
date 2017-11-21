@@ -59,12 +59,12 @@ public class OptionsHandler extends BaseLdpHandler {
 
     /**
      * An OPTIONS response builder
-     * @param baseUrl the base URL
      * @param req the LDP request
      * @param resourceService the resource service
+     * @param baseUrl the base URL
      */
-    public OptionsHandler(final String baseUrl, final LdpRequest req, final ResourceService resourceService) {
-        super(baseUrl, req, resourceService);
+    public OptionsHandler(final LdpRequest req, final ResourceService resourceService, final String baseUrl) {
+        super(req, resourceService, baseUrl);
     }
 
     /**

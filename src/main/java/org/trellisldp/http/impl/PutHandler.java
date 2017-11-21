@@ -80,16 +80,16 @@ public class PutHandler extends ContentBearingHandler {
 
     /**
      * Create a builder for an LDP POST response
-     * @param baseUrl the base URL
      * @param req the LDP request
      * @param entity the entity
      * @param resourceService the resource service
      * @param ioService the serialization service
      * @param binaryService the binary service
+     * @param baseUrl the base URL
      */
-    public PutHandler(final String baseUrl, final LdpRequest req, final File entity,
-            final ResourceService resourceService, final IOService ioService, final BinaryService binaryService) {
-        super(baseUrl, req, entity, resourceService, ioService, binaryService);
+    public PutHandler(final LdpRequest req, final File entity, final ResourceService resourceService,
+            final IOService ioService, final BinaryService binaryService, final String baseUrl) {
+        super(req, entity, resourceService, ioService, binaryService, baseUrl);
     }
 
     private void checkResourceCache(final String identifier, final Resource res) {

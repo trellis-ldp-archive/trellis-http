@@ -128,7 +128,7 @@ public class DeleteHandlerTest {
 
     @Test
     public void testDelete() {
-        final DeleteHandler handler = new DeleteHandler(null, mockLdpRequest, mockResourceService);
+        final DeleteHandler handler = new DeleteHandler(mockLdpRequest, mockResourceService, null);
 
         final Response res = handler.deleteResource(mockResource).build();
         assertEquals(NO_CONTENT, res.getStatusInfo());
@@ -137,7 +137,7 @@ public class DeleteHandlerTest {
     @Test
     public void testDeleteError() {
         when(mockResourceService.put(any(IRI.class), any(Dataset.class))).thenReturn(false);
-        final DeleteHandler handler = new DeleteHandler(baseUrl, mockLdpRequest, mockResourceService);
+        final DeleteHandler handler = new DeleteHandler(mockLdpRequest, mockResourceService, baseUrl);
 
         final Response res = handler.deleteResource(mockResource).build();
         assertEquals(INTERNAL_SERVER_ERROR, res.getStatusInfo());
@@ -147,7 +147,7 @@ public class DeleteHandlerTest {
     public void testCache() {
         when(mockRequest.evaluatePreconditions(eq(from(time)), any(EntityTag.class)))
                 .thenReturn(status(PRECONDITION_FAILED));
-        final DeleteHandler handler = new DeleteHandler(baseUrl, mockLdpRequest, mockResourceService);
+        final DeleteHandler handler = new DeleteHandler(mockLdpRequest, mockResourceService, baseUrl);
 
         assertThrows(WebApplicationException.class, () -> handler.deleteResource(mockResource));
     }
@@ -157,7 +157,7 @@ public class DeleteHandlerTest {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Resource);
         when(mockResource.getTypes()).thenReturn(singletonList(Trellis.DeletedResource));
 
-        final DeleteHandler handler = new DeleteHandler(baseUrl, mockLdpRequest, mockResourceService);
+        final DeleteHandler handler = new DeleteHandler(mockLdpRequest, mockResourceService, baseUrl);
 
         assertThrows(WebApplicationException.class, () -> handler.deleteResource(mockResource));
     }

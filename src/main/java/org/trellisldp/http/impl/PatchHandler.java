@@ -83,15 +83,15 @@ public class PatchHandler extends BaseLdpHandler {
 
     /**
      * Create a handler for PATCH operations
-     * @param baseUrl the base URL
      * @param req the LDP request
      * @param sparqlUpdate the sparql update body
      * @param resourceService the resource service
      * @param ioService the serialization service
+     * @param baseUrl the base URL
      */
-    public PatchHandler(final String baseUrl, final LdpRequest req, final String sparqlUpdate,
-            final ResourceService resourceService, final IOService ioService) {
-        super(baseUrl, req, resourceService);
+    public PatchHandler(final LdpRequest req, final String sparqlUpdate,
+            final ResourceService resourceService, final IOService ioService, final String baseUrl) {
+        super(req, resourceService, baseUrl);
         this.ioService = ioService;
         this.sparqlUpdate = sparqlUpdate;
     }

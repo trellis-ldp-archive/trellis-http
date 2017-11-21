@@ -70,11 +70,11 @@ public class BaseLdpHandler {
 
     /**
      * A base class for response handling
-     * @param baseUrl the base URL
      * @param req the LDP request
      * @param resourceService the resource service
+     * @param baseUrl the base URL
      */
-    public BaseLdpHandler(final String baseUrl, final LdpRequest req, final ResourceService resourceService) {
+    public BaseLdpHandler(final LdpRequest req, final ResourceService resourceService, final String baseUrl) {
         this.baseUrl = baseUrl;
         this.req = req;
         this.resourceService = resourceService;

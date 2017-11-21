@@ -69,17 +69,17 @@ public class PostHandler extends ContentBearingHandler {
 
     /**
      * Create a builder for an LDP POST response
-     * @param baseUrl the base URL
      * @param req the LDP request
      * @param id the new resource's identifier
      * @param entity the entity
      * @param resourceService the resource service
      * @param ioService the serialization service
      * @param binaryService the datastream service
+     * @param baseUrl the base URL
      */
-    public PostHandler(final String baseUrl, final LdpRequest req, final String id, final File entity,
-            final ResourceService resourceService, final IOService ioService, final BinaryService binaryService) {
-        super(baseUrl, req, entity, resourceService, ioService, binaryService);
+    public PostHandler(final LdpRequest req, final String id, final File entity, final ResourceService resourceService,
+            final IOService ioService, final BinaryService binaryService, final String baseUrl) {
+        super(req, entity, resourceService, ioService, binaryService, baseUrl);
         this.id = id;
     }
 

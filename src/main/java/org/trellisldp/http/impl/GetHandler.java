@@ -108,16 +108,15 @@ public class GetHandler extends BaseLdpHandler {
 
     /**
      * A GET response builder
-     * @param baseUrl the base URL
      * @param req the LDP request
      * @param resourceService the resource service
      * @param ioService the serialization service
      * @param binaryService the binary service
+     * @param baseUrl the base URL
      */
-    public GetHandler(final String baseUrl, final LdpRequest req,
-            final ResourceService resourceService, final IOService ioService,
-            final BinaryService binaryService) {
-        super(baseUrl, req, resourceService);
+    public GetHandler(final LdpRequest req, final ResourceService resourceService, final IOService ioService,
+            final BinaryService binaryService, final String baseUrl) {
+        super(req, resourceService, baseUrl);
         this.ioService = ioService;
         this.binaryService = binaryService;
     }

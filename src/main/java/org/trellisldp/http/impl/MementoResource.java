@@ -110,8 +110,8 @@ public final class MementoResource {
      * @param serializer the serializer to use
      * @return a response builder object
      */
-    public Response.ResponseBuilder getTimeMapBuilder(final String baseUrl, final LdpRequest req,
-            final IOService serializer) {
+    public Response.ResponseBuilder getTimeMapBuilder(final LdpRequest req,
+            final IOService serializer, final String baseUrl) {
 
         final List<MediaType> acceptableTypes = req.getHeaders().getAcceptableMediaTypes();
         final String identifier = getBaseUrl(baseUrl, req) + req.getPartition() + req.getPath();
@@ -163,11 +163,11 @@ public final class MementoResource {
 
     /**
      * Create a response builder for a TimeGate response
-     * @param baseUrl the base URL
      * @param req the LDP request
+     * @param baseUrl the base URL
      * @return a response builder object
      */
-    public Response.ResponseBuilder getTimeGateBuilder(final String baseUrl, final LdpRequest req) {
+    public Response.ResponseBuilder getTimeGateBuilder(final LdpRequest req, final String baseUrl) {
         final String identifier = getBaseUrl(baseUrl, req) + req.getPartition() + req.getPath();
         return Response.status(FOUND)
             .location(fromUri(identifier + "?version=" + req.getDatetime().getInstant().toEpochMilli()).build())
