@@ -46,10 +46,10 @@ ext {
     junitPlatformVersion = '1.0.2'
     apiguardianVersion = '1.0.0'
     mockitoVersion = '2.12.0'
-    trellisJenaIOVersion = '0.2.1'
-    trellisAuditVersion = '0.1.0'
-    trellisEventVersion = '0.1.0'
-    trellisConstraintVersion = '0.2.2'
+    trellisJenaIOVersion = '0.3.0'
+    trellisAuditVersion = '0.1.1'
+    trellisEventVersion = '0.1.1'
+    trellisConstraintVersion = '0.2.3'
     jerseyVersion = '2.26'
     logbackVersion = '1.2.3'
     jsonVersion = '1.1.2'
@@ -58,8 +58,8 @@ ext {
     commonsTextVersion = '1.1'
 
     /* OSGi */
-    trellisApiVersionRange = '[0.3,1)'
-    trellisVocabularyVersionRange = '[0.1,1)'
+    trellisApiVersionRange = '[0.4,1)'
+    trellisVocabularyVersionRange = '[0.2,1)'
     spiflyVersion = '1.0.8'
     projectOsgiVersion = project.version.replaceAll("-SNAPSHOT", ".SNAPSHOT")
 }
