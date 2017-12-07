@@ -118,25 +118,14 @@ public final class RdfUtils {
      */
     public static Predicate<Quad> filterWithLDF(final String subject, final String predicate,
             final String object) {
-        return quad -> {
-            if (notCompareWithString(quad.getSubject(), subject)
+        return quad -> !(notCompareWithString(quad.getSubject(), subject)
                     || notCompareWithString(quad.getPredicate(), predicate)
-                    || notCompareWithString(quad.getObject(), object)) {
-                return false;
-            }
-            return true;
-        };
+                    || notCompareWithString(quad.getObject(), object));
     }
 
     private static Boolean notCompareWithString(final RDFTerm term, final String str) {
-        if (nonNull(str) && !str.isEmpty()) {
-            if (term instanceof IRI && !((IRI) term).getIRIString().equals(str)) {
-                return true;
-            } else if (term instanceof Literal && !((Literal) term).getLexicalForm().equals(str)) {
-                return true;
-            }
-        }
-        return false;
+        return nonNull(str) && !str.isEmpty() && (term instanceof IRI && !((IRI) term).getIRIString().equals(str)
+                    || term instanceof Literal && !((Literal) term).getLexicalForm().equals(str));
     }
 
     /**
