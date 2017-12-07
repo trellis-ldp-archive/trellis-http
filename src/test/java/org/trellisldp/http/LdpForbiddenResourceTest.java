@@ -122,7 +122,7 @@ public class LdpForbiddenResourceTest extends JerseyTest {
         config.register(new TestAuthenticationFilter("testUser", "group"));
         config.register(new AgentAuthorizationFilter(mockAgentService, emptyList()));
         config.register(new WebAcFilter(partitions, emptyList(), mockAccessControlService));
-        config.register(new LdpResource(mockResourceService, ioService, mockBinaryService, partitions));
+        config.register(new PartitionedLdpResource(mockResourceService, ioService, mockBinaryService, partitions));
         return config;
     }
 

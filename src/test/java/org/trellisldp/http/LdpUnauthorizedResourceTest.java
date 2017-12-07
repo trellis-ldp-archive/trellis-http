@@ -124,7 +124,7 @@ public class LdpUnauthorizedResourceTest extends JerseyTest {
         initMocks(this);
 
         final ResourceConfig config = new ResourceConfig();
-        config.register(new LdpResource(mockResourceService, ioService, mockBinaryService, partitions));
+        config.register(new PartitionedLdpResource(mockResourceService, ioService, mockBinaryService, partitions));
         config.register(new TestAuthenticationFilter("testUser", "group"));
         config.register(new WebAcFilter(partitions, asList(BASIC_AUTH, DIGEST_AUTH), mockAccessControlService));
         config.register(new CrossOriginResourceSharingFilter(asList(origin),

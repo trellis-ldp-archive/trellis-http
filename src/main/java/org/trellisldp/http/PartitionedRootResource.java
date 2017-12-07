@@ -62,9 +62,9 @@ import org.trellisldp.vocabulary.RDFS;
  */
 @Produces({"text/turtle,application/ld+json,application/n-triples,text/html"})
 @Path("")
-public class RootResource extends BaseLdpResource {
+public class PartitionedRootResource extends BaseLdpResource {
 
-    private static final Logger LOGGER = getLogger(RootResource.class);
+    private static final Logger LOGGER = getLogger(PartitionedRootResource.class);
 
     private static Map<String, IRI> propMapping = getPropertyMapping();
 
@@ -77,7 +77,8 @@ public class RootResource extends BaseLdpResource {
      * @param partitions a map of partition/baseURLs
      * @param properties a collection of properties to customize the triple output
      */
-    public RootResource(final IOService ioService, final Map<String, String> partitions, final Properties properties) {
+    public PartitionedRootResource(final IOService ioService, final Map<String, String> partitions,
+            final Properties properties) {
         super(partitions);
         this.ioService = ioService;
         this.properties = properties;

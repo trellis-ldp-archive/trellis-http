@@ -76,7 +76,7 @@ public class RootResourceTest extends JerseyTest {
         properties.setProperty("publisher", "https://example.org");
 
         final ResourceConfig config = new ResourceConfig();
-        config.register(new RootResource(ioService, partitions, properties));
+        config.register(new PartitionedRootResource(ioService, partitions, properties));
         return config;
     }
 

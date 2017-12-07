@@ -90,9 +90,9 @@ import org.trellisldp.vocabulary.LDP;
 @Priority(AUTHORIZATION + 20)
 @Singleton
 @Path("{partition}{path: .*}")
-public class LdpResource extends BaseLdpResource implements ContainerRequestFilter {
+public class PartitionedLdpResource extends BaseLdpResource implements ContainerRequestFilter {
 
-    private static final Logger LOGGER = getLogger(LdpResource.class);
+    private static final Logger LOGGER = getLogger(PartitionedLdpResource.class);
 
     protected final ResourceService resourceService;
 
@@ -103,13 +103,13 @@ public class LdpResource extends BaseLdpResource implements ContainerRequestFilt
     private static final List<String> MUTATING_METHODS = asList("POST", "PUT", "DELETE", "PATCH");
 
     /**
-     * Create a LdpResource
+     * Create a partitioned LdpResource
      * @param resourceService the resource service
      * @param ioService the i/o service
      * @param binaryService the datastream service
      * @param partitions a map of partitions for use with custom hostnames
      */
-    public LdpResource(final ResourceService resourceService, final IOService ioService,
+    public PartitionedLdpResource(final ResourceService resourceService, final IOService ioService,
             final BinaryService binaryService, final Map<String, String> partitions) {
         super(partitions);
         this.resourceService = resourceService;

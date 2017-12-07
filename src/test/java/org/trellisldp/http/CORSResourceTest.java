@@ -173,7 +173,7 @@ public class CORSResourceTest extends JerseyTest {
         final String origin = baseUri.substring(0, baseUri.length() - 1);
 
         final ResourceConfig config = new ResourceConfig();
-        config.register(new LdpResource(mockResourceService, ioService, mockBinaryService, partitions));
+        config.register(new PartitionedLdpResource(mockResourceService, ioService, mockBinaryService, partitions));
         config.register(new CrossOriginResourceSharingFilter(asList("*"),
                     asList("PATCH", "POST", "PUT"), asList("Link", "Content-Type", "Accept", "Accept-Datetime"),
                     emptyList(), false, 0));
