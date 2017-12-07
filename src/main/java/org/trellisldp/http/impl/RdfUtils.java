@@ -14,6 +14,7 @@
 package org.trellisldp.http.impl;
 
 import static java.util.Collections.unmodifiableMap;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
@@ -43,9 +44,11 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.rdf.api.BlankNodeOrIRI;
 import org.apache.commons.rdf.api.IRI;
+import org.apache.commons.rdf.api.Literal;
 import org.apache.commons.rdf.api.Quad;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.commons.rdf.api.RDFSyntax;
+import org.apache.commons.rdf.api.RDFTerm;
 import org.apache.commons.rdf.api.Triple;
 
 import org.slf4j.Logger;
@@ -104,6 +107,36 @@ public final class RdfUtils {
         });
         return quad -> quad.getGraphName().filter(x -> x instanceof IRI).map(x -> (IRI) x)
             .map(IRI::getIRIString).filter(include::contains).isPresent();
+    }
+
+    /**
+     * Create a Linked Data Fragments filter.
+     * @param subject the LDF subject
+     * @param predicate the LDF predicate
+     * @param object the LDF object
+     * @return a filtering predicate
+     */
+    public static Predicate<Quad> filterWithLDF(final String subject, final String predicate,
+            final String object) {
+        return quad -> {
+            if (notCompareWithString(quad.getSubject(), subject)
+                    || notCompareWithString(quad.getPredicate(), predicate)
+                    || notCompareWithString(quad.getObject(), object)) {
+                return false;
+            }
+            return true;
+        };
+    }
+
+    private static Boolean notCompareWithString(final RDFTerm term, final String str) {
+        if (nonNull(str) && !str.isEmpty()) {
+            if (term instanceof IRI && !((IRI) term).getIRIString().equals(str)) {
+                return true;
+            } else if (term instanceof Literal && !((Literal) term).getLexicalForm().equals(str)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

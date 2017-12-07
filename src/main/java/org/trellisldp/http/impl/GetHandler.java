@@ -53,6 +53,7 @@ import static org.trellisldp.http.domain.Prefer.PREFER_REPRESENTATION;
 import static org.trellisldp.http.domain.Prefer.PREFER_RETURN;
 import static org.trellisldp.http.domain.RdfMediaType.APPLICATION_SPARQL_UPDATE;
 import static org.trellisldp.http.domain.RdfMediaType.MEDIA_TYPES;
+import static org.trellisldp.http.impl.RdfUtils.filterWithLDF;
 import static org.trellisldp.http.impl.RdfUtils.filterWithPrefer;
 import static org.trellisldp.http.impl.RdfUtils.getDefaultProfile;
 import static org.trellisldp.http.impl.RdfUtils.getProfile;
@@ -211,8 +212,10 @@ public class GetHandler extends BaseLdpHandler {
             public void write(final OutputStream out) throws IOException {
                 try (final Stream<? extends Quad> stream = res.stream()) {
                     ioService.write(stream.filter(filterWithPrefer(prefer))
-                        .map(unskolemizeQuads(resourceService, getBaseUrl())).map(Quad::asTriple), out,
-                        syntax, ofNullable(profile).orElseGet(() -> getDefaultProfile(syntax, identifier)));
+                        .map(unskolemizeQuads(resourceService, getBaseUrl()))
+                        .filter(filterWithLDF(req.getSubject(), req.getPredicate(), req.getObject()))
+                        .map(Quad::asTriple), out, syntax,
+                            ofNullable(profile).orElseGet(() -> getDefaultProfile(syntax, identifier)));
                 }
             }
         };

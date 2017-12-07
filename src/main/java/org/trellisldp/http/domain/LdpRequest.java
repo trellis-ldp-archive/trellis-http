@@ -48,6 +48,15 @@ public class LdpRequest {
     @QueryParam("ext")
     private String ext;
 
+    @QueryParam("subject")
+    private String subject;
+
+    @QueryParam("predicate")
+    private String predicate;
+
+    @QueryParam("object")
+    private String object;
+
     @Context
     private UriInfo uriInfo;
 
@@ -199,6 +208,30 @@ public class LdpRequest {
      */
     public Session getSession() {
         return (Session) ctx.getProperty(SESSION_PROPERTY);
+    }
+
+    /**
+     * Get the subject filter.
+     * @return the subject filter
+     */
+    public String getSubject() {
+        return subject;
+    }
+
+    /**
+     * Get the predicate filter.
+     * @return the predicate filter
+     */
+    public String getPredicate() {
+        return predicate;
+    }
+
+    /**
+     * Get the object filter.
+     * @return the object filter
+     */
+    public String getObject() {
+        return object;
     }
 
     /**

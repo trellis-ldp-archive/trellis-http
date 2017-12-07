@@ -916,6 +916,134 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
     }
 
     @Test
+    public void testGetJsonCompactLDF1() throws IOException {
+        when(mockResource.stream()).thenAnswer(inv -> Stream.of(
+                rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.creator, rdf.createLiteral("User")),
+                rdf.createQuad(Trellis.PreferUserManaged, rdf.createIRI("ex:foo"), DC.title, rdf.createIRI("ex:title")),
+                rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title, rdf.createLiteral("A title")),
+                rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title, rdf.createLiteral("Other title")),
+                rdf.createQuad(Trellis.PreferUserManaged, identifier, type, rdf.createIRI("ex:Type")),
+                rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.created,
+                    rdf.createLiteral("2017-04-01T10:15:00Z", XSD.dateTime)),
+                rdf.createQuad(Trellis.PreferAccessControl, identifier, type, ACL.Authorization),
+                rdf.createQuad(Trellis.PreferAccessControl, identifier, ACL.mode, ACL.Control)));
+
+        final Response res = target(RESOURCE_PATH).queryParam("subject", BASE_URL + RESOURCE_PATH)
+            .queryParam("predicate", "http://purl.org/dc/terms/title").request()
+            .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(APPLICATION_LD_JSON_TYPE.isCompatible(res.getMediaType()));
+        assertTrue(res.getMediaType().isCompatible(APPLICATION_LD_JSON_TYPE));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertNull(res.getHeaderString(ACCEPT_POST));
+        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
+        assertNull(res.getHeaderString(ACCEPT_RANGES));
+        assertEquals(from(time), res.getLastModified());
+        assertTrue(res.getLinks().stream().anyMatch(l ->
+                    l.getRel().contains("timegate") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+        assertTrue(res.getLinks().stream().anyMatch(l ->
+                    l.getRel().contains("original") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+        assertTrue(res.hasEntity());
+
+        assertTrue(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        final List<String> varies = res.getStringHeaders().get(VARY);
+        assertFalse(varies.contains(RANGE));
+        assertFalse(varies.contains(WANT_DIGEST));
+        assertTrue(varies.contains(ACCEPT_DATETIME));
+        assertTrue(varies.contains(PREFER));
+
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        final Map<String, Object> obj = MAPPER.readValue(entity, new TypeReference<Map<String, Object>>(){});
+
+        assertTrue(obj.containsKey("@context"));
+        assertFalse(obj.containsKey("creator"));
+        assertTrue(obj.containsKey("title"));
+        assertFalse(obj.containsKey("mode"));
+        assertFalse(obj.containsKey("created"));
+
+        assertTrue(obj.get("title") instanceof List);
+        @SuppressWarnings("unchecked")
+        final List<Object> titles = (List<Object>) obj.get("title");
+        assertTrue(titles.contains("A title"));
+        assertEquals(2L, titles.size());
+        assertEquals(BASE_URL + RESOURCE_PATH, obj.get("@id"));
+    }
+
+    @Test
+    public void testGetJsonCompactLDF2() throws IOException {
+        when(mockResource.stream()).thenAnswer(inv -> Stream.of(
+                rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.creator, rdf.createLiteral("User")),
+                rdf.createQuad(Trellis.PreferUserManaged, rdf.createIRI("ex:foo"), DC.title, rdf.createIRI("ex:title")),
+                rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title, rdf.createLiteral("A title")),
+                rdf.createQuad(Trellis.PreferUserManaged, identifier, DC.title, rdf.createLiteral("Other title")),
+                rdf.createQuad(Trellis.PreferUserManaged, identifier, type, rdf.createIRI("ex:Type")),
+                rdf.createQuad(Trellis.PreferUserManaged, rdf.createIRI("ex:foo"), type, rdf.createIRI("ex:Type")),
+                rdf.createQuad(Trellis.PreferUserManaged, rdf.createIRI("ex:foo"), type, rdf.createIRI("ex:Other")),
+                rdf.createQuad(Trellis.PreferServerManaged, identifier, DC.created,
+                    rdf.createLiteral("2017-04-01T10:15:00Z", XSD.dateTime)),
+                rdf.createQuad(Trellis.PreferAccessControl, identifier, type, ACL.Authorization),
+                rdf.createQuad(Trellis.PreferAccessControl, identifier, ACL.mode, ACL.Control)));
+
+        final Response res = target(RESOURCE_PATH).queryParam("subject", BASE_URL + RESOURCE_PATH)
+            .queryParam("object", "ex:Type").queryParam("predicate", "").request()
+            .accept("application/ld+json; profile=\"http://www.w3.org/ns/json-ld#compacted\"").get();
+
+        assertEquals(OK, res.getStatusInfo());
+        assertTrue(APPLICATION_LD_JSON_TYPE.isCompatible(res.getMediaType()));
+        assertTrue(res.getMediaType().isCompatible(APPLICATION_LD_JSON_TYPE));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.Resource)));
+        assertTrue(res.getLinks().stream().anyMatch(hasType(LDP.RDFSource)));
+        assertFalse(res.getLinks().stream().anyMatch(hasType(LDP.Container)));
+        assertNull(res.getHeaderString(ACCEPT_POST));
+        assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
+        assertNull(res.getHeaderString(ACCEPT_RANGES));
+        assertEquals(from(time), res.getLastModified());
+        assertTrue(res.getLinks().stream().anyMatch(l ->
+                    l.getRel().contains("timegate") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+        assertTrue(res.getLinks().stream().anyMatch(l ->
+                    l.getRel().contains("original") && l.getUri().toString().equals(BASE_URL + RESOURCE_PATH)));
+        assertTrue(res.hasEntity());
+
+        assertTrue(res.getAllowedMethods().contains("PATCH"));
+        assertTrue(res.getAllowedMethods().contains("PUT"));
+        assertTrue(res.getAllowedMethods().contains("DELETE"));
+        assertTrue(res.getAllowedMethods().contains("GET"));
+        assertTrue(res.getAllowedMethods().contains("HEAD"));
+        assertTrue(res.getAllowedMethods().contains("OPTIONS"));
+        assertFalse(res.getAllowedMethods().contains("POST"));
+
+        final List<String> varies = res.getStringHeaders().get(VARY);
+        assertFalse(varies.contains(RANGE));
+        assertFalse(varies.contains(WANT_DIGEST));
+        assertTrue(varies.contains(ACCEPT_DATETIME));
+        assertTrue(varies.contains(PREFER));
+
+        final String entity = IOUtils.toString((InputStream) res.getEntity(), UTF_8);
+        final Map<String, Object> obj = MAPPER.readValue(entity, new TypeReference<Map<String, Object>>(){});
+
+        assertTrue(obj.containsKey("@type"));
+        assertFalse(obj.containsKey("@context"));
+        assertFalse(obj.containsKey("creator"));
+        assertFalse(obj.containsKey("title"));
+        assertFalse(obj.containsKey("mode"));
+        assertFalse(obj.containsKey("created"));
+
+        assertEquals("ex:Type", obj.get("@type"));
+        assertEquals(BASE_URL + RESOURCE_PATH, obj.get("@id"));
+    }
+
+
+    @Test
     public void testGetTimeMapLinkDefaultFormat() throws IOException {
         when(mockResource.getInteractionModel()).thenReturn(LDP.Container);
 
