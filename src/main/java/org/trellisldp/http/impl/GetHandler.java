@@ -42,6 +42,7 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_RANGES;
 import static org.trellisldp.http.domain.HttpConstants.ACL;
 import static org.trellisldp.http.domain.HttpConstants.DIGEST;
+import static org.trellisldp.http.domain.HttpConstants.LINK_TEMPLATE;
 import static org.trellisldp.http.domain.HttpConstants.MEMENTO_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.PATCH;
 import static org.trellisldp.http.domain.HttpConstants.PREFER;
@@ -94,6 +95,7 @@ import org.trellisldp.http.domain.LdpRequest;
 import org.trellisldp.http.domain.Prefer;
 import org.trellisldp.http.domain.WantDigest;
 import org.trellisldp.vocabulary.LDP;
+import org.trellisldp.vocabulary.Memento;
 
 /**
  * The GET response builder
@@ -159,6 +161,9 @@ public class GetHandler extends BaseLdpHandler {
                 .links(MementoResource.getMementoLinks(identifier, res.getMementos()).toArray(Link[]::new));
         }
 
+        // URI Template
+        builder.header(LINK_TEMPLATE, "<" + identifier + "{?version}>; rel=\"" + Memento.Memento.getIRIString() + "\"");
+
         // NonRDFSources responses (strong ETags, etc)
         if (res.getBinary().isPresent() && !syntax.isPresent()) {
             return getLdpNr(identifier, res, builder);
@@ -187,6 +192,10 @@ public class GetHandler extends BaseLdpHandler {
         } else {
             builder.header(ALLOW, join(",", GET, HEAD, OPTIONS, PATCH, PUT, DELETE, POST));
         }
+
+        // URI Templates
+        builder.header(LINK_TEMPLATE, "<" + identifier + "{?subject,predicate,object}>; rel=\""
+                + LDP.Resource.getIRIString() + "\"");
 
         final Prefer prefer = ACL.equals(req.getExt()) ?
             new Prefer(PREFER_REPRESENTATION, singletonList(PreferAccessControl.getIRIString()),

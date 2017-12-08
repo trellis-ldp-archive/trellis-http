@@ -45,6 +45,8 @@ public final class HttpConstants {
 
     public static final String DIGEST = "Digest";
 
+    public static final String LINK_TEMPLATE = "Link-Template";
+
     public static final String MEMENTO_DATETIME = "Memento-Datetime";
 
     public static final String PATCH = "PATCH";

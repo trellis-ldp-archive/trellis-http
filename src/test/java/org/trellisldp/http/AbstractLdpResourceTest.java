@@ -62,6 +62,7 @@ import static org.trellisldp.http.domain.HttpConstants.ACCEPT_POST;
 import static org.trellisldp.http.domain.HttpConstants.ACCEPT_RANGES;
 import static org.trellisldp.http.domain.HttpConstants.APPLICATION_LINK_FORMAT;
 import static org.trellisldp.http.domain.HttpConstants.DIGEST;
+import static org.trellisldp.http.domain.HttpConstants.LINK_TEMPLATE;
 import static org.trellisldp.http.domain.HttpConstants.MEMENTO_DATETIME;
 import static org.trellisldp.http.domain.HttpConstants.PREFER;
 import static org.trellisldp.http.domain.HttpConstants.RANGE;
@@ -129,8 +130,9 @@ import org.trellisldp.io.JenaIOService;
 import org.trellisldp.vocabulary.ACL;
 import org.trellisldp.vocabulary.DC;
 import org.trellisldp.vocabulary.LDP;
-import org.trellisldp.vocabulary.XSD;
+import org.trellisldp.vocabulary.Memento;
 import org.trellisldp.vocabulary.Trellis;
+import org.trellisldp.vocabulary.XSD;
 
 /**
  * @author acoburn
@@ -415,6 +417,13 @@ abstract class AbstractLdpResourceTest extends JerseyTest {
         assertNull(res.getHeaderString(ACCEPT_POST));
         assertEquals(APPLICATION_SPARQL_UPDATE, res.getHeaderString(ACCEPT_PATCH));
         assertTrue(res.hasEntity());
+
+        final List<String> templates = res.getStringHeaders().get(LINK_TEMPLATE);
+        assertEquals(2L, templates.size());
+        assertTrue(templates.contains("<" + BASE_URL + RESOURCE_PATH + "{?subject,predicate,object}>; rel=\""
+                + LDP.Resource.getIRIString() + "\""));
+        assertTrue(templates.contains("<" + BASE_URL + RESOURCE_PATH + "{?version}>; rel=\""
+                + Memento.Memento.getIRIString() + "\""));
 
         assertTrue(res.getAllowedMethods().contains("PATCH"));
         assertTrue(res.getAllowedMethods().contains("PUT"));
